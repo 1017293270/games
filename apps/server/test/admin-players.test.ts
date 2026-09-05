@@ -11,6 +11,7 @@ import {
   makePlayer,
   type Harness,
 } from './helpers.js';
+import { settle } from '../src/game/character.js';
 
 /** Player management and invite codes — the W4 half of the admin surface. */
 
@@ -163,6 +164,44 @@ describe('admin / players', () => {
     );
     const pill = bag.items.find((i) => i.itemId === BREAKTHROUGH_PILL_ID)!;
     expect(pill.qty).toBe(pillsBefore + 3);
+  });
+
+  it('settles the pending 修为 before applying a grant', async () => {
+    const player = await makePlayer(h);
+    // The row on disk stops at the moment the cultivator was made; nothing
+    // reads it again, so 两个时辰 of cultivation is still unbanked.
+    const stored = h.ctx.characters.byId(player.characterId)!;
+    h.clock.advance(2 * 60 * 60 * 1000);
+
+    // What a plain read would have credited, computed off the same stored row.
+    const owed = settle(stored, h.ctx.settings.get(), h.clock.now());
+    expect(owed.gainedExp).toBeGreaterThan(0);
+
+    const granted = expectOk<CharacterState>(
+      (
+        await h.app.inject({
+          method: 'POST',
+          url: '/api/admin/players/grant',
+          headers: adminAuth(token),
+          payload: {
+            characterId: player.characterId,
+            items: [{ itemId: BREAKTHROUGH_PILL_ID, qty: 3 }],
+          },
+        })
+      ).json(),
+    );
+
+    // An item-only grant must not cost the player the offline window: the
+    // 修为 lands exactly where a read would have put it, not back at the
+    // stored value that `lastSettledAt: now` would otherwise have frozen.
+    expect(granted.stageIndex).toBe(owed.character.stageIndex);
+    expect(granted.exp).toBeCloseTo(owed.character.exp, 6);
+    expect(granted.exp).not.toBe(stored.exp);
+    expect(granted.lastSettledAt).toBe(h.clock.now());
+
+    const saved = h.ctx.characters.byId(player.characterId)!;
+    expect(saved.exp).toBeCloseTo(owed.character.exp, 6);
+    expect(saved.lastSettledAt).toBe(h.clock.now());
   });
 
   it('rolls 修为 up through 小境界 and parks at 圆满', async () => {

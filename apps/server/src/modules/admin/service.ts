@@ -24,7 +24,7 @@ import { ApiError } from '../../http/errors.js';
 import { generateBots } from '../../engine/bots/generate.js';
 import { transact } from '../../db/index.js';
 import { newInviteCode } from '../../db/repo/invites.js';
-import { resolveEquipment, withFreshPower } from '../../game/character.js';
+import { resolveEquipment, settle, withFreshPower } from '../../game/character.js';
 import {
   addExp,
   clampExpToStage,
@@ -281,14 +281,20 @@ export function grant(
   },
   now: number,
 ): CharacterState {
-  const state = ctx.characters.byId(input.characterId);
-  if (!state) throw new ApiError('PLAYER_NOT_FOUND', '没有这个角色');
+  const stored = ctx.characters.byId(input.characterId);
+  if (!stored) throw new ApiError('PLAYER_NOT_FOUND', '没有这个角色');
 
   for (const entry of input.items ?? []) {
     if (!ITEM_BY_ID.has(entry.itemId)) {
       throw new ApiError('ITEM_NOT_FOUND', `没有这件物品：${entry.itemId}`);
     }
   }
+
+  // The stored row is only settled up to its own `lastSettledAt`, and the save
+  // below stamps `now`. Settling first means an offline cultivator keeps the
+  // 修为 earned since their last read instead of having it overwritten by the
+  // grant. `settle` is what moves `lastSettledAt` to `now` (ARCHITECTURE §8).
+  const state = settle(stored, ctx.settings.get(), now).character;
 
   let next: CharacterState = { ...state };
 
@@ -306,8 +312,6 @@ export function grant(
   if (input.spiritStones !== undefined && input.spiritStones !== 0) {
     next = { ...next, spiritStones: Math.max(0, next.spiritStones + input.spiritStones) };
   }
-
-  next = { ...next, lastSettledAt: now };
 
   transact(ctx.db, () => {
     for (const entry of input.items ?? []) {
