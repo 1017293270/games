@@ -81,6 +81,7 @@ gpt-image-2 要求两边都是 16 的倍数，且 `Output size` 只是倾向—�
 |---|---|---|---|---|
 | `bg/` | 1088×1920 | 1080×1920 | `@720` 720×1280 | 否 |
 | `npc/` `avatar/` | 1024×1024 | 512×512 | — | 否 |
+| `char/` | 1024×1280 | 800×1000 | — | 是 |
 | `monster/` `boss/` | 1024×1280 | 640×800 | — | 否 |
 | `item/` | 1024×1024 | 256×256 | — | 是 |
 | `ui/cloud-pattern` | 1536×512 | 1024×256 | — | 是 |
@@ -111,4 +112,8 @@ gpt-image-2 要求两边都是 16 的倍数，且 `Output size` 只是倾向—�
 - macOS 没有 `timeout`；卡住的任务看 `raw/.imagegen-logs/<name>.log`，必要时 `pkill -f "codex exec"`。
 - Codex 账号用量打满时，日志末尾是 `You've hit your usage limit ... try again at <时间>`，
   且 `raw/` 里不会落文件。等窗口重置后重跑 `run.sh` 即可续上。
+- **并行出图会串图**：所有 codex 会话共用 `$CODEX_HOME/generated_images/`，`cp` 那步可能抓到隔壁会话的图，
+  于是文件名对、画的内容却是别的素材。本次 82 张里中招 5 次。这种错误尺寸和 alpha 全都正常，只能靠
+  **`check.mjs` 的 md5 去重扫描**发现（串图必然与源文件逐字节相同）。并行度越高越容易中招：8 并行中招多，
+  1 并行没再中过。重出关键素材时用 `run.sh 1`。
 - `raw/`、`.imagegen-logs/` 不进仓库（见 `.gitignore`）；成品 WebP 进仓库。

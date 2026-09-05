@@ -1,6 +1,6 @@
 Use case: stylized-concept
 Asset type: transparent inventory item icon for a mobile idle-cultivation RPG
-Primary request: a single polished oval tablet of carved pale green jade stone, a hard smooth mineral object with a soft waxy lustre and one subtle darker vein running through it, lying flat
+Primary request: a single round translucent pearl-white elixir pill with a tiny ink landscape faintly suspended inside it
 Style/medium: traditional Chinese ink wash painting (shuimo) on textured xuan rice paper, expressive calligraphic brush strokes, controlled ink bleed and dry-brush texture, muted palette with sparse accents of vermilion #B23A2E, indigo #3B5F6B and antique gold #C9A063, paper tone #F3EBDC, ink #1E1B18, generous negative space, misty atmosphere
 Composition/framing: square 1:1 format; one single object, centered, filling about 70 percent of the frame, seen straight on at a slight three-quarter angle; nothing else in the frame
 Color palette: paper #F3EBDC, ink #1E1B18, light ink #5C5650, vermilion #B23A2E, indigo #3B5F6B, antique gold #C9A063

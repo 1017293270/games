@@ -322,7 +322,9 @@ export const ASSETS = [
   { id: 'boss/kunlun-heaven-beast', subject: 'a monstrous nine-headed divine beast, nine serpentine necks fanning out from one massive four-legged body, each head snarling in a different direction' },
 
   // --- item: pills (8) -----------------------------------------------------
-  { id: 'item/pill-qi', subject: 'a single round polished elixir pill with a faint pale-blue sheen and a thin curl of spirit vapour rising from it' },
+  // v2: the original vapour trail dominated the frame and left the pill itself
+  // small and low, reading undersized next to the other seven pills in a grid.
+  { id: 'item/pill-qi', subject: 'a single round polished elixir pill with a faint pale-blue sheen, filling the frame like the large sphere it is, with only a very short wisp of spirit vapour just above its top edge' },
   { id: 'item/pill-foundation', subject: 'a single round earth-brown elixir pill with a dense granular surface and a faint gold flake pressed into it' },
   { id: 'item/pill-breakthrough', subject: 'a single round elixir pill in deep vermilion with a hairline crack of gold light across its surface' },
   { id: 'item/pill-heal', subject: 'a single round jade-green elixir pill with one small fresh leaf still stuck to its side' },
@@ -336,7 +338,9 @@ export const ASSETS = [
   { id: 'item/mat-iron-essence', subject: 'a single rough chunk of dark black-iron ore with sharp fractured faces and a cold metallic sheen along the edges' },
   { id: 'item/mat-beast-core', subject: 'a single smooth spherical beast core the size of an egg, dark translucent amber, with a faint spark of light at its centre' },
   { id: 'item/mat-spirit-stone', subject: 'a single hexagonal prismatic crystal of pale blue-green spirit stone, faceted and slightly translucent' },
-  { id: 'item/mat-jade', subject: 'a single carved oval tablet of pale green jade with a soft waxy surface and one subtle vein running through it' },
+  // v2: first pass returned a leafy herb with roots, nearly a twin of
+  // mat-spirit-herb. Emphasise that this is carved stone, explicitly not a plant.
+  { id: 'item/mat-jade', subject: 'a single polished oval tablet of carved pale green jade stone, a hard smooth mineral object with a soft waxy lustre and one subtle darker vein running through it, lying flat' },
   { id: 'item/mat-soul-crystal', subject: 'a single sharp-tipped violet-grey soul crystal shard with a wisp of pale vapour trapped inside it' },
   { id: 'item/mat-cloud-silk', subject: 'a single loosely coiled skein of gossamer cloud-pattern silk thread, its loose end lifting weightlessly' },
   { id: 'item/mat-thunder-wood', subject: 'a single short length of lightning-struck timber, blackened and split down the middle, with charred fibres along the fracture' },
@@ -389,11 +393,15 @@ export const ASSETS = [
     id: 'ui/scroll-bg',
     request: '1008x1344',
     out: [768, 1024],
+    // v2: the first pass painted a pine branch, sun, bamboo and plum blossom into
+    // the paper field, which would collide with the UI text drawn on top of it.
     subject:
-      'a vertical hanging scroll of blank xuan rice paper with a wooden roller bar across the top and another across the bottom, the paper surface warm and faintly fibrous and completely unpainted',
+      'a vertical hanging scroll of completely blank unpainted xuan rice paper with a wooden roller bar across the top and another across the bottom, the paper surface warm and faintly fibrous, bearing no painting whatsoever',
     compositionOverride:
       'vertical 3:4 format; the scroll runs the full height, centred, with its two roller bars at the very top and very bottom; ' +
-      'the paper field between them is entirely empty because UI content is drawn over it; the narrow margins to the left and right of the scroll are fully transparent',
+      'the paper field between them must be absolutely blank — no landscape, no mountains, no branches, no bamboo, no blossoms, no sun or moon, ' +
+      'no clouds, no border motif and no decoration of any kind anywhere inside the paper, because UI text is drawn over it; ' +
+      'the only drawn elements in the entire image are the two wooden roller bars; the narrow margins left and right of the scroll are fully transparent',
     mood: 'flat and even, no strong lighting, no shadow under the scroll',
     alphaOptional: true,
   },

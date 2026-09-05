@@ -14,6 +14,7 @@
  */
 import { createRequire } from 'node:module';
 import { existsSync, readFileSync, statSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
@@ -133,6 +134,20 @@ for (const a of RESOLVED) {
   byCat[c] ??= { n: 0, bytes: 0 };
   byCat[c].n++;
   byCat[c].bytes += bytes;
+}
+
+// --- 2b. identical-content scan -------------------------------------------
+// Parallel codex sessions all write into $CODEX_HOME/generated_images/, so the
+// `cp` step can pick up a sibling's image. That ships an asset whose picture
+// belongs to a different id, which no dimension or alpha check would catch —
+// but the two files come out byte-identical, so hashing finds it.
+const seen = new Map();
+for (const a of RESOLVED) {
+  const f = join(OUT, `${a.id}.webp`);
+  if (!existsSync(f)) continue;
+  const h = createHash('md5').update(readFileSync(f)).digest('hex');
+  if (seen.has(h)) fail.push(`${a.id}: byte-identical to ${seen.get(h)} — one of them is a mis-copied image`);
+  else seen.set(h, a.id);
 }
 
 // --- 3. report ------------------------------------------------------------

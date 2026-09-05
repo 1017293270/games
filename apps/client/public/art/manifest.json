@@ -1,0 +1,508 @@
+{
+  "version": 1,
+  "generatedAt": "2026-09-05T09:51:09.506Z",
+  "assets": {
+    "bg/cultivation-day": {
+      "src": "/art/bg/cultivation-day.webp",
+      "srcSmall": "/art/bg/cultivation-day@720.webp",
+      "w": 1080,
+      "h": 1920,
+      "alpha": false
+    },
+    "bg/cultivation-night": {
+      "src": "/art/bg/cultivation-night.webp",
+      "srcSmall": "/art/bg/cultivation-night@720.webp",
+      "w": 1080,
+      "h": 1920,
+      "alpha": false
+    },
+    "bg/town-qingyun": {
+      "src": "/art/bg/town-qingyun.webp",
+      "srcSmall": "/art/bg/town-qingyun@720.webp",
+      "w": 1080,
+      "h": 1920,
+      "alpha": false
+    },
+    "bg/map-qingyun-mountain": {
+      "src": "/art/bg/map-qingyun-mountain.webp",
+      "srcSmall": "/art/bg/map-qingyun-mountain@720.webp",
+      "w": 1080,
+      "h": 1920,
+      "alpha": false
+    },
+    "bg/map-luoshui-city": {
+      "src": "/art/bg/map-luoshui-city.webp",
+      "srcSmall": "/art/bg/map-luoshui-city@720.webp",
+      "w": 1080,
+      "h": 1920,
+      "alpha": false
+    },
+    "bg/map-youming-valley": {
+      "src": "/art/bg/map-youming-valley.webp",
+      "srcSmall": "/art/bg/map-youming-valley@720.webp",
+      "w": 1080,
+      "h": 1920,
+      "alpha": false
+    },
+    "bg/map-kunlun-ruins": {
+      "src": "/art/bg/map-kunlun-ruins.webp",
+      "srcSmall": "/art/bg/map-kunlun-ruins@720.webp",
+      "w": 1080,
+      "h": 1920,
+      "alpha": false
+    },
+    "bg/dungeon-secret-realm": {
+      "src": "/art/bg/dungeon-secret-realm.webp",
+      "srcSmall": "/art/bg/dungeon-secret-realm@720.webp",
+      "w": 1080,
+      "h": 1920,
+      "alpha": false
+    },
+    "bg/tribulation": {
+      "src": "/art/bg/tribulation.webp",
+      "srcSmall": "/art/bg/tribulation@720.webp",
+      "w": 1080,
+      "h": 1920,
+      "alpha": false
+    },
+    "bg/login": {
+      "src": "/art/bg/login.webp",
+      "srcSmall": "/art/bg/login@720.webp",
+      "w": 1080,
+      "h": 1920,
+      "alpha": false
+    },
+    "npc/zhangmen": {
+      "src": "/art/npc/zhangmen.webp",
+      "w": 512,
+      "h": 512,
+      "alpha": false
+    },
+    "npc/zhanglao": {
+      "src": "/art/npc/zhanglao.webp",
+      "w": 512,
+      "h": 512,
+      "alpha": false
+    },
+    "npc/yaowang": {
+      "src": "/art/npc/yaowang.webp",
+      "w": 512,
+      "h": 512,
+      "alpha": false
+    },
+    "npc/shangren": {
+      "src": "/art/npc/shangren.webp",
+      "w": 512,
+      "h": 512,
+      "alpha": false
+    },
+    "npc/laozhe": {
+      "src": "/art/npc/laozhe.webp",
+      "w": 512,
+      "h": 512,
+      "alpha": false
+    },
+    "npc/tiejiang": {
+      "src": "/art/npc/tiejiang.webp",
+      "w": 512,
+      "h": 512,
+      "alpha": false
+    },
+    "npc/xianzi": {
+      "src": "/art/npc/xianzi.webp",
+      "w": 512,
+      "h": 512,
+      "alpha": false
+    },
+    "npc/zhenshou": {
+      "src": "/art/npc/zhenshou.webp",
+      "w": 512,
+      "h": 512,
+      "alpha": false
+    },
+    "avatar/m01": {
+      "src": "/art/avatar/m01.webp",
+      "w": 512,
+      "h": 512,
+      "alpha": false
+    },
+    "avatar/m02": {
+      "src": "/art/avatar/m02.webp",
+      "w": 512,
+      "h": 512,
+      "alpha": false
+    },
+    "avatar/m03": {
+      "src": "/art/avatar/m03.webp",
+      "w": 512,
+      "h": 512,
+      "alpha": false
+    },
+    "avatar/m04": {
+      "src": "/art/avatar/m04.webp",
+      "w": 512,
+      "h": 512,
+      "alpha": false
+    },
+    "avatar/m05": {
+      "src": "/art/avatar/m05.webp",
+      "w": 512,
+      "h": 512,
+      "alpha": false
+    },
+    "avatar/m06": {
+      "src": "/art/avatar/m06.webp",
+      "w": 512,
+      "h": 512,
+      "alpha": false
+    },
+    "avatar/m07": {
+      "src": "/art/avatar/m07.webp",
+      "w": 512,
+      "h": 512,
+      "alpha": false
+    },
+    "avatar/m08": {
+      "src": "/art/avatar/m08.webp",
+      "w": 512,
+      "h": 512,
+      "alpha": false
+    },
+    "avatar/f01": {
+      "src": "/art/avatar/f01.webp",
+      "w": 512,
+      "h": 512,
+      "alpha": false
+    },
+    "avatar/f02": {
+      "src": "/art/avatar/f02.webp",
+      "w": 512,
+      "h": 512,
+      "alpha": false
+    },
+    "avatar/f03": {
+      "src": "/art/avatar/f03.webp",
+      "w": 512,
+      "h": 512,
+      "alpha": false
+    },
+    "avatar/f04": {
+      "src": "/art/avatar/f04.webp",
+      "w": 512,
+      "h": 512,
+      "alpha": false
+    },
+    "avatar/f05": {
+      "src": "/art/avatar/f05.webp",
+      "w": 512,
+      "h": 512,
+      "alpha": false
+    },
+    "avatar/f06": {
+      "src": "/art/avatar/f06.webp",
+      "w": 512,
+      "h": 512,
+      "alpha": false
+    },
+    "avatar/f07": {
+      "src": "/art/avatar/f07.webp",
+      "w": 512,
+      "h": 512,
+      "alpha": false
+    },
+    "avatar/f08": {
+      "src": "/art/avatar/f08.webp",
+      "w": 512,
+      "h": 512,
+      "alpha": false
+    },
+    "char/meditate-m": {
+      "src": "/art/char/meditate-m.webp",
+      "w": 800,
+      "h": 1000,
+      "alpha": true
+    },
+    "char/meditate-f": {
+      "src": "/art/char/meditate-f.webp",
+      "w": 800,
+      "h": 1000,
+      "alpha": true
+    },
+    "monster/qingyun-wolf": {
+      "src": "/art/monster/qingyun-wolf.webp",
+      "w": 640,
+      "h": 800,
+      "alpha": false
+    },
+    "monster/spirit-ape": {
+      "src": "/art/monster/spirit-ape.webp",
+      "w": 640,
+      "h": 800,
+      "alpha": false
+    },
+    "monster/luoshui-flood-dragon": {
+      "src": "/art/monster/luoshui-flood-dragon.webp",
+      "w": 640,
+      "h": 800,
+      "alpha": false
+    },
+    "monster/river-bandit": {
+      "src": "/art/monster/river-bandit.webp",
+      "w": 640,
+      "h": 800,
+      "alpha": false
+    },
+    "monster/ghost-lantern": {
+      "src": "/art/monster/ghost-lantern.webp",
+      "w": 640,
+      "h": 800,
+      "alpha": false
+    },
+    "monster/bone-general": {
+      "src": "/art/monster/bone-general.webp",
+      "w": 640,
+      "h": 800,
+      "alpha": false
+    },
+    "monster/ice-qilin": {
+      "src": "/art/monster/ice-qilin.webp",
+      "w": 640,
+      "h": 800,
+      "alpha": false
+    },
+    "monster/golden-crow": {
+      "src": "/art/monster/golden-crow.webp",
+      "w": 640,
+      "h": 800,
+      "alpha": false
+    },
+    "boss/qingyun-tiger-king": {
+      "src": "/art/boss/qingyun-tiger-king.webp",
+      "w": 640,
+      "h": 800,
+      "alpha": false
+    },
+    "boss/luoshui-dragon-lord": {
+      "src": "/art/boss/luoshui-dragon-lord.webp",
+      "w": 640,
+      "h": 800,
+      "alpha": false
+    },
+    "boss/youming-ghost-emperor": {
+      "src": "/art/boss/youming-ghost-emperor.webp",
+      "w": 640,
+      "h": 800,
+      "alpha": false
+    },
+    "boss/kunlun-heaven-beast": {
+      "src": "/art/boss/kunlun-heaven-beast.webp",
+      "w": 640,
+      "h": 800,
+      "alpha": false
+    },
+    "item/pill-qi": {
+      "src": "/art/item/pill-qi.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "item/pill-foundation": {
+      "src": "/art/item/pill-foundation.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "item/pill-breakthrough": {
+      "src": "/art/item/pill-breakthrough.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "item/pill-heal": {
+      "src": "/art/item/pill-heal.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "item/pill-spirit": {
+      "src": "/art/item/pill-spirit.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "item/pill-power": {
+      "src": "/art/item/pill-power.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "item/pill-golden-core": {
+      "src": "/art/item/pill-golden-core.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "item/pill-enlightenment": {
+      "src": "/art/item/pill-enlightenment.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "item/mat-spirit-herb": {
+      "src": "/art/item/mat-spirit-herb.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "item/mat-iron-essence": {
+      "src": "/art/item/mat-iron-essence.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "item/mat-beast-core": {
+      "src": "/art/item/mat-beast-core.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "item/mat-spirit-stone": {
+      "src": "/art/item/mat-spirit-stone.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "item/mat-jade": {
+      "src": "/art/item/mat-jade.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "item/mat-soul-crystal": {
+      "src": "/art/item/mat-soul-crystal.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "item/mat-cloud-silk": {
+      "src": "/art/item/mat-cloud-silk.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "item/mat-thunder-wood": {
+      "src": "/art/item/mat-thunder-wood.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "item/treasure-sword": {
+      "src": "/art/item/treasure-sword.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "item/treasure-bell": {
+      "src": "/art/item/treasure-bell.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "item/treasure-fan": {
+      "src": "/art/item/treasure-fan.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "item/treasure-seal": {
+      "src": "/art/item/treasure-seal.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "item/robe-linen": {
+      "src": "/art/item/robe-linen.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "item/robe-daoist": {
+      "src": "/art/item/robe-daoist.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "item/robe-cloud": {
+      "src": "/art/item/robe-cloud.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "item/robe-golden": {
+      "src": "/art/item/robe-golden.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "item/acc-jade-pendant": {
+      "src": "/art/item/acc-jade-pendant.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "item/acc-prayer-beads": {
+      "src": "/art/item/acc-prayer-beads.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "item/acc-talisman": {
+      "src": "/art/item/acc-talisman.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "item/pet-crane": {
+      "src": "/art/item/pet-crane.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "item/pet-fox": {
+      "src": "/art/item/pet-fox.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "item/pet-turtle": {
+      "src": "/art/item/pet-turtle.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "ui/cloud-pattern": {
+      "src": "/art/ui/cloud-pattern.webp",
+      "w": 1024,
+      "h": 256,
+      "alpha": true
+    },
+    "ui/seal-red": {
+      "src": "/art/ui/seal-red.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "ui/scroll-bg": {
+      "src": "/art/ui/scroll-bg.webp",
+      "w": 768,
+      "h": 1024,
+      "alpha": true
+    },
+    "ui/ink-splash": {
+      "src": "/art/ui/ink-splash.webp",
+      "w": 512,
+      "h": 512,
+      "alpha": true
+    }
+  }
+}
