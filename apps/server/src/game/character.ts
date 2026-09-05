@@ -1,0 +1,181 @@
+import {
+  activePillBonus,
+  computeStats,
+  cultivationRatePerSec,
+  expRequired,
+  getStage,
+  getTechnique,
+  isPerfection,
+  ITEM_BY_ID,
+  powerScore,
+  secondsToNextStage,
+  settleCultivation,
+  spiritRootName,
+  stageName,
+  type CharacterState,
+  type CharacterView,
+  type EquipmentItem,
+  type PublicProfile,
+  type SettleResult,
+  type Stats,
+  type WorldSettings,
+} from '@xianxia/shared';
+import type { InventoryRepo } from '../db/repo/inventory.js';
+
+/**
+ * Derivations every module needs: attributes, 战力, the settle wrapper and the
+ * two response shapes (`CharacterView` for the owner, `PublicProfile` for
+ * everyone else).
+ */
+
+/** Resolves the four equip slots into the equipment pieces they point at. */
+export function resolveEquipment(
+  state: CharacterState,
+  inventory: InventoryRepo,
+): EquipmentItem[] {
+  const pieces: EquipmentItem[] = [];
+  for (const uid of Object.values(state.equipment)) {
+    if (uid === null) continue;
+    const row = inventory.byUid(uid);
+    if (!row || row.characterId !== state.id) continue;
+    const item = ITEM_BY_ID.get(row.itemId);
+    if (item?.kind === 'equipment') pieces.push(item);
+  }
+  return pieces;
+}
+
+/** Full attributes with gear and 功法 folded in. */
+export function statsOf(state: CharacterState, equipment: readonly EquipmentItem[]): Stats {
+  return computeStats({
+    stageIndex: state.stageIndex,
+    equipment,
+    technique: getTechnique(state.techniqueId),
+  });
+}
+
+/**
+ * Recomputes and stamps `powerScore`.
+ *
+ * The cached value is what rankings sort on, so it is refreshed on every path
+ * that can change attributes: settle, breakthrough, equip, learn.
+ */
+export function withFreshPower(
+  state: CharacterState,
+  equipment: readonly EquipmentItem[],
+): CharacterState {
+  const power = powerScore(statsOf(state, equipment));
+  return state.powerScore === power ? state : { ...state, powerScore: power };
+}
+
+/** Live cultivation points per second, all multipliers applied. */
+export function ratePerSecOf(
+  state: CharacterState,
+  world: WorldSettings,
+  nowMs: number,
+  extraMultiplier = 1,
+): number {
+  return cultivationRatePerSec({
+    stageIndex: state.stageIndex,
+    spiritRootQuality: state.spiritRoot.quality,
+    techniqueBonus: getTechnique(state.techniqueId)?.cultivationBonus ?? 0,
+    pillBonus: activePillBonus(state.buffs, nowMs),
+    world: { cultivationMultiplier: world.cultivationMultiplier * extraMultiplier },
+    botMultiplier:
+      state.isBot && state.botParams
+        ? state.botParams.talent * (1 + state.botParams.insight)
+        : 1,
+  });
+}
+
+/**
+ * Lazy settle. Every request that reads a character runs this first, so 修为 is
+ * always a pure function of the wall clock (ARCHITECTURE §8).
+ *
+ * `cultivationMultiplier` may be scaled by `extraMultiplier` — the bot tick
+ * passes the schedule/diligence part of `botCultivationMultiplier` that way.
+ */
+export function settle(
+  state: CharacterState,
+  world: WorldSettings,
+  nowMs: number,
+  extraMultiplier = 1,
+): SettleResult {
+  return settleCultivation(
+    state,
+    nowMs,
+    {
+      cultivationMultiplier: world.cultivationMultiplier * extraMultiplier,
+      offlineCapHours: world.offlineCapHours,
+    },
+    { technique: getTechnique(state.techniqueId) },
+  );
+}
+
+/** Stage names crossed during a settle window, for the 闭关归来 summary. */
+export function stagesPassed(from: number, stageUps: number): string[] {
+  const names: string[] = [];
+  for (let i = 1; i <= stageUps; i += 1) names.push(stageName(from + i));
+  return names;
+}
+
+/** True when the character is parked at 圆满 with a full 修为 bar. */
+export function atPerfection(state: CharacterState): boolean {
+  return isPerfection(state.stageIndex) && state.exp >= getStage(state.stageIndex).expRequired;
+}
+
+/** The owner-facing character payload. */
+export function buildView(
+  state: CharacterState,
+  world: WorldSettings,
+  nowMs: number,
+  inventory: InventoryRepo,
+): CharacterView {
+  const equipment = resolveEquipment(state, inventory);
+  return {
+    character: state,
+    stats: statsOf(state, equipment),
+    stageName: stageName(state.stageIndex),
+    expRequired: expRequired(state.stageIndex),
+    ratePerSec: ratePerSecOf(state, world, nowMs),
+    secondsToNextStage: secondsToNextStage(
+      state,
+      { cultivationMultiplier: world.cultivationMultiplier },
+      { technique: getTechnique(state.techniqueId), nowMs },
+    ),
+    atPerfection: atPerfection(state),
+    inventory: inventory.view(state.id, Object.values(state.equipment)),
+  };
+}
+
+/** What any player may see about another cultivator. */
+export function buildPublicProfile(
+  state: CharacterState,
+  online: boolean,
+  inventory: InventoryRepo,
+): PublicProfile {
+  const equipment = resolveEquipment(state, inventory);
+  return {
+    id: state.id,
+    name: state.name,
+    gender: state.gender,
+    avatarArt: state.avatarArt,
+    isBot: state.isBot,
+    stageIndex: state.stageIndex,
+    stageName: stageName(state.stageIndex),
+    spiritRoot: state.spiritRoot,
+    powerScore: state.powerScore,
+    stats: statsOf(state, equipment),
+    techniqueName: getTechnique(state.techniqueId)?.name ?? null,
+    skillIds: state.skillSlots.filter((s): s is string => s !== null),
+    equipmentItemIds: equipment.map((e) => e.id),
+    arenaRating: state.arenaRating,
+    arenaWins: state.arenaWins,
+    arenaLosses: state.arenaLosses,
+    online,
+    lastSeenAt: state.lastSeenAt,
+    protectedUntil: state.protectedUntil,
+  };
+}
+
+/** Display string for a spirit root, re-exported so modules import one place. */
+export { spiritRootName };

@@ -22,6 +22,7 @@ export const MapListEntrySchema = ExploreMapSchema.extend({
 export type MapListEntry = z.infer<typeof MapListEntrySchema>;
 
 export const MapListResponseSchema = z.object({ maps: z.array(MapListEntrySchema) });
+export type MapListResponse = z.infer<typeof MapListResponseSchema>;
 
 export const ExploreBattleRequestSchema = z.object({
   mapId: z.string().min(1),
