@@ -21,6 +21,7 @@ import {
   type WorldSettings,
 } from '@xianxia/shared';
 import type { InventoryRepo } from '../db/repo/inventory.js';
+import { botEquipment } from '../engine/bots/gear.js';
 
 /**
  * Derivations every module needs: attributes, 战力, the settle wrapper and the
@@ -28,11 +29,20 @@ import type { InventoryRepo } from '../db/repo/inventory.js';
  * everyone else).
  */
 
-/** Resolves the four equip slots into the equipment pieces they point at. */
+/**
+ * Resolves the four equip slots into the equipment pieces they point at.
+ *
+ * A 机器人修士 owns no `inventory` rows, so its slots are derived from its id
+ * and 大境界 instead (`engine/bots/gear.ts`). Routing that through the one
+ * function every module already calls is what gives 论道, 围攻, 公开档案 and
+ * the rankings a geared bot without any of them special-casing one.
+ */
 export function resolveEquipment(
   state: CharacterState,
   inventory: InventoryRepo,
 ): EquipmentItem[] {
+  if (state.isBot) return botEquipment(state);
+
   const pieces: EquipmentItem[] = [];
   for (const uid of Object.values(state.equipment)) {
     if (uid === null) continue;

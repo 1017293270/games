@@ -19,6 +19,7 @@ import {
 } from '@xianxia/shared';
 import type { AppContext } from '../../context.js';
 import { resolveEquipment, withFreshPower } from '../../game/character.js';
+import { botLoadout } from './gear.js';
 import { takenNames } from './repo.js';
 
 /**
@@ -123,8 +124,9 @@ export function generateBots(
       slots[s] = starters[s] ?? null;
     }
 
+    const id = randomUUID();
     const state: CharacterState = {
-      id: randomUUID(),
+      id,
       userId: BOT_OWNER_ID,
       name,
       gender,
@@ -144,7 +146,9 @@ export function generateBots(
       learnedSkillIds: starters,
       techniqueId: STARTER_TECHNIQUE_ID,
       learnedTechniqueIds: [STARTER_TECHNIQUE_ID],
-      equipment: { treasure: null, robe: null, accessory: null, pet: null },
+      // Gear is derived from `(id, 大境界)`, not owned as inventory rows; the
+      // slots are written here so a raw row reads the same as 公开档案 does.
+      equipment: botLoadout(id, stageIndex, archetype.params),
 
       buffs: [],
       hpPercent: 1,

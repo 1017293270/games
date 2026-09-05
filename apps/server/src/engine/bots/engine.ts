@@ -4,11 +4,9 @@ import {
   botScheduleMultiplier,
   BREAKTHROUGH_BASE_CHANCE,
   combineSeeds,
-  computeStats,
   createRng,
   decideBotAction,
   hourOfDay,
-  powerScore,
   realmOf,
   requiresTribulation,
   stageName,
@@ -19,13 +17,14 @@ import {
   type WorldSettings,
 } from '@xianxia/shared';
 import type { AppContext } from '../../context.js';
-import { resolveEquipment, statsOf } from '../../game/character.js';
+import { resolveEquipment, statsOf, withFreshPower } from '../../game/character.js';
 import { characterCombatant, monsterCombatant, runBattle } from '../../game/combat.js';
 import { settle } from '../../game/character.js';
 import { rollDailyCounters } from '../../game/rewards.js';
 import { transact } from '../../db/index.js';
 import { recordMessage } from '../../modules/social/service.js';
 import { BOT_CHAT_COOLDOWN_MS, BOT_CHAT_PER_TICK, pickBotLine } from './chatter.js';
+import { botEquipment, withBotGear } from './gear.js';
 import { generateBots } from './generate.js';
 import { allHeaders } from './repo.js';
 import type { CharacterHeader } from '../../db/repo/characters.js';
@@ -101,9 +100,9 @@ export function insightWorld(
   };
 }
 
-/** Attributes of a gear-less bot; bots fight on their realm baseline alone. */
+/** A bot's attributes: realm baseline, its 功法 and the gear its 大境界 carries. */
 function botStats(state: CharacterState): Stats {
-  return computeStats({ stageIndex: state.stageIndex, technique: null });
+  return statsOf(state, botEquipment(state));
 }
 
 export class BotEngine {
@@ -128,8 +127,31 @@ export class BotEngine {
   start(): void {
     if (this.running) return;
     this.running = true;
+    this.ensureGear();
     this.stopSettingsWatch = this.ctx.settings.onChange(() => this.reschedule());
     this.schedule();
+  }
+
+  /**
+   * Writes every bot's slot uids back into its row, and returns how many rows
+   * changed.
+   *
+   * The loadout is derived, so this only mirrors it into storage — which is
+   * what a world seeded before bots had gear needs, and what makes the admin
+   * panel and a raw `state_json` read agree with 公开档案. Deriving the same
+   * uids from `(id, 大境界)` every time makes it idempotent: the second run
+   * over an unchanged world reports 0.
+   */
+  ensureGear(): number {
+    const dirty: CharacterState[] = [];
+    for (const bot of this.ctx.characters.allBots()) {
+      const geared = withBotGear(bot);
+      const fresh = withFreshPower(geared, botEquipment(geared));
+      if (fresh !== bot) dirty.push(fresh);
+    }
+    if (dirty.length === 0) return 0;
+    transact(this.ctx.db, () => this.ctx.characters.saveMany(dirty));
+    return dirty.length;
   }
 
   stop(): void {
@@ -277,7 +299,11 @@ export class BotEngine {
         chats.push(state);
       }
 
-      dirty.set(state.id, state);
+      // Gear follows the 大境界 the bot is in *now*, so a tick that broke it
+      // through also re-equips it, and the cached 战力 is stamped from the
+      // same pieces the next fight will use.
+      const geared = withBotGear(state);
+      dirty.set(geared.id, withFreshPower(geared, botEquipment(geared)));
     }
 
     // ---- fights, resolved after the settle pass so both sides are current
@@ -373,9 +399,10 @@ export class BotEngine {
     });
     if (attempt.blocked) return { state, attempted: false, success: false, tribulation };
 
-    const next = { ...attempt.character, powerScore: powerScore(botStats(attempt.character)) };
+    // 战力 is stamped once per tick, after the gear pass, so a bot that just
+    // crossed into a new 大境界 is rated with the pieces that realm carries.
     this.ctx.counters.bump('breakthroughs', now, attempt.success ? 1 : 0);
-    return { state: next, attempted: true, success: attempt.success, tribulation };
+    return { state: attempt.character, attempted: true, success: attempt.success, tribulation };
   }
 
   /** Finds a nearby cultivator to challenge; players count, self does not. */
@@ -406,12 +433,10 @@ export class BotEngine {
     world: WorldSettings,
     now: number,
   ): { attacker: CharacterState; defender: CharacterState } {
-    const attackerStats = attacker.isBot
-      ? botStats(attacker)
-      : statsOf(attacker, resolveEquipment(attacker, this.ctx.inventory));
-    const defenderStats = defender.isBot
-      ? botStats(defender)
-      : statsOf(defender, resolveEquipment(defender, this.ctx.inventory));
+    // `resolveEquipment` already answers for both kinds of cultivator: an
+    // `inventory` lookup for a player, the derived loadout for a bot.
+    const attackerStats = statsOf(attacker, resolveEquipment(attacker, this.ctx.inventory));
+    const defenderStats = statsOf(defender, resolveEquipment(defender, this.ctx.inventory));
 
     const battle = runBattle(
       [characterCombatant(attacker, attackerStats)],
