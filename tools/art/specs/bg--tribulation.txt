@@ -1,0 +1,11 @@
+Use case: stylized-concept
+Asset type: full-screen vertical game background for a mobile idle-cultivation RPG
+Primary request: a violent churning mass of black storm cloud pressing down on a lone dark peak, one jagged bolt of gold and vermilion lightning tearing from the cloud to the summit
+Style/medium: traditional Chinese ink wash painting (shuimo) on textured xuan rice paper, expressive calligraphic brush strokes, controlled ink bleed and dry-brush texture, muted palette with sparse accents of vermilion #B23A2E, indigo #3B5F6B and antique gold #C9A063, paper tone #F3EBDC, ink #1E1B18, generous negative space, misty atmosphere
+Composition/framing: vertical 9:16 portrait format; the top third of the frame stays pale, misty and almost empty so a translucent status bar can sit over it; the bottom quarter fades into darker ink wash or bare paper so a tab bar can sit over it; the main subject occupies the middle band
+Lighting/mood: apocalyptic and heavy, wild wet ink splashes for the cloud, the lightning is the only bright element
+Color palette: paper #F3EBDC, ink #1E1B18, light ink #5C5650, vermilion #B23A2E, indigo #3B5F6B, antique gold #C9A063
+Materials/textures: absorbent xuan rice paper grain, wet ink bleed into damp fibre, dry-brush scratch where the brush runs out of ink
+Constraints: no human figures anywhere in the frame, no animals in the foreground, no text of any kind, edge-to-edge painted composition with no border or frame
+Avoid: neon or cyberpunk colors, glossy 3D render look, photorealism, anime cel-shading, any readable text or letters, logos, watermarks, UI frames, borders, signatures, split panels, people, characters, close-up faces, video game HUD, minimap, vignette frames
+Output size: 1088x1920

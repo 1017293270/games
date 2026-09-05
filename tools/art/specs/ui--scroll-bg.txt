@@ -1,0 +1,13 @@
+Use case: stylized-concept
+Asset type: transparent ink-wash UI ornament for a mobile idle-cultivation RPG
+Primary request: a vertical hanging scroll of blank xuan rice paper with a wooden roller bar across the top and another across the bottom, the paper surface warm and faintly fibrous and completely unpainted
+Style/medium: traditional Chinese ink wash painting (shuimo) on textured xuan rice paper, expressive calligraphic brush strokes, controlled ink bleed and dry-brush texture, muted palette with sparse accents of vermilion #B23A2E, indigo #3B5F6B and antique gold #C9A063, paper tone #F3EBDC, ink #1E1B18, generous negative space, misty atmosphere
+Composition/framing: vertical 3:4 format; the scroll runs the full height, centred, with its two roller bars at the very top and very bottom; the paper field between them is entirely empty because UI content is drawn over it; the narrow margins to the left and right of the scroll are fully transparent
+Lighting/mood: flat and even, no strong lighting, no shadow under the scroll
+Color palette: paper #F3EBDC, ink #1E1B18, light ink #5C5650, vermilion #B23A2E, indigo #3B5F6B, antique gold #C9A063
+Materials/textures: absorbent xuan rice paper grain, wet ink bleed into damp fibre, dry-brush scratch where the brush runs out of ink
+Constraints: genuinely transparent background, preserve the alpha channel, no backdrop, no drop shadow; the ink-wash brushwork and paper tone belong to the painted ornament itself — everything around it must be fully transparent, not filled with paper colour; no text, no frame, no border
+Avoid: neon or cyberpunk colors, glossy 3D render look, photorealism, anime cel-shading, any readable text or letters, logos, watermarks, UI frames, borders, signatures, split panels, drop shadow, glow halo, background wash, buttons, panels, readable characters
+Output size: 1008x1344
+
+OPERATOR NOTE: when you call image_gen, explicitly ask for a transparent background and preserve the generated alpha channel; save the result as a PNG that still has its alpha channel intact.

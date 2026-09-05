@@ -1,0 +1,5 @@
+# Generated PNGs from Image2 — large, non-deterministic, not worth versioning.
+# The processed WebP under apps/client/public/art IS committed.
+raw/
+.imagegen-logs/
+node_modules/

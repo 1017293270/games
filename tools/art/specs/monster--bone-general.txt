@@ -1,0 +1,10 @@
+Use case: illustration-story
+Asset type: vertical enemy card illustration for a mobile idle-cultivation RPG
+Primary request: a skeletal warlord standing tall in shattered rusted lamellar armour, empty eye sockets, a broken halberd gripped in one bony hand, tattered war cape
+Style/medium: traditional Chinese ink wash painting (shuimo) on textured xuan rice paper, expressive calligraphic brush strokes, controlled ink bleed and dry-brush texture, muted palette with sparse accents of vermilion #B23A2E, indigo #3B5F6B and antique gold #C9A063, paper tone #F3EBDC, ink #1E1B18, generous negative space, misty atmosphere
+Composition/framing: vertical 4:5 format; the whole creature is centered in frame with its full body visible and a comfortable margin of bare paper on all four sides; plain xuan rice paper ground with only a suggestion of ink mist under the feet
+Color palette: paper #F3EBDC, ink #1E1B18, light ink #5C5650, vermilion #B23A2E, indigo #3B5F6B, antique gold #C9A063
+Materials/textures: absorbent xuan rice paper grain, wet ink bleed into damp fibre, dry-brush scratch where the brush runs out of ink
+Constraints: exactly one creature, complete body inside the frame, plain paper background, no scenery, no text
+Avoid: neon or cyberpunk colors, glossy 3D render look, photorealism, anime cel-shading, any readable text or letters, logos, watermarks, UI frames, borders, signatures, split panels, cropped limbs, multiple creatures, detailed landscape background, health bars
+Output size: 1024x1280

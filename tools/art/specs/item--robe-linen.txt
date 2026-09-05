@@ -1,0 +1,12 @@
+Use case: stylized-concept
+Asset type: transparent inventory item icon for a mobile idle-cultivation RPG
+Primary request: a single plain coarse hemp robe laid out flat and neatly folded at the sleeves, undyed oatmeal colour, visibly rough weave and one small patch
+Style/medium: traditional Chinese ink wash painting (shuimo) on textured xuan rice paper, expressive calligraphic brush strokes, controlled ink bleed and dry-brush texture, muted palette with sparse accents of vermilion #B23A2E, indigo #3B5F6B and antique gold #C9A063, paper tone #F3EBDC, ink #1E1B18, generous negative space, misty atmosphere
+Composition/framing: square 1:1 format; one single object, centered, filling about 70 percent of the frame, seen straight on at a slight three-quarter angle; nothing else in the frame
+Color palette: paper #F3EBDC, ink #1E1B18, light ink #5C5650, vermilion #B23A2E, indigo #3B5F6B, antique gold #C9A063
+Materials/textures: absorbent xuan rice paper grain, wet ink bleed into damp fibre, dry-brush scratch where the brush runs out of ink
+Constraints: genuinely transparent background, preserve the alpha channel, no backdrop, no drop shadow; the ink-wash brushwork and paper tone belong to the painted object itself — the area around the object must be fully transparent, not filled with paper colour; single object centered, no scene, no ground plane, no cast shadow, no text
+Avoid: neon or cyberpunk colors, glossy 3D render look, photorealism, anime cel-shading, any readable text or letters, logos, watermarks, UI frames, borders, signatures, split panels, multiple objects, collections or sets, a scene or setting, tabletop, background wash, plate or pedestal, drop shadow, glow halo, icon badge frame
+Output size: 1024x1024
+
+OPERATOR NOTE: when you call image_gen, explicitly ask for a transparent background and preserve the generated alpha channel; save the result as a PNG that still has its alpha channel intact.

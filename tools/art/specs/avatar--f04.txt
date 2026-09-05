@@ -1,0 +1,10 @@
+Use case: illustration-story
+Asset type: square player-avatar portrait for a mobile idle-cultivation RPG
+Primary request: a serene Daoist nun in a plain undyed robe and simple wooden hairpin crown, no ornament, detached tranquil expression
+Style/medium: traditional Chinese ink wash painting (shuimo) on textured xuan rice paper, expressive calligraphic brush strokes, controlled ink bleed and dry-brush texture, muted palette with sparse accents of vermilion #B23A2E, indigo #3B5F6B and antique gold #C9A063, paper tone #F3EBDC, ink #1E1B18, generous negative space, misty atmosphere
+Composition/framing: square 1:1 format; head-and-shoulders bust portrait only, cropped just below the chest; the figure is centered, facing the viewer at a slight three-quarter turn; plain undecorated xuan rice paper ground behind the figure with soft ink wash
+Color palette: paper #F3EBDC, ink #1E1B18, light ink #5C5650, vermilion #B23A2E, indigo #3B5F6B, antique gold #C9A063
+Materials/textures: absorbent xuan rice paper grain, wet ink bleed into damp fibre, dry-brush scratch where the brush runs out of ink
+Constraints: exactly one person in the frame, bust only, plain paper background, no props floating around the figure, no text
+Avoid: neon or cyberpunk colors, glossy 3D render look, photorealism, anime cel-shading, any readable text or letters, logos, watermarks, UI frames, borders, signatures, split panels, multiple people, full body, legs, hands raised across the face, busy background scenery, speech bubbles, name plates
+Output size: 1024x1024

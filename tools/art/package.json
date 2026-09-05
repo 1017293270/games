@@ -1,0 +1,16 @@
+{
+  "name": "@games/art",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Image2 (gpt-image-2) ink-wash asset pipeline: specs -> raw PNG -> WebP + manifest.json",
+  "scripts": {
+    "art:specs": "node gen-specs.mjs",
+    "art:process": "node process.mjs",
+    "art:manifest": "node process.mjs --manifest-only",
+    "art:check": "node check.mjs"
+  },
+  "devDependencies": {
+    "sharp": "^0.35.4"
+  }
+}
