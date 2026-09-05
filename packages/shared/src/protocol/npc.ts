@@ -13,8 +13,10 @@ export const NpcListEntrySchema = NpcSchema.extend({
   /** True when this NPC has a quest ready to accept or turn in. */
   hasQuest: z.boolean(),
 });
+export type NpcListEntry = z.infer<typeof NpcListEntrySchema>;
 
 export const NpcListResponseSchema = z.object({ npcs: z.array(NpcListEntrySchema) });
+export type NpcListResponse = z.infer<typeof NpcListResponseSchema>;
 
 /** One choice as the player sees it, with conditions already evaluated. */
 export const ResolvedChoiceSchema = z.object({
@@ -95,6 +97,7 @@ export const ShopEntryViewSchema = z.object({
   available: z.boolean(),
   blockedReason: z.string().nullable(),
 });
+export type ShopEntryView = z.infer<typeof ShopEntryViewSchema>;
 
 export const ShopViewSchema = z.object({
   shop: ShopSchema,

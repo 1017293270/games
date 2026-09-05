@@ -55,6 +55,8 @@ export const FriendSchema = z.object({
 export type Friend = z.infer<typeof FriendSchema>;
 
 export const FriendListResponseSchema = z.object({ friends: z.array(FriendSchema) });
+export type FriendListResponse = z.infer<typeof FriendListResponseSchema>;
+
 export const FriendTargetRequestSchema = z.object({ characterId: z.string().min(1) });
 
 // ------------------------------------------------------------------ 聊天 chat
@@ -86,10 +88,13 @@ export const ChatHistoryResponseSchema = z.object({ messages: z.array(ChatMessag
 
 // ------------------------------------------------------------ 论道 arena / 围攻 raid
 
+export type ChatHistoryResponse = z.infer<typeof ChatHistoryResponseSchema>;
+
 export const ArenaOpponentSchema = PublicProfileSchema.extend({
   /** Rough odds hint shown before challenging, 0-1. */
   winHint: z.number().min(0).max(1),
 });
+export type ArenaOpponent = z.infer<typeof ArenaOpponentSchema>;
 
 export const ArenaOpponentsResponseSchema = z.object({
   opponents: z.array(ArenaOpponentSchema),
@@ -97,6 +102,8 @@ export const ArenaOpponentsResponseSchema = z.object({
   dailyLimit: z.number().int().min(0),
   rating: z.number().int(),
 });
+
+export type ArenaOpponentsResponse = z.infer<typeof ArenaOpponentsResponseSchema>;
 
 export const ArenaChallengeRequestSchema = z.object({ targetId: z.string().min(1) });
 
@@ -135,6 +142,8 @@ export const RaidTargetSchema = PublicProfileSchema.extend({
 export type RaidTarget = z.infer<typeof RaidTargetSchema>;
 
 export const RaidTargetsResponseSchema = z.object({ targets: z.array(RaidTargetSchema) });
+
+export type RaidTargetsResponse = z.infer<typeof RaidTargetsResponseSchema>;
 
 export const RaidAttackRequestSchema = z.object({
   botId: z.string().min(1),

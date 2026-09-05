@@ -86,6 +86,8 @@ export const DungeonListEntrySchema = DungeonSchema.extend({
 });
 
 export const DungeonListResponseSchema = z.object({ dungeons: z.array(DungeonListEntrySchema) });
+export type DungeonListEntry = z.infer<typeof DungeonListEntrySchema>;
+export type DungeonListResponse = z.infer<typeof DungeonListResponseSchema>;
 
 export const DungeonStartRequestSchema = z.object({
   dungeonId: z.string().min(1),
@@ -158,7 +160,7 @@ export const exploreEndpoints = {
     auth: 'user',
     request: DungeonStartRequestSchema,
     response: DungeonStartResponseSchema,
-    errors: ['DUNGEON_LOCKED', 'DAILY_LIMIT_REACHED', 'PARTY_TOO_SMALL', 'NOT_IN_PARTY'],
+    errors: ['DUNGEON_LOCKED', 'DAILY_LIMIT_REACHED', 'PARTY_TOO_SMALL', 'NOT_IN_PARTY', 'NOT_PARTY_LEADER'],
     summary: '开启秘境副本（可组队）',
   }),
 } as const;
