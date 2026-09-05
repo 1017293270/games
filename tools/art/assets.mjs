@@ -1,7 +1,7 @@
 /**
  * Single source of truth for the Image2 art pipeline.
  *
- * Mirrors the 80 IDs defined in docs/ASSETS.md (that file is the contract; this
+ * Mirrors the 82 IDs defined in docs/ASSETS.md (that file is the contract; this
  * file must follow it, never the other way around). Consumed by:
  *   gen-specs.mjs  -> writes specs/<id with '/' replaced by '--'>.txt
  *   process.mjs    -> raw/<same>.png -> apps/client/public/art/<id>.webp + manifest.json
@@ -9,7 +9,7 @@
  */
 
 // ---------------------------------------------------------------------------
-// Shared prompt fragments. The STYLE string is byte-identical in all 80 specs —
+// Shared prompt fragments. The STYLE string is byte-identical in all 82 specs —
 // that is what keeps the set looking like one painter's hand.
 // ---------------------------------------------------------------------------
 
@@ -125,6 +125,22 @@ export const CATEGORIES = {
     avoidExtra:
       'multiple objects, collections or sets, a scene or setting, tabletop, background wash, plate or pedestal, drop shadow, glow halo, icon badge frame',
   },
+  char: {
+    request: '1024x1280',
+    out: [800, 1000],
+    alpha: true,
+    useCase: 'illustration-story',
+    assetType: 'transparent full-body seated cultivator sprite for the main meditation scene of a mobile idle-cultivation RPG',
+    composition:
+      'vertical 4:5 format; one complete figure seated cross-legged in lotus meditation, centered, facing the viewer at a slight three-quarter turn, hands resting in a mudra in the lap, eyes closed; ' +
+      'the whole figure including the folded legs and the hem of the robe is inside the frame with a small margin on every side; there is no ground, no cushion and no scenery — the figure floats on nothing',
+    constraints:
+      TRANSPARENT +
+      '; the ink-wash brushwork and paper tone belong to the painted figure itself — everything around the figure must be fully transparent, not filled with paper colour; ' +
+      'exactly one person, complete body, no props on the ground, no text',
+    avoidExtra:
+      'multiple people, standing pose, cropped limbs, ground plane, cushion, mat, background wash, scenery, drop shadow, glow halo, cast shadow',
+  },
   ui: {
     // per-asset request/out; see UI entries below
     alpha: true,
@@ -139,7 +155,7 @@ export const CATEGORIES = {
 };
 
 // ---------------------------------------------------------------------------
-// The 80 assets. `subject` becomes the Primary request line; optional fields
+// The 82 assets. `subject` becomes the Primary request line; optional fields
 // override or extend the category defaults.
 // ---------------------------------------------------------------------------
 
@@ -276,6 +292,19 @@ export const ASSETS = [
   { id: 'avatar/f07', subject: 'a female zither cultivator holding a long guqin upright against her shoulder, elegant draped sleeves, quiet absorbed expression' },
   { id: 'avatar/f08', subject: 'an icy beautiful female cultivator with the lower half of her face behind a thin gauze veil, ornate hairpin, cold distant eyes' },
 
+  // --- char (2) -----------------------------------------------------------
+  {
+    id: 'char/meditate-m',
+    subject:
+      'a male cultivator seated cross-legged in deep meditation, wide-sleeved plain daoist robe stirring slightly as if in a mountain breeze, hair bound high with a long ribbon that drifts to one side, eyes closed, hands folded in a mudra at the lap, serene and still',
+    mood: 'soft even daylight, calm, weightless',
+  },
+  {
+    id: 'char/meditate-f',
+    subject:
+      'a female cultivator seated cross-legged in deep meditation, long loose hair and a plain pale robe with wide sleeves drifting slightly as if in a mountain breeze, eyes closed, hands folded in a mudra at the lap, serene and still',
+    mood: 'soft even daylight, calm, weightless',
+  },
   // --- monster (8) ---------------------------------------------------------
   { id: 'monster/qingyun-wolf', subject: 'a lean blue-grey mountain wolf standing braced on all fours, hackles raised, pale spirit light glinting in its eyes, ink-splash fur texture' },
   { id: 'monster/spirit-ape', subject: 'a heavy-shouldered spirit ape standing upright on two legs, clutching a gnarled peachwood staff, thick shaggy ink-brushed coat, wary intelligent eyes' },

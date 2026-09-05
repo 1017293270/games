@@ -1,11 +1,11 @@
 # tools/art — Image2 水墨素材管线
 
-把 `docs/ASSETS.md` 里的 80 个素材 ID 变成 `apps/client/public/art/**` 下的 WebP 成品 +
+把 `docs/ASSETS.md` 里的 82 个素材 ID 变成 `apps/client/public/art/**` 下的 WebP 成品 +
 `manifest.json`。出图后端是本机 Codex CLI 的内置 `image_gen`（gpt-image-2 / "Image2"），
 封装在 `~/.claude/skills/codex-imagegen/` 这个 skill 里。
 
 ```
-assets.mjs      80 个素材的唯一数据源（主体描述 + 每类的请求尺寸/成品尺寸/是否透明）
+assets.mjs      82 个素材的唯一数据源（主体描述 + 每类的请求尺寸/成品尺寸/是否透明）
 gen-specs.mjs   assets.mjs -> specs/*.txt        （提示词，可重复生成）
 run.sh          specs/*.txt -> raw/*.png         （调 codex，只补缺失的）
 process.mjs     raw/*.png   -> ../../apps/client/public/art/**.webp + manifest.json
@@ -31,7 +31,7 @@ export NODE_PATH="$SHARP_ENV/node_modules"
 ## 全量流程
 
 ```bash
-node tools/art/gen-specs.mjs          # 写出 80 个 spec
+node tools/art/gen-specs.mjs          # 写出 82 个 spec
 tools/art/run.sh 8                    # 出图（只补 raw/ 里缺的那些）
 NODE_PATH="$SHARP_ENV/node_modules" node tools/art/process.mjs
 NODE_PATH="$SHARP_ENV/node_modules" node tools/art/check.mjs
@@ -101,9 +101,9 @@ gpt-image-2 要求两边都是 16 的倍数，且 `Output size` 只是倾向—�
 
 ## 画风一致性
 
-80 个 spec 的 `Style/medium` 段是 `assets.mjs` 里同一个 `STYLE` 常量，逐字相同——这是整套图
+82 个 spec 的 `Style/medium` 段是 `assets.mjs` 里同一个 `STYLE` 常量，逐字相同——这是整套图
 看起来像同一个人画的主要原因。`Avoid` 段固定以 `docs/ASSETS.md` 的清单开头，再按类别追加。
-**改 `STYLE` 等于让全部 80 张失去一致性**，要改就得全部重出。
+**改 `STYLE` 等于让全部 82 张失去一致性**，要改就得全部重出。
 
 ## 已知坑
 

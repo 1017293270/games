@@ -1,0 +1,13 @@
+Use case: illustration-story
+Asset type: transparent full-body seated cultivator sprite for the main meditation scene of a mobile idle-cultivation RPG
+Primary request: a female cultivator seated cross-legged in deep meditation, long loose hair and a plain pale robe with wide sleeves drifting slightly as if in a mountain breeze, eyes closed, hands folded in a mudra at the lap, serene and still
+Style/medium: traditional Chinese ink wash painting (shuimo) on textured xuan rice paper, expressive calligraphic brush strokes, controlled ink bleed and dry-brush texture, muted palette with sparse accents of vermilion #B23A2E, indigo #3B5F6B and antique gold #C9A063, paper tone #F3EBDC, ink #1E1B18, generous negative space, misty atmosphere
+Composition/framing: vertical 4:5 format; one complete figure seated cross-legged in lotus meditation, centered, facing the viewer at a slight three-quarter turn, hands resting in a mudra in the lap, eyes closed; the whole figure including the folded legs and the hem of the robe is inside the frame with a small margin on every side; there is no ground, no cushion and no scenery — the figure floats on nothing
+Lighting/mood: soft even daylight, calm, weightless
+Color palette: paper #F3EBDC, ink #1E1B18, light ink #5C5650, vermilion #B23A2E, indigo #3B5F6B, antique gold #C9A063
+Materials/textures: absorbent xuan rice paper grain, wet ink bleed into damp fibre, dry-brush scratch where the brush runs out of ink
+Constraints: genuinely transparent background, preserve the alpha channel, no backdrop, no drop shadow; the ink-wash brushwork and paper tone belong to the painted figure itself — everything around the figure must be fully transparent, not filled with paper colour; exactly one person, complete body, no props on the ground, no text
+Avoid: neon or cyberpunk colors, glossy 3D render look, photorealism, anime cel-shading, any readable text or letters, logos, watermarks, UI frames, borders, signatures, split panels, multiple people, standing pose, cropped limbs, ground plane, cushion, mat, background wash, scenery, drop shadow, glow halo, cast shadow
+Output size: 1024x1280
+
+OPERATOR NOTE: when you call image_gen, explicitly ask for a transparent background and preserve the generated alpha channel; save the result as a PNG that still has its alpha channel intact.

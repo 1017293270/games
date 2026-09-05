@@ -5,7 +5,7 @@
  *   NODE_PATH=<sharp-env>/node_modules node tools/art/check.mjs
  *
  * Checks, per asset:
- *   - the id is one of the 80 ids parsed straight out of docs/ASSETS.md
+ *   - the id is one of the 82 ids parsed straight out of docs/ASSETS.md
  *   - manifest entry exists, file exists, file is non-empty WebP
  *   - pixel dimensions match the manifest's declared w/h
  *   - backgrounds carry an @720 derivative with a 720 short edge
@@ -41,18 +41,18 @@ const err = (id, msg) => fail.push(`${id}: ${msg}`);
 let contractIds = null;
 if (existsSync(CONTRACT)) {
   const md = readFileSync(CONTRACT, 'utf8');
-  contractIds = new Set(md.match(/\b(?:bg|npc|avatar|monster|boss|item|ui)\/[a-z0-9-]+/g) ?? []);
+  contractIds = new Set(md.match(/\b(?:bg|npc|avatar|char|monster|boss|item|ui)\/[a-z0-9-]+/g) ?? []);
 } else {
   warn.push('docs/ASSETS.md not found — skipped contract cross-check');
 }
 
 const localIds = new Set(RESOLVED.map((a) => a.id));
 if (contractIds) {
-  if (contractIds.size !== 80) warn.push(`docs/ASSETS.md yielded ${contractIds.size} ids, expected 80`);
+  if (contractIds.size !== 82) warn.push(`docs/ASSETS.md yielded ${contractIds.size} ids, expected 82`);
   for (const id of contractIds) if (!localIds.has(id)) fail.push(`assets.mjs is missing contract id ${id}`);
   for (const id of localIds) if (!contractIds.has(id)) fail.push(`assets.mjs has id ${id} not in docs/ASSETS.md`);
 }
-if (localIds.size !== 80) fail.push(`assets.mjs defines ${localIds.size} ids, expected 80`);
+if (localIds.size !== 82) fail.push(`assets.mjs defines ${localIds.size} ids, expected 82`);
 
 // --- 2. manifest ----------------------------------------------------------
 const manifestPath = join(OUT, 'manifest.json');
@@ -64,7 +64,7 @@ const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
 if (manifest.version !== 1) fail.push(`manifest.version is ${manifest.version}, expected 1`);
 if (!/^\d{4}-\d{2}-\d{2}T/.test(manifest.generatedAt ?? '')) fail.push('manifest.generatedAt is not an ISO timestamp');
 const keys = Object.keys(manifest.assets ?? {});
-if (keys.length !== 80) fail.push(`manifest has ${keys.length} assets, expected 80`);
+if (keys.length !== 82) fail.push(`manifest has ${keys.length} assets, expected 82`);
 for (const k of keys) if (!localIds.has(k)) fail.push(`manifest has unknown id ${k}`);
 
 async function coverage(file) {
@@ -157,4 +157,4 @@ if (fail.length) {
   for (const f of fail) console.log(`  x ${f}`);
   process.exit(1);
 }
-console.log('\nOK — all 80 assets present, sized and consistent with the manifest.');
+console.log('\nOK — all 82 assets present, sized and consistent with the manifest.');

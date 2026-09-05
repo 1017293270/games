@@ -2,10 +2,10 @@
 /**
  * Writes one gpt-image-2 prompt spec per asset into tools/art/specs/.
  *
- *   node tools/art/gen-specs.mjs            # write all 80
+ *   node tools/art/gen-specs.mjs            # write all 82
  *   node tools/art/gen-specs.mjs bg/login   # write only these ids
  *
- * The style/avoid blocks are assembled from shared constants so all 80 specs
+ * The style/avoid blocks are assembled from shared constants so all 82 specs
  * carry byte-identical wording where it matters. Regenerating is idempotent;
  * hand-written retry specs (*-v2.txt) are never touched.
  */
