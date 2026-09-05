@@ -1,6 +1,12 @@
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { buildApp, pendingEndpointsBanner } from './app.js';
-import { ConfigError, loadConfig } from './config.js';
+import { ConfigError, loadConfig, PACKAGE_ROOT } from './config.js';
 import { attachSocketIo } from './socket.js';
+
+/** `apps/server/.env`, when present. Variables already in the environment win. */
+const ENV_FILE = resolve(PACKAGE_ROOT, '.env');
+if (existsSync(ENV_FILE)) process.loadEnvFile(ENV_FILE);
 
 /**
  * Entry point.
