@@ -15,6 +15,7 @@
     "test": "pnpm -r --if-present run test",
     "build": "pnpm -r --if-present run build",
     "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
+    "e2e": "pnpm --filter e2e run e2e",
     "dev": "pnpm --filter @xianxia/shared run build && pnpm -r --parallel --if-present run dev",
     "clean": "pnpm -r --if-present run clean && rm -rf node_modules/.cache",
     "format": "prettier --write .",
