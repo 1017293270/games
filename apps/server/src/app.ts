@@ -36,6 +36,8 @@ export interface BuildAppOptions {
   now?: () => number;
   /** Skips the bot timer. Tests tick by hand. */
   startBots?: boolean;
+  /** Replaces the default registry; module tests merge their own handlers over `handlers`. */
+  handlers?: HandlerRegistry;
 }
 
 export interface BuiltApp {
@@ -88,7 +90,7 @@ export function buildApp(options: BuildAppOptions = {}): BuiltApp {
   void app.register(cors, { origin: true, credentials: true });
 
   // ---- REST: every endpoint in the shared table, implemented or not
-  const routes = registerRoutes(app, ctx, handlers);
+  const routes = registerRoutes(app, ctx, options.handlers ?? handlers);
 
   // ---- static client, when a build is present
   const clientDist = config.clientDist;

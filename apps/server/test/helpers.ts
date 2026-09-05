@@ -2,7 +2,8 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { ApiResult } from '@xianxia/shared';
-import { buildApp, type BuiltApp } from '../src/app.js';
+import { buildApp, handlers as defaultHandlers, type BuiltApp } from '../src/app.js';
+import type { HandlerRegistry } from '../src/http/handler.js';
 import type { ServerConfig } from '../src/config.js';
 
 /**
@@ -43,6 +44,8 @@ export interface HarnessOptions {
   adminPassword?: string;
   startBots?: boolean;
   config?: Partial<ServerConfig>;
+  /** Extra handlers merged over the default registry, for modules not yet wired into app.ts. */
+  handlers?: HandlerRegistry;
 }
 
 export function createHarness(options: HarnessOptions = {}): Harness {
@@ -63,7 +66,12 @@ export function createHarness(options: HarnessOptions = {}): Harness {
     ...options.config,
   };
 
-  const built = buildApp({ config, now: clock.now, startBots: options.startBots ?? false });
+  const built = buildApp({
+    config,
+    now: clock.now,
+    startBots: options.startBots ?? false,
+    handlers: options.handlers ? { ...defaultHandlers, ...options.handlers } : undefined,
+  });
 
   return {
     ...built,
