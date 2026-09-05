@@ -222,11 +222,11 @@ export async function dismissOfflineReturn(page: Page): Promise<void> {
 }
 
 /**
- * 「有人向你论道」挡路时关掉它。
+ * 收掉「有人向你论道」的通报条。
  *
  * 这不是测试的噪音，是这个世界的真实行为：机器人 tick 会挑战境界相近的玩家，
- * 挑到谁，谁的秘境页上就会弹出这个通知，并且它的遮罩会挡住页签。
- * 真人玩也会遇到，所以这里照着真人的做法点「知道了」。
+ * 挑到谁，谁的秘境页顶上就会挂出这条战报。它不遮页面，底下照样能点；
+ * 收掉只是让截图和断言看到干净的页头，真人玩也会顺手点「知道了」。
  */
 export async function dismissArenaChallenge(page: Page): Promise<void> {
   const ack = page.getByRole('button', { name: '知道了' });

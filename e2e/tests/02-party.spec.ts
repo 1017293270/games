@@ -91,8 +91,8 @@ test.describe('结伴同行', () => {
   });
 
   // 这是个活着的世界：机器人 tick 每三十秒会挑战境界相近的玩家，被挑到的人
-  // 秘境页上就会弹出「有人向你论道」，它的遮罩会挡住页签和战斗回放。
-  // 真人玩到这儿也是点一下「知道了」，用例照做。
+  // 秘境页顶上会挂出「有人向你论道」的战报条。它不挡页面，收掉只是为了
+  // 让每条用例从干净的页头开始，真人玩到这儿也会顺手点一下「知道了」。
   test.beforeEach(async () => {
     await dismissArenaChallenge(pageA);
     await dismissArenaChallenge(pageB);

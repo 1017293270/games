@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import Fastify, { type FastifyInstance } from 'fastify';
+import Fastify, { type FastifyInstance, type FastifyRequest } from 'fastify';
 import cors from '@fastify/cors';
 import fastifyStatic from '@fastify/static';
 import { API_PREFIX, fail } from '@xianxia/shared';
@@ -71,6 +71,22 @@ function packageVersion(): string {
   }
 }
 
+/**
+ * What a request looks like in the log.
+ *
+ * pino's default `req` serializer reports `req.socket.remoteAddress`, which
+ * behind Caddy or a Docker network is the gateway on every line. `trustProxy`
+ * below makes `req.ip` the first address in `X-Forwarded-For`, so that is the
+ * one logged; without a proxy it is still the peer address.
+ */
+export function serializeRequest(req: FastifyRequest): {
+  method: string;
+  url: string;
+  ip: string;
+} {
+  return { method: req.method, url: req.url, ip: req.ip };
+}
+
 /** True when the request should never fall through to the SPA shell. */
 function isApiPath(url: string): boolean {
   return url.startsWith(API_PREFIX) || url.startsWith('/socket.io');
@@ -96,7 +112,7 @@ export function buildApp(options: BuildAppOptions = {}): BuiltApp {
   ctx.sessions.purgeExpired(now());
 
   const app = Fastify({
-    logger: { level: config.logLevel },
+    logger: { level: config.logLevel, serializers: { req: serializeRequest } },
     // Trusting the proxy keeps client IPs honest behind nginx/Caddy, which is
     // how this is meant to be deployed.
     trustProxy: true,

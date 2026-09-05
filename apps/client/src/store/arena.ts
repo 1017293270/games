@@ -15,6 +15,9 @@ import { toast } from './ui';
 
 const RECORD_PAGE_SIZE = 10;
 
+/** Inbound 论道 reports held at once; past this the oldest fall off the bar. */
+const MAX_PENDING_CHALLENGES = 20;
+
 /**
  * State behind 秘境论道's two PvP boards. 论道 and 围攻 share a store because
  * they share a screen, a rating and the same live socket traffic — splitting
@@ -35,8 +38,12 @@ interface ArenaState {
   recordsLoading: boolean;
   recordsLoaded: boolean;
 
-  /** Someone challenged this cultivator while they were away from the screen. */
-  challenged: ArenaChallengedEvent | null;
+  /**
+   * Bouts other cultivators came and fought while this one was away from the
+   * screen, newest first. They are reports, not decisions — the notice bar
+   * shows the latest with a count and the rest stay in 近日战绩.
+   */
+  challenges: ArenaChallengedEvent[];
 
   // ---- 围攻
   targets: RaidTarget[];
@@ -51,7 +58,7 @@ interface ArenaState {
   challenge: (targetId: string) => Promise<ArenaChallengeResponse | null>;
   loadRecords: (page?: number) => Promise<void>;
   receiveChallenge: (event: ArenaChallengedEvent) => void;
-  dismissChallenge: () => void;
+  dismissChallenges: () => void;
 
   loadTargets: () => Promise<void>;
   attack: (botId: string, withParty: boolean) => Promise<RaidAttackResponse | null>;
@@ -74,7 +81,7 @@ export const useArenaStore = create<ArenaState>((set, get) => ({
   recordsLoading: false,
   recordsLoaded: false,
 
-  challenged: null,
+  challenges: [],
 
   targets: [],
   loadingTargets: false,
@@ -142,14 +149,15 @@ export const useArenaStore = create<ArenaState>((set, get) => ({
 
   receiveChallenge(event) {
     set((current) => ({
-      challenged: event,
+      challenges: [event, ...current.challenges].slice(0, MAX_PENDING_CHALLENGES),
       rating: current.rating ? current.rating + event.ratingDelta : current.rating,
       recordsLoaded: false,
     }));
   },
 
-  dismissChallenge() {
-    set({ challenged: null });
+  /** One 「知道了」 clears the batch; every bout is still in the record book. */
+  dismissChallenges() {
+    set({ challenges: [] });
   },
 
   async loadTargets() {
@@ -200,7 +208,7 @@ export const useArenaStore = create<ArenaState>((set, get) => ({
       opponentsLoaded: false,
       records: [],
       recordsLoaded: false,
-      challenged: null,
+      challenges: [],
       targets: [],
       targetsLoaded: false,
       lastHitBotId: null,

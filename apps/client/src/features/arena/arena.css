@@ -192,37 +192,91 @@
 
 /* --------------------------------------------------------- 被论道的通报 */
 
-.challenged__head {
+/*
+ * Not a dialog: the bout already happened, so the report hangs from the top of
+ * the leaf on a 朱砂 edge and leaves the page under it live. It shares the slot
+ * the toasts use, which is why it waits for them (and for any replay) to clear.
+ */
+.hail {
+  position: absolute;
+  top: calc(var(--safe-top) + var(--sp-2));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(24rem, calc(100% - 1.5rem));
+  z-index: 55;
   display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-  margin-bottom: var(--sp-3);
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  background-color: var(--paper-raised);
+  background-image: var(--paper-grain);
+  background-size: var(--paper-grain-size);
+  border: var(--hair) solid var(--ink-hair);
+  border-left: 3px solid var(--cinnabar);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lift);
+  animation: hail-in var(--dur) var(--ease-brush);
 }
 
-.challenged__mark {
+/* `--dur` collapses to 1ms under prefers-reduced-motion, so this lands flat. */
+@keyframes hail-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.hail__head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+}
+
+/* The same struck 胜 / 负 the record book and the replay verdict use. */
+.hail__mark {
   flex: none;
-  width: 3rem;
-  height: 3rem;
-  display: grid;
-  place-items: center;
+  width: 1.8rem;
+  text-align: center;
   font-family: var(--font-display);
   font-size: var(--fs-title);
-  color: var(--paper);
-  background: var(--cinnabar);
-  border-radius: var(--radius);
+  line-height: 1.3;
 }
 
-.challenged__line {
-  font-size: var(--fs-body);
-  line-height: 1.6;
+.hail__mark--win {
+  color: var(--cinnabar);
 }
 
-.challenged__acts {
-  display: flex;
-  gap: var(--sp-2);
-  margin-top: var(--sp-4);
+.hail__mark--lose {
+  color: var(--ink-soft);
 }
 
-.challenged__acts .btn {
+.hail__line {
   flex: 1;
+  min-width: 0;
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+}
+
+.hail__meta {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.hail__acts {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+}
+
+.hail__acts .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
 }

@@ -1,9 +1,11 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useUiStore } from '../store/ui';
 import { Button } from './Button';
 import { InkFrame } from './InkFrame';
 import { Modal, Sheet } from './Modal';
+import { Overlay } from './Overlay';
 import { ProgressBar } from './ProgressBar';
 
 describe('Button', () => {
@@ -108,5 +110,39 @@ describe('Modal and Sheet', () => {
     );
     await user.keyboard('{Escape}');
     expect(onClose).toHaveBeenCalledOnce();
+  });
+});
+
+describe('Overlay', () => {
+  beforeEach(() => {
+    useUiStore.setState({ overlayDepth: 0 });
+  });
+
+  it('counts the layers stacked over the page while they are mounted', () => {
+    const { unmount } = render(
+      <InkFrame>
+        <Modal open title="运功破境">
+          <p>正文</p>
+        </Modal>
+        <Sheet open title="丹房" onClose={() => {}}>
+          <p>正文</p>
+        </Sheet>
+      </InkFrame>,
+    );
+    expect(useUiStore.getState().overlayDepth).toBe(2);
+    unmount();
+    expect(useUiStore.getState().overlayDepth).toBe(0);
+  });
+
+  it('leaves the count alone for a layer that reports rather than interrupts', () => {
+    render(
+      <InkFrame>
+        <Overlay blocking={false}>
+          <p>有人向你论道</p>
+        </Overlay>
+      </InkFrame>,
+    );
+    expect(screen.getByText('有人向你论道')).toBeInTheDocument();
+    expect(useUiStore.getState().overlayDepth).toBe(0);
   });
 });

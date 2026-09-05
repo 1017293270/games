@@ -13,11 +13,19 @@ interface UiState {
   /** Character id whose public profile drawer is open. */
   profileId: string | null;
   onlineCount: number;
+  /**
+   * How many layers are stacked over the page right now — modals, sheets,
+   * replays, toasts. `Overlay` keeps the count; anything that must not pile on
+   * top of what the player is already watching waits for it to reach zero.
+   */
+  overlayDepth: number;
   pushToast: (text: string, tone?: ToastTone) => void;
   dismissToast: (id: string) => void;
   openProfile: (characterId: string) => void;
   closeProfile: () => void;
   setOnlineCount: (count: number) => void;
+  openOverlay: () => void;
+  closeOverlay: () => void;
 }
 
 let toastSeq = 0;
@@ -26,6 +34,7 @@ export const useUiStore = create<UiState>((set) => ({
   toasts: [],
   profileId: null,
   onlineCount: 0,
+  overlayDepth: 0,
 
   pushToast(text, tone = 'info') {
     toastSeq += 1;
@@ -50,6 +59,14 @@ export const useUiStore = create<UiState>((set) => ({
 
   setOnlineCount(count) {
     set({ onlineCount: count });
+  },
+
+  openOverlay() {
+    set((state) => ({ overlayDepth: state.overlayDepth + 1 }));
+  },
+
+  closeOverlay() {
+    set((state) => ({ overlayDepth: Math.max(0, state.overlayDepth - 1) }));
   },
 }));
 

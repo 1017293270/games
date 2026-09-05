@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 import { CloudRule } from '../../design';
 import { useArenaStore } from '../../store/arena';
 import { usePartyStore } from '../../store/party';
-import { ArenaChallengedModal } from '../arena/ArenaChallengedModal';
+import { ArenaChallengedNotice } from '../arena/ArenaChallengedNotice';
 import { ArenaPanel } from '../arena/ArenaPanel';
 import { DungeonLobby } from '../dungeon/DungeonLobby';
 import { DungeonRunReplay } from '../dungeon/DungeonRunReplay';
@@ -30,7 +30,7 @@ export function RealmPage() {
   const loadParty = usePartyStore((state) => state.load);
   const incomingRun = usePartyStore((state) => state.incomingRun);
   const clearIncomingRun = usePartyStore((state) => state.clearIncomingRun);
-  const challenged = useArenaStore((state) => state.challenged);
+  const challenges = useArenaStore((state) => state.challenges);
 
   useEffect(() => {
     void loadParty();
@@ -60,7 +60,7 @@ export function RealmPage() {
             {entry.id === 'dungeon' && party && party.members.length > 1 && (
               <span className="segment__n numeral">{party.members.length}</span>
             )}
-            {entry.id === 'arena' && challenged && (
+            {entry.id === 'arena' && challenges.length > 0 && (
               <span className="segment__dot" aria-label="有人向你论道" />
             )}
           </button>
@@ -89,7 +89,8 @@ export function RealmPage() {
         />
       )}
 
-      <ArenaChallengedModal />
+      {/* A report, not a decision: a top bar that waits for the screen to clear. */}
+      <ArenaChallengedNotice />
     </div>
   );
 }
