@@ -1,0 +1,10 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+  - 'tools/*'
+  - 'e2e'
+minimumReleaseAgeExclude:
+  - eslint@10.10.0
+onlyBuiltDependencies:
+  - esbuild
+strictPeerDependencies: false
