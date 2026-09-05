@@ -32,7 +32,7 @@ const SPECS: Npc[] = [
     location: TOWN_QINGYUN,
     shopId: null,
     dialogueId: 'dlg-zhanglao',
-    questIds: ['quest-c1-02', 'quest-c2-02'],
+    questIds: ['quest-c1-02', 'quest-c2-02', 'quest-c3-03'],
     unlockStage: 0,
   },
   {
@@ -45,7 +45,7 @@ const SPECS: Npc[] = [
     location: TOWN_QINGYUN,
     shopId: 'shop-yaowang',
     dialogueId: 'dlg-yaowang',
-    questIds: ['quest-c1-03', 'quest-c2-03'],
+    questIds: ['quest-c1-03', 'quest-c2-03', 'quest-c3-04'],
     unlockStage: 0,
   },
   {
@@ -58,7 +58,7 @@ const SPECS: Npc[] = [
     location: TOWN_QINGYUN,
     shopId: 'shop-shangren',
     dialogueId: 'dlg-shangren',
-    questIds: ['quest-c2-04'],
+    questIds: ['quest-c2-04', 'quest-c3-05'],
     unlockStage: 0,
   },
   {
@@ -84,7 +84,7 @@ const SPECS: Npc[] = [
     location: TOWN_QINGYUN,
     shopId: 'shop-tiejiang',
     dialogueId: 'dlg-tiejiang',
-    questIds: ['quest-c1-05'],
+    questIds: ['quest-c1-05', 'quest-c2-06'],
     unlockStage: 0,
   },
   {
@@ -110,7 +110,7 @@ const SPECS: Npc[] = [
     location: TOWN_QINGYUN,
     shopId: null,
     dialogueId: 'dlg-zhenshou',
-    questIds: [],
+    questIds: ['quest-c2-07'],
     unlockStage: 0,
   },
 ];

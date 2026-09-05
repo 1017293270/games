@@ -5,6 +5,7 @@
  */
 
 import { indexById } from '../core/util.js';
+import type { ItemKind } from '../domain/item.js';
 import { ShopSchema, type Shop } from '../domain/shop.js';
 import { ITEM_BY_ID } from './items.js';
 
@@ -54,6 +55,16 @@ const SPECS: Shop[] = [
         dailyStock: 1,
         conditions: [{ type: 'stage_at_least', stageIndex: 16 }],
       },
+      // 药材: the alchemist marks herbs up over 万宝阁, but never runs out —
+      // 采药之约 stays completable on a bad gathering day.
+      { itemId: 'mat-spirit-herb', price: 30, dailyStock: null, conditions: [] },
+      { itemId: 'mat-beast-core', price: 200, dailyStock: null, conditions: [] },
+      {
+        itemId: 'mat-soul-crystal',
+        price: 900,
+        dailyStock: 5,
+        conditions: [{ type: 'stage_at_least', stageIndex: 9 }],
+      },
     ],
   },
   {
@@ -100,6 +111,14 @@ const SPECS: Shop[] = [
         price: 14000,
         dailyStock: 1,
         conditions: [{ type: 'stage_at_least', stageIndex: 22 }],
+      },
+      // 铸造材料: cheaper here than at 万宝阁 — the smith buys by the crate.
+      { itemId: 'mat-iron-essence', price: 110, dailyStock: null, conditions: [] },
+      {
+        itemId: 'mat-jade',
+        price: 380,
+        dailyStock: 5,
+        conditions: [{ type: 'stage_at_least', stageIndex: 9 }],
       },
     ],
   },
@@ -175,6 +194,26 @@ const SPECS: Shop[] = [
 export const SHOPS: readonly Shop[] = SPECS.map((s) => ShopSchema.parse(s));
 export const SHOP_BY_ID: ReadonlyMap<string, Shop> = indexById(SHOPS);
 export const SHOP_IDS: readonly string[] = SHOPS.map((s) => s.id);
+
+/**
+ * What each shop will take off your hands.
+ *
+ * The alchemist has no use for a sword and the smith none for a pill, so the
+ * 回收 list is narrower than the 货架 for two of the three; 钱多多 takes
+ * everything, which is the whole point of 万宝阁.
+ */
+export const SHOP_BUYBACK_KINDS: Readonly<Record<string, readonly ItemKind[]>> = {
+  'shop-yaowang': ['pill', 'material'],
+  'shop-tiejiang': ['equipment', 'material'],
+  'shop-shangren': ['pill', 'material', 'equipment'],
+};
+
+/** 灵石 (currency) is never a tradeable row; everything else follows the kind list. */
+export function shopAcceptsItem(shopId: string, itemId: string): boolean {
+  const item = ITEM_BY_ID.get(itemId);
+  if (!item || item.id === 'mat-spirit-stone') return false;
+  return (SHOP_BUYBACK_KINDS[shopId] ?? []).includes(item.kind);
+}
 
 /** 灵石 a shop pays for one unit of an item. 0 when it will not buy. */
 export function sellPriceAt(shopId: string, itemId: string): number {

@@ -24,6 +24,9 @@ import { dungeonHandlers } from './modules/dungeon/routes.js';
 import { arenaHandlers } from './modules/arena/routes.js';
 import { raidHandlers } from './modules/raid/routes.js';
 import { friendHandlers } from './modules/friend/routes.js';
+import { npcHandlers } from './modules/npc/routes.js';
+import { questHandlers } from './modules/quest/routes.js';
+import { shopHandlers } from './modules/shop/routes.js';
 
 /** Every implemented endpoint, keyed `group.name`. */
 export const handlers: HandlerRegistry = {
@@ -38,6 +41,9 @@ export const handlers: HandlerRegistry = {
   ...arenaHandlers,
   ...raidHandlers,
   ...friendHandlers,
+  ...npcHandlers,
+  ...questHandlers,
+  ...shopHandlers,
 };
 
 export interface BuildAppOptions {

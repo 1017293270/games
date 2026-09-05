@@ -30,6 +30,7 @@ import {
   rollLoot,
   scaleReward,
 } from '../../game/rewards.js';
+import { recordMonsterKill } from '../quest/service.js';
 
 /** How long an 奇遇 token stays answerable. */
 export const ENCOUNTER_TTL_MS = 10 * 60 * 1000;
@@ -128,6 +129,7 @@ export function explore(
     const drops = rollLoot(monster.loot, rng, world);
     reward = nameReward({ ...scaled, items: drops });
     next = applyReward(state, reward, ctx.inventory);
+    next = recordMonsterKill(next, monster.id);
   }
 
   const saved = withFreshPower(next, resolveEquipment(next, ctx.inventory));

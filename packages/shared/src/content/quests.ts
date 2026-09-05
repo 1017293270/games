@@ -1,7 +1,8 @@
 /**
  * 剧情任务链. Three chapters gated by realm, each a chain of quests handed out
- * by the 青云镇 NPCs. M1 ships chapter 1 fully playable; chapters 2-3 are
- * structurally complete and will be fleshed out by the content pass.
+ * by the 青云镇 NPCs. `prerequisiteQuestId` strings the main line together and
+ * `requirements` gates the side work; every quest here has matching accept and
+ * turn-in branches in `dialogues.ts`, so the whole set is reachable by talking.
  */
 
 import { indexById } from '../core/util.js';
@@ -204,6 +205,47 @@ const SPECS: Quest[] = [
     advancesChapterTo: 3,
     repeatable: false,
   },
+  {
+    id: 'quest-c2-06',
+    name: '断刃',
+    description: '铁玄从炉边摸出半截断刃：「妖丹六枚，我给它重新开锋。这刃是从洛水里捞上来的。」',
+    kind: 'side',
+    chapter: 2,
+    giverNpcId: 'npc-tiejiang',
+    turnInNpcId: 'npc-tiejiang',
+    requirements: [
+      { type: 'stage_at_least', stageIndex: 5 },
+      { type: 'quest_state', questId: 'quest-c1-05', state: 'claimed' },
+    ],
+    objectives: [{ type: 'collect_item', itemId: 'mat-beast-core', count: 6 }],
+    reward: {
+      exp: 9000,
+      spiritStones: 1500,
+      items: [{ itemId: 'treasure-bell', qty: 1 }],
+    },
+    prerequisiteQuestId: 'quest-c1-05',
+    advancesChapterTo: null,
+    repeatable: false,
+  },
+  {
+    id: 'quest-c2-07',
+    name: '后山巡守',
+    description: '守山弟子搓着手：「灵猿最近闹得凶，师兄若得空……」后半句他没敢说出口。',
+    kind: 'daily',
+    chapter: 2,
+    giverNpcId: 'npc-zhenshou',
+    turnInNpcId: 'npc-zhenshou',
+    requirements: [{ type: 'quest_state', questId: 'quest-c1-01', state: 'claimed' }],
+    objectives: [{ type: 'kill_monster', monsterId: 'monster-spirit-ape', count: 6 }],
+    reward: {
+      exp: 3000,
+      spiritStones: 1200,
+      items: [{ itemId: 'pill-heal', qty: 2 }],
+    },
+    prerequisiteQuestId: null,
+    advancesChapterTo: null,
+    repeatable: true,
+  },
 
   // ============================ 第三章 · 幽冥问道 (金丹) ============================
   {
@@ -229,6 +271,25 @@ const SPECS: Quest[] = [
     repeatable: false,
   },
   {
+    id: 'quest-c3-03',
+    name: '白骨令',
+    description: '玄阳长老将一枚焦黑的令牌拍在案上：「幽冥谷的白骨将，是拿我宗门弟子的骨头堆起来的。」',
+    kind: 'main',
+    chapter: 3,
+    giverNpcId: 'npc-zhanglao',
+    turnInNpcId: 'npc-zhanglao',
+    requirements: [{ type: 'quest_state', questId: 'quest-c3-01', state: 'claimed' }],
+    objectives: [{ type: 'kill_monster', monsterId: 'monster-bone-general', count: 8 }],
+    reward: {
+      exp: 400000,
+      spiritStones: 30000,
+      items: [{ itemId: 'acc-prayer-beads', qty: 1 }],
+    },
+    prerequisiteQuestId: 'quest-c3-01',
+    advancesChapterTo: null,
+    repeatable: false,
+  },
+  {
     id: 'quest-c3-02',
     name: '老者的斗笠',
     description: '无名老者忽然开口：「你若能从鬼帝殿中带回一物，我便告诉你一件事。」',
@@ -236,14 +297,55 @@ const SPECS: Quest[] = [
     chapter: 3,
     giverNpcId: 'npc-laozhe',
     turnInNpcId: 'npc-laozhe',
-    requirements: [{ type: 'quest_state', questId: 'quest-c3-01', state: 'claimed' }],
+    requirements: [{ type: 'quest_state', questId: 'quest-c3-03', state: 'claimed' }],
     objectives: [{ type: 'clear_dungeon', dungeonId: 'dungeon-youming' }],
     reward: {
       exp: 800000,
       spiritStones: 50000,
       items: [{ itemId: 'pill-enlightenment', qty: 1 }],
     },
-    prerequisiteQuestId: 'quest-c3-01',
+    prerequisiteQuestId: 'quest-c3-03',
+    advancesChapterTo: null,
+    repeatable: false,
+  },
+  {
+    id: 'quest-c3-04',
+    name: '引路灯',
+    description: '百草仙翁难得正色：「魂晶三枚，灵玉两块。老夫炼一盏引路灯给你——进谷时点上。」',
+    kind: 'side',
+    chapter: 3,
+    giverNpcId: 'npc-yaowang',
+    turnInNpcId: 'npc-yaowang',
+    requirements: [{ type: 'stage_at_least', stageIndex: 9 }],
+    objectives: [
+      { type: 'collect_item', itemId: 'mat-soul-crystal', count: 3 },
+      { type: 'collect_item', itemId: 'mat-jade', count: 2 },
+    ],
+    reward: {
+      exp: 120000,
+      spiritStones: 12000,
+      items: [{ itemId: 'pill-golden-core', qty: 1 }],
+    },
+    prerequisiteQuestId: null,
+    advancesChapterTo: null,
+    repeatable: true,
+  },
+  {
+    id: 'quest-c3-05',
+    name: '洛水沉船',
+    description: '钱多多压低了嗓子：「洛水秘境底下沉着我一船货。您替我取回来，三成归您。」',
+    kind: 'side',
+    chapter: 3,
+    giverNpcId: 'npc-shangren',
+    turnInNpcId: 'npc-shangren',
+    requirements: [{ type: 'stage_at_least', stageIndex: 8 }],
+    objectives: [{ type: 'clear_dungeon', dungeonId: 'dungeon-luoshui' }],
+    reward: {
+      exp: 150000,
+      spiritStones: 25000,
+      items: [{ itemId: 'mat-thunder-wood', qty: 2 }],
+    },
+    prerequisiteQuestId: null,
     advancesChapterTo: null,
     repeatable: false,
   },
@@ -266,14 +368,28 @@ const CHAPTER_SPECS: StoryChapter[] = [
     title: '第二章 · 洛水风波',
     summary: '洛水城修士离奇失踪，蛟龙潜于河底。一桩旧案就此翻起。',
     unlockStage: 4,
-    questIds: ['quest-c2-01', 'quest-c2-02', 'quest-c2-03', 'quest-c2-04', 'quest-c2-05'],
+    questIds: [
+      'quest-c2-01',
+      'quest-c2-02',
+      'quest-c2-03',
+      'quest-c2-04',
+      'quest-c2-06',
+      'quest-c2-07',
+      'quest-c2-05',
+    ],
   },
   {
     chapter: 3,
     title: '第三章 · 幽冥问道',
     summary: '三十年前失踪的师伯，斗笠下不肯露面的老者，鬼帝殿中的那件旧物。',
     unlockStage: 8,
-    questIds: ['quest-c3-01', 'quest-c3-02'],
+    questIds: [
+      'quest-c3-01',
+      'quest-c3-03',
+      'quest-c3-04',
+      'quest-c3-05',
+      'quest-c3-02',
+    ],
   },
 ];
 
@@ -288,4 +404,28 @@ export function getQuest(id: string): Quest | undefined {
 /** Quests handed out by one NPC. */
 export function questsFromNpc(npcId: string): readonly Quest[] {
   return QUESTS.filter((q) => q.giverNpcId === npcId);
+}
+
+/** Quests reported back to one NPC. */
+export function questsTurnedInAt(npcId: string): readonly Quest[] {
+  return QUESTS.filter((q) => q.turnInNpcId === npcId);
+}
+
+/** Quests belonging to one story chapter, in the chapter's own order. */
+export function questsInChapter(chapter: number): readonly Quest[] {
+  const spec = STORY_CHAPTERS.find((c) => c.chapter === chapter);
+  if (!spec) return [];
+  return spec.questIds.flatMap((id) => {
+    const quest = QUEST_BY_ID.get(id);
+    return quest ? [quest] : [];
+  });
+}
+
+/** The chapter a stage index has unlocked, 1 when none is reached yet. */
+export function chapterAtStage(stageIndex: number): number {
+  let highest = 1;
+  for (const c of STORY_CHAPTERS) {
+    if (c.unlockStage <= stageIndex) highest = Math.max(highest, c.chapter);
+  }
+  return highest;
 }
