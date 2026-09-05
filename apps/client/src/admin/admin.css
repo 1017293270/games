@@ -1,0 +1,1270 @@
+/*
+ * 道录司 — the operator console.
+ *
+ * The game is a painting; this is the ledger kept behind it. Same six pigments,
+ * none of the ornament: ruled rows, tabular numerals, controls sized for a
+ * mouse and a long afternoon.
+ *
+ * Two devices carry the whole screen:
+ *   · the ink masthead — a bound volume's dark cover strip, which says at a
+ *     glance that this is not the game;
+ *   · 朱批 — vermilion, reserved *exclusively* for "you changed this and have
+ *     not written it back yet". It appears in the gutter of a dirty field and
+ *     in the commit strip. Nothing else in the console is red.
+ */
+
+/* -------------------------------------------------------------- the leaf */
+
+/*
+ * The album leaf is 480px because the game is portrait. The console is not:
+ * eleven columns of bot parameters need a desk. `:has` scopes the override to
+ * the /admin route without touching the shared frame.
+ */
+.frame:has(.admin) {
+  max-width: min(100%, 1180px);
+}
+
+.admin {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--paper);
+  background-image: var(--paper-grain);
+  background-size: var(--paper-grain-size);
+  font-size: var(--fs-sm);
+}
+
+/* ---------------------------------------------------------- the masthead */
+
+.admin__masthead {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-4);
+  padding-top: calc(var(--sp-2) + var(--safe-top));
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.admin__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+
+.admin__brand-seal {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  background: var(--cinnabar);
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-size: var(--fs-lead);
+  border-radius: var(--radius);
+}
+
+.admin__brand-name {
+  font-size: var(--fs-title);
+  letter-spacing: 0.22em;
+  color: var(--paper);
+}
+
+.admin__brand-sub {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.18em;
+  color: rgba(243, 235, 220, 0.56);
+}
+
+.admin__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  font-size: var(--fs-xs);
+  color: rgba(243, 235, 220, 0.72);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.admin__exit,
+.admin__masthead .adm-btn--quiet {
+  color: var(--paper);
+}
+
+.admin__exit {
+  text-decoration-color: rgba(243, 235, 220, 0.4);
+}
+
+.admin__masthead .adm-btn--quiet:hover:not(:disabled) {
+  color: var(--paper);
+  background: rgba(243, 235, 220, 0.12);
+}
+
+/* ------------------------------------------------------------- structure */
+
+.admin__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.admin__rail {
+  flex: none;
+  width: 8.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--sp-3) var(--sp-2);
+  border-right: var(--hair) solid var(--ink-hair);
+  background: var(--paper-sunk);
+  overflow-y: auto;
+}
+
+.admin__tab {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2);
+  border: none;
+  border-left: 2px solid transparent;
+  background: transparent;
+  color: var(--ink-soft);
+  text-align: left;
+  letter-spacing: 0.12em;
+  transition: background-color var(--dur-fast) var(--ease-brush);
+}
+
+.admin__tab:hover {
+  background: var(--ink-veil);
+  color: var(--ink);
+}
+
+.admin__tab.is-on {
+  border-left-color: var(--cinnabar);
+  background: var(--paper-raised);
+  color: var(--ink);
+}
+
+.admin__tab-seal {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: var(--hair) solid var(--ink-hair-strong);
+  border-radius: var(--radius);
+  font-family: var(--font-display);
+  font-size: var(--fs-body);
+  line-height: 1;
+}
+
+.admin__tab.is-on .admin__tab-seal {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+.admin__content {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--sp-5) var(--sp-5) var(--sp-7);
+}
+
+/* ------------------------------------------------------------- the gate */
+
+.admin--gate {
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-4);
+}
+
+.admin-gate {
+  width: min(22rem, 100%);
+  padding: var(--sp-6) var(--sp-5) var(--sp-5);
+  background: var(--paper-raised);
+  border: var(--hair) solid var(--ink-hair-strong);
+  border-top: 3px solid var(--ink);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lift);
+  text-align: center;
+}
+
+.admin-gate__seal {
+  display: inline-grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin-bottom: var(--sp-3);
+  background: var(--cinnabar);
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  border-radius: var(--radius);
+}
+
+.admin-gate__title {
+  font-size: var(--fs-display);
+  letter-spacing: 0.24em;
+}
+
+.admin-gate__lede {
+  margin: var(--sp-2) 0 var(--sp-5);
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  line-height: 1.7;
+}
+
+.admin-gate .adm-field {
+  text-align: left;
+}
+
+.admin-gate__back {
+  display: block;
+  margin-top: var(--sp-4);
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+/* --------------------------------------------------------------- section */
+
+.adm-section {
+  margin-bottom: var(--sp-6);
+}
+
+.adm-section__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding-bottom: var(--sp-2);
+  margin-bottom: var(--sp-4);
+  border-bottom: var(--hair) solid var(--ink-hair-strong);
+}
+
+.adm-section__title {
+  font-size: var(--fs-title);
+  letter-spacing: 0.2em;
+}
+
+.adm-section__lede {
+  margin-top: var(--sp-1);
+  max-width: 56ch;
+  font-size: var(--fs-xs);
+  line-height: 1.7;
+  color: var(--ink-soft);
+}
+
+.adm-section__actions {
+  flex: none;
+}
+
+/* --------------------------------------------------------------- 息 hero */
+
+.adm-breath__bar {
+  position: relative;
+  height: 10px;
+  background: var(--paper-sunk);
+  border: var(--hair) solid var(--ink-hair);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.adm-breath__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--indigo);
+  transition: width 520ms linear;
+}
+
+.adm-breath__read {
+  margin-top: var(--sp-2);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+
+.adm-breath__read strong {
+  color: var(--ink);
+  font-weight: 400;
+}
+
+.adm-breath__idle {
+  color: var(--cinnabar);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .adm-breath__fill {
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------- stats */
+
+/* Eight tiles, so the columns are fixed rather than auto-fit: an auto-fit
+ * track count that does not divide eight leaves a half-empty last row. */
+.adm-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--hair);
+  background: var(--ink-hair);
+  border: var(--hair) solid var(--ink-hair);
+}
+
+.adm-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--sp-3);
+  background: var(--paper-raised);
+}
+
+.adm-stat__label {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.24em;
+  color: var(--ink-soft);
+}
+
+.adm-stat__value {
+  font-family: var(--font-num);
+  font-size: 1.5rem;
+  line-height: 1.1;
+}
+
+.adm-stat__note {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+/* ------------------------------------------------------- realm pyramid */
+
+.adm-realms {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: var(--sp-2);
+  align-items: end;
+}
+
+.adm-realm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  min-width: 0;
+}
+
+.adm-realm__count {
+  font-family: var(--font-num);
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+.adm-realm__column {
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  height: 5rem;
+  /* No track: a realm with nobody in it must read as empty, not as a bar the
+   * height of the tallest one. The printed count above each column is the
+   * scale. */
+  border-bottom: var(--hair) solid var(--ink-hair-strong);
+}
+
+.adm-realm__fill {
+  width: 100%;
+  background: var(--indigo);
+}
+
+.adm-realm__name {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------ bar rows */
+
+.adm-bars {
+  display: flex;
+  flex-direction: column;
+}
+
+.adm-bar {
+  display: grid;
+  grid-template-columns: 6rem 1fr 3rem;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) 0;
+  border-bottom: var(--hair) solid var(--ink-hair);
+}
+
+.adm-bar:last-child {
+  border-bottom: 0;
+}
+
+.adm-bar__track {
+  height: 6px;
+  background: var(--paper-sunk);
+}
+
+.adm-bar__fill {
+  display: block;
+  height: 100%;
+  background: var(--ink-soft);
+}
+
+.adm-bar__value {
+  font-family: var(--font-num);
+  text-align: right;
+  color: var(--ink-soft);
+}
+
+/* -------------------------------------------------------- key / value */
+
+.adm-kv {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--sp-3) var(--sp-5);
+}
+
+.adm-kv > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: var(--sp-2);
+  border-bottom: var(--hair) solid var(--ink-hair);
+}
+
+.adm-kv dt {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.24em;
+  color: var(--ink-soft);
+}
+
+.adm-kv dd {
+  margin: 0;
+  font-family: var(--font-num);
+  font-size: var(--fs-sm);
+}
+
+/* ---------------------------------------------------------------- forms */
+
+.adm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: var(--sp-3) var(--sp-4);
+  align-items: start;
+}
+
+.adm-grid--tight {
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+}
+
+.adm-field {
+  display: block;
+  padding-left: var(--sp-3);
+  border-left: 2px solid transparent;
+}
+
+/* 朱批: the operator has written here and not yet committed it. */
+.adm-field.is-dirty {
+  border-left-color: var(--cinnabar);
+  background: var(--cinnabar-veil);
+}
+
+.adm-field__label {
+  display: block;
+  margin-bottom: var(--sp-1);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.2em;
+  color: var(--ink-soft);
+}
+
+.adm-field.is-dirty .adm-field__label {
+  color: var(--cinnabar);
+}
+
+.adm-field__hint {
+  display: block;
+  margin-top: var(--sp-1);
+  font-size: var(--fs-xs);
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+.adm-input {
+  width: 100%;
+  min-height: 2.25rem;
+  padding: 0 var(--sp-2);
+  background: var(--paper-raised);
+  border: var(--hair) solid var(--ink-hair-strong);
+  border-radius: var(--radius);
+  font-size: var(--fs-sm);
+}
+
+.adm-input--area {
+  padding: var(--sp-2);
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.adm-input::placeholder {
+  color: rgba(92, 86, 80, 0.5);
+}
+
+/* ------------------------------------------------------- number stepper */
+
+.adm-num {
+  display: grid;
+  grid-template-columns: 2rem 1fr 2rem;
+  grid-template-areas:
+    'minus box plus'
+    'range range range';
+  gap: var(--sp-1);
+  align-items: center;
+}
+
+.adm-num__step {
+  grid-area: minus;
+  height: 2.25rem;
+  border: var(--hair) solid var(--ink-hair-strong);
+  border-radius: var(--radius);
+  background: var(--paper-sunk);
+  color: var(--ink);
+  font-size: var(--fs-body);
+  line-height: 1;
+}
+
+.adm-num__step:last-of-type {
+  grid-area: plus;
+}
+
+.adm-num__step:hover:not(:disabled) {
+  background: var(--paper-deep);
+}
+
+.adm-num__step:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.adm-num__box {
+  grid-area: box;
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  background: var(--paper-raised);
+  border: var(--hair) solid var(--ink-hair-strong);
+  border-radius: var(--radius);
+}
+
+.adm-num__input {
+  width: 100%;
+  min-width: 0;
+  height: 2.25rem;
+  padding: 0 var(--sp-2);
+  border: none;
+  background: transparent;
+  font-family: var(--font-num);
+  font-size: var(--fs-sm);
+  text-align: right;
+}
+
+/* The − / ＋ buttons are the stepper; the browser's own spinner would be a
+ * second one, and it eats the width the unit label needs. */
+.adm-num__input {
+  appearance: textfield;
+}
+
+.adm-num__input::-webkit-outer-spin-button,
+.adm-num__input::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+.adm-num__input:focus-visible {
+  outline: none;
+}
+
+/* Ring the whole box, so the unit label sits inside the focused control. */
+.adm-num__box:has(:focus-visible) {
+  outline: 2px solid var(--cinnabar);
+  outline-offset: -1px;
+}
+
+.adm-num__unit {
+  padding-right: var(--sp-2);
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+/* Where this value sits inside its legal band — read-only, never a control. */
+.adm-num__gauge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--paper-sunk);
+}
+
+.adm-num__gauge::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--fill, 0%);
+  background: var(--indigo);
+}
+
+.adm-num__range {
+  grid-area: range;
+  font-family: var(--font-num);
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  text-align: right;
+}
+
+/* -------------------------------------------------------------- toggle */
+
+.adm-field--toggle {
+  padding-top: 1.35rem;
+}
+
+.adm-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 100%;
+  min-height: 2.25rem;
+  padding: 0 var(--sp-2);
+  background: var(--paper-raised);
+  border: var(--hair) solid var(--ink-hair-strong);
+  border-radius: var(--radius);
+  text-align: left;
+}
+
+.adm-toggle__track {
+  flex: none;
+  position: relative;
+  width: 2rem;
+  height: 1rem;
+  background: var(--paper-deep);
+  border: var(--hair) solid var(--ink-hair-strong);
+  border-radius: var(--radius);
+}
+
+.adm-toggle__knob {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: calc(1rem - 4px);
+  height: calc(1rem - 4px);
+  background: var(--ink-soft);
+  transition: transform var(--dur-fast) var(--ease-brush);
+}
+
+.adm-toggle.is-on .adm-toggle__track {
+  background: var(--indigo-veil);
+}
+
+.adm-toggle.is-on .adm-toggle__knob {
+  transform: translateX(1rem);
+  background: var(--indigo);
+}
+
+.adm-toggle__label {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-sm);
+}
+
+.adm-toggle__state {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+/* -------------------------------------------------------------- buttons */
+
+.adm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-1);
+  min-height: 2.25rem;
+  padding: 0 var(--sp-3);
+  border: var(--hair) solid var(--ink-hair-strong);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  color: var(--ink);
+  font-size: var(--fs-sm);
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  transition:
+    background-color var(--dur-fast) var(--ease-brush),
+    border-color var(--dur-fast) var(--ease-brush);
+}
+
+.adm-btn:hover:not(:disabled) {
+  background: var(--paper-sunk);
+}
+
+.adm-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.adm-btn--quiet {
+  background: transparent;
+  border-color: transparent;
+  color: var(--ink-soft);
+}
+
+.adm-btn--quiet:hover:not(:disabled) {
+  background: var(--ink-veil);
+  color: var(--ink);
+}
+
+.adm-btn--seal {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+  letter-spacing: 0.18em;
+}
+
+.adm-btn--seal:hover:not(:disabled) {
+  background: #2c2823;
+}
+
+.adm-btn--danger {
+  background: var(--cinnabar);
+  border-color: var(--cinnabar);
+  color: var(--paper);
+  letter-spacing: 0.18em;
+}
+
+.adm-btn--danger:hover:not(:disabled) {
+  background: #9c3227;
+}
+
+.adm-btn--block {
+  display: flex;
+  width: 100%;
+}
+
+/* --------------------------------------------------------------- chips */
+
+.adm-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+}
+
+.adm-chip {
+  min-height: 2.25rem;
+  padding: 0 var(--sp-3);
+  border: var(--hair) solid var(--ink-hair-strong);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  font-size: var(--fs-sm);
+}
+
+.adm-chip.is-on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+/* -------------------------------------------------------------- filters */
+
+.adm-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+
+.adm-filter {
+  display: block;
+  min-width: 10rem;
+}
+
+.adm-filter__label {
+  display: block;
+  margin-bottom: var(--sp-1);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.2em;
+  color: var(--ink-soft);
+}
+
+.adm-check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 2.25rem;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+
+.adm-check input {
+  accent-color: var(--cinnabar);
+  width: 1rem;
+  height: 1rem;
+}
+
+/* --------------------------------------------------------------- table */
+
+.adm-scroll {
+  overflow-x: auto;
+  border: var(--hair) solid var(--ink-hair);
+  background: var(--paper-raised);
+}
+
+.adm-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+}
+
+.adm-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--paper-sunk);
+  border-bottom: var(--hair) solid var(--ink-hair-strong);
+  font-size: var(--fs-xs);
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  color: var(--ink-soft);
+  text-align: left;
+}
+
+.adm-table td,
+.adm-table tbody th {
+  padding: var(--sp-2) var(--sp-3);
+  border-bottom: var(--hair) solid var(--ink-hair);
+  font-weight: 400;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.adm-table .numeral {
+  font-family: var(--font-num);
+}
+
+.adm-row:hover > * {
+  background: var(--ink-veil);
+}
+
+.adm-row.is-open > * {
+  background: var(--paper-sunk);
+}
+
+.adm-row.is-banned .adm-row__name {
+  text-decoration: line-through;
+  text-decoration-color: var(--cinnabar);
+}
+
+.adm-row__name {
+  border-left: 2px solid transparent;
+}
+
+.adm-row.is-open .adm-row__name {
+  border-left-color: var(--cinnabar);
+}
+
+.adm-row__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: var(--fs-sm);
+  letter-spacing: 0.04em;
+}
+
+.adm-row__chevron {
+  color: var(--ink-soft);
+  font-size: var(--fs-xs);
+}
+
+.adm-row__drawer > td {
+  padding: 0;
+  background: var(--paper);
+  border-bottom: var(--hair) solid var(--ink-hair-strong);
+  white-space: normal;
+}
+
+.adm-cell--soft {
+  color: var(--ink-soft);
+}
+
+.adm-col--action {
+  text-align: right;
+}
+
+.adm-empty {
+  padding: var(--sp-5) var(--sp-3);
+  color: var(--ink-soft);
+  text-align: center;
+  white-space: normal;
+}
+
+/* -------------------------------------------------------------- editor */
+
+.adm-editor {
+  padding: var(--sp-4);
+  border-left: 3px solid var(--ink);
+}
+
+.adm-editor__title {
+  margin: var(--sp-4) 0 var(--sp-2);
+  font-size: var(--fs-xs);
+  font-weight: 400;
+  letter-spacing: 0.3em;
+  color: var(--ink-soft);
+}
+
+.adm-editor__title:first-child {
+  margin-top: 0;
+}
+
+.adm-editor__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+}
+
+.adm-editor__id {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  word-break: break-all;
+}
+
+.adm-editor__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+.adm-editor__warn {
+  font-size: var(--fs-xs);
+  color: var(--cinnabar);
+}
+
+.adm-editor .hairline {
+  margin: var(--sp-4) 0;
+}
+
+/* ---------------------------------------------------------- archetypes */
+
+.adm-archetypes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(24rem, 1fr));
+  gap: var(--sp-4);
+}
+
+.adm-card {
+  padding: var(--sp-4);
+  background: var(--paper-raised);
+  border: var(--hair) solid var(--ink-hair);
+  border-top: 2px solid var(--ink);
+  border-radius: var(--radius);
+}
+
+.adm-card.is-dirty {
+  border-top-color: var(--cinnabar);
+}
+
+.adm-card__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+
+.adm-card__title {
+  font-size: var(--fs-title);
+  letter-spacing: 0.16em;
+}
+
+.adm-card__share {
+  font-family: var(--font-num);
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+.adm-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: var(--hair) solid var(--ink-hair);
+}
+
+/* ------------------------------------------------------- 朱批 commit bar */
+
+.adm-commit {
+  position: sticky;
+  bottom: 0;
+  margin: 0 calc(var(--sp-5) * -1) calc(var(--sp-7) * -1);
+  padding: var(--sp-3) var(--sp-5) calc(var(--sp-3) + var(--safe-bottom));
+  background: var(--paper-raised);
+  border-top: var(--hair) solid var(--ink-hair-strong);
+  box-shadow: 0 -6px 18px rgba(30, 27, 24, 0.08);
+}
+
+/* The veil rides as a background *layer* over the opaque paper, so the strip
+ * still hides the fields it floats above. */
+.adm-commit.is-open {
+  border-top: 2px solid var(--cinnabar);
+  background-image: linear-gradient(var(--cinnabar-veil), var(--cinnabar-veil));
+}
+
+.adm-commit__body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.adm-commit__mark {
+  flex: none;
+  padding: 2px var(--sp-2);
+  background: var(--paper-deep);
+  color: var(--ink-soft);
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  letter-spacing: 0.2em;
+  border-radius: var(--radius);
+}
+
+.adm-commit.is-open .adm-commit__mark {
+  background: var(--cinnabar);
+  color: var(--paper);
+}
+
+.adm-commit__list {
+  flex: 1;
+  min-width: 12rem;
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+.adm-commit.is-open .adm-commit__list {
+  color: var(--ink);
+}
+
+.adm-commit__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+/* --------------------------------------------------------------- misc */
+
+.adm-notice {
+  margin: var(--sp-3) 0;
+  padding: var(--sp-2) var(--sp-3);
+  border-left: 3px solid var(--indigo);
+  background: var(--indigo-veil);
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+}
+
+.adm-notice--warn {
+  border-left-color: var(--cinnabar);
+  background: var(--cinnabar-veil);
+}
+
+.adm-notice--done {
+  border-left-color: var(--gold);
+  background: var(--gold-veil);
+}
+
+.adm-loading {
+  padding: var(--sp-6);
+  text-align: center;
+  color: var(--ink-soft);
+}
+
+.adm-tags {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  flex-wrap: wrap;
+}
+
+.adm-tag {
+  padding: 1px var(--sp-2);
+  border: var(--hair) solid var(--ink-hair-strong);
+  border-radius: var(--radius);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.1em;
+  color: var(--ink-soft);
+}
+
+.adm-tag--warn {
+  border-color: var(--cinnabar);
+  color: var(--cinnabar);
+}
+
+.adm-tag--live {
+  border-color: var(--indigo);
+  color: var(--indigo);
+}
+
+.adm-code {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 2px var(--sp-2);
+  border: var(--hair) solid var(--ink-hair-strong);
+  border-radius: var(--radius);
+  background: var(--paper-sunk);
+  font-family: var(--font-num);
+  font-size: var(--fs-sm);
+  letter-spacing: 0.24em;
+}
+
+.adm-code__hint {
+  font-family: var(--font-body);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.1em;
+  color: var(--ink-soft);
+}
+
+.adm-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-top: var(--sp-3);
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+.adm-pager__buttons {
+  display: flex;
+  gap: var(--sp-2);
+}
+
+.adm-seal {
+  display: inline-grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  background: var(--cinnabar);
+  color: var(--paper);
+  font-family: var(--font-display);
+  border-radius: var(--radius);
+}
+
+/* ------------------------------------------------------------ narrow */
+
+@media (max-width: 860px) {
+  .admin__body {
+    flex-direction: column;
+  }
+
+  .admin__rail {
+    flex-direction: row;
+    width: auto;
+    gap: var(--sp-1);
+    padding: var(--sp-2);
+    border-right: 0;
+    border-bottom: var(--hair) solid var(--ink-hair);
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .admin__tab {
+    flex: none;
+    flex-direction: column;
+    gap: 2px;
+    border-left: 0;
+    border-bottom: 2px solid transparent;
+    padding: var(--sp-1) var(--sp-2);
+  }
+
+  .admin__tab.is-on {
+    border-left-color: transparent;
+    border-bottom-color: var(--cinnabar);
+  }
+
+  .admin__tab-label {
+    font-size: var(--fs-xs);
+  }
+
+  .admin__content {
+    padding: var(--sp-4) var(--sp-3) var(--sp-6);
+  }
+
+  .adm-commit {
+    margin: 0 calc(var(--sp-3) * -1) calc(var(--sp-6) * -1);
+    padding-inline: var(--sp-3);
+  }
+
+  .admin__brand-sub,
+  .admin__meta .numeral {
+    display: none;
+  }
+
+  /* One column: two 15rem tracks cannot both fit, and the drawer below sits
+   * inside a table that is wider than the screen. */
+  .adm-grid,
+  .adm-grid--tight {
+    grid-template-columns: 1fr;
+  }
+
+  /*
+   * The row editor is a cell of a table that scrolls sideways, so by default it
+   * is as wide as the table and half its controls sit off-screen. Pinning the
+   * cell to the scroller's left edge and sizing the editor to the viewport
+   * keeps every control reachable without scrolling sideways first.
+   */
+  .adm-row__drawer > td {
+    position: sticky;
+    left: 0;
+  }
+
+  .adm-editor {
+    width: min(100vw - var(--sp-4), 34rem);
+  }
+
+  .adm-realms {
+    gap: 2px;
+  }
+
+  .adm-realm__name {
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    letter-spacing: -0.1em;
+  }
+
+  .adm-stat__value {
+    font-size: var(--fs-title);
+  }
+
+  .adm-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

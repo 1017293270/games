@@ -3,7 +3,9 @@ import {
   BotArchetypeSchema,
   BotParamsSchema,
   dayKey,
+  ITEM_BY_ID,
   MAX_STAGE_INDEX,
+  ROOMS,
   clamp,
   computeStats,
   powerScore,
@@ -12,6 +14,8 @@ import {
   type BotArchetype,
   type BotSummary,
   type CharacterState,
+  type Invite,
+  type PlayerSummary,
   type WorldSettings,
   type WorldSettingsPatch,
 } from '@xianxia/shared';
@@ -19,7 +23,17 @@ import type { AppContext } from '../../context.js';
 import { ApiError } from '../../http/errors.js';
 import { generateBots } from '../../engine/bots/generate.js';
 import { transact } from '../../db/index.js';
-import { clampExpToStage, toBotSummary } from './repo.js';
+import { newInviteCode } from '../../db/repo/invites.js';
+import { resolveEquipment, withFreshPower } from '../../game/character.js';
+import {
+  addExp,
+  clampExpToStage,
+  playerPage,
+  playerSummaryOf,
+  toBotSummary,
+  toInviteView,
+  type PlayerPageQuery,
+} from './repo.js';
 
 /** 后台. World tuning, the bot population and the dashboard. */
 
@@ -226,4 +240,167 @@ export function stats(ctx: AppContext, now: number): AdminStats {
       version: ctx.version,
     },
   };
+}
+
+/* ------------------------------------------------------------------- 玩家 */
+
+export function listPlayers(
+  ctx: AppContext,
+  query: { page: number; pageSize: number; q?: string; onlyBanned?: boolean },
+): { items: PlayerSummary[]; page: number; pageSize: number; total: number; hasMore: boolean } {
+  const options: PlayerPageQuery = { page: query.page, pageSize: query.pageSize };
+  if (query.q !== undefined) options.q = query.q;
+  if (query.onlyBanned !== undefined) options.onlyBanned = query.onlyBanned;
+
+  const { items, total } = playerPage(ctx, options);
+  return {
+    items,
+    page: query.page,
+    pageSize: query.pageSize,
+    total,
+    hasMore: query.page * query.pageSize < total,
+  };
+}
+
+/**
+ * Hands a cultivator 修为 / 灵石 / 道具, or moves them to a stage outright.
+ *
+ * Everything is applied in one transaction and the owner is pushed the new
+ * numbers, so a player watching the cultivation screen sees the grant land
+ * without a reload. Bots are accepted too — a granted item is inert for them,
+ * but 修为 and 境界 are the same fields the bot tick reads.
+ */
+export function grant(
+  ctx: AppContext,
+  input: {
+    characterId: string;
+    exp?: number;
+    spiritStones?: number;
+    stageIndex?: number;
+    items?: { itemId: string; qty: number }[];
+  },
+  now: number,
+): CharacterState {
+  const state = ctx.characters.byId(input.characterId);
+  if (!state) throw new ApiError('PLAYER_NOT_FOUND', '没有这个角色');
+
+  for (const entry of input.items ?? []) {
+    if (!ITEM_BY_ID.has(entry.itemId)) {
+      throw new ApiError('ITEM_NOT_FOUND', `没有这件物品：${entry.itemId}`);
+    }
+  }
+
+  let next: CharacterState = { ...state };
+
+  // 境界 is set first so a 修为 grant in the same call fills the *target* stage.
+  if (input.stageIndex !== undefined) {
+    const stageIndex = clamp(Math.round(input.stageIndex), 0, MAX_STAGE_INDEX);
+    next = { ...next, stageIndex, exp: clampExpToStage(stageIndex, next.exp) };
+  }
+
+  if (input.exp !== undefined && input.exp > 0) {
+    const rolled = addExp(next.stageIndex, next.exp, input.exp);
+    next = { ...next, stageIndex: rolled.stageIndex, exp: rolled.exp };
+  }
+
+  if (input.spiritStones !== undefined && input.spiritStones !== 0) {
+    next = { ...next, spiritStones: Math.max(0, next.spiritStones + input.spiritStones) };
+  }
+
+  next = { ...next, lastSettledAt: now };
+
+  transact(ctx.db, () => {
+    for (const entry of input.items ?? []) {
+      ctx.inventory.add(next.id, entry.itemId, entry.qty);
+    }
+    next = withFreshPower(next, resolveEquipment(next, ctx.inventory));
+    ctx.characters.save(next);
+  });
+
+  ctx.realtime.characterUpdate(next);
+  return next;
+}
+
+/**
+ * Sets a new password and drops every session the account holds, so a
+ * compromised token cannot outlive the reset.
+ */
+export function resetPassword(
+  ctx: AppContext,
+  input: { userId: string; newPassword: string },
+): void {
+  const user = ctx.users.byId(input.userId);
+  if (!user) throw new ApiError('PLAYER_NOT_FOUND', '没有这个账号');
+
+  transact(ctx.db, () => {
+    ctx.users.setPassword(user.id, input.newPassword);
+    ctx.sessions.removeForUser(user.id);
+  });
+}
+
+/**
+ * Bans or unbans an account.
+ *
+ * A ban is immediate: the sessions are deleted, so the next REST call answers
+ * `BANNED`, and any live socket is cut so the player does not keep receiving
+ * world events on a token that no longer resolves.
+ */
+export function setBanned(
+  ctx: AppContext,
+  input: { userId: string; banned: boolean; reason?: string },
+): PlayerSummary {
+  const user = ctx.users.byId(input.userId);
+  if (!user) throw new ApiError('PLAYER_NOT_FOUND', '没有这个账号');
+
+  const reason = input.banned ? (input.reason ?? '') : '';
+  transact(ctx.db, () => {
+    ctx.users.setBanned(user.id, input.banned, reason);
+    if (input.banned) ctx.sessions.removeForUser(user.id);
+  });
+
+  if (input.banned) {
+    const character = ctx.characters.byUserId(user.id);
+    if (character) {
+      ctx.realtime.server?.in(ROOMS.character(character.id)).disconnectSockets(true);
+    }
+  }
+
+  return playerSummaryOf(ctx, { ...user, banned: input.banned, banReason: reason });
+}
+
+/* ----------------------------------------------------------------- 邀请码 */
+
+export function listInvites(ctx: AppContext): Invite[] {
+  return ctx.invites.list().map(toInviteView);
+}
+
+/** Mints `count` single-use codes, stamped with the operator who asked. */
+export function createInvites(
+  ctx: AppContext,
+  input: { count: number; note: string; expiresAt: number | null },
+  createdBy: string,
+  now: number,
+): Invite[] {
+  transact(ctx.db, () => {
+    for (let i = 0; i < input.count; i += 1) {
+      // A six-character code has 29^6 values; a collision is still cheaper to
+      // retry than to explain, so the loop redraws until the code is free.
+      let code = newInviteCode();
+      for (let attempt = 0; attempt < 8 && ctx.invites.find(code) !== null; attempt += 1) {
+        code = newInviteCode();
+      }
+      ctx.invites.create(code, now, {
+        createdBy,
+        note: input.note,
+        expiresAt: input.expiresAt,
+        maxUses: 1,
+      });
+    }
+  });
+  return listInvites(ctx);
+}
+
+export function deleteInvite(ctx: AppContext, code: string): Invite[] {
+  if (!ctx.invites.remove(code)) throw new ApiError('NOT_FOUND', '没有这个邀请码');
+  return listInvites(ctx);
 }
