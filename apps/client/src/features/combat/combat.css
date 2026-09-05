@@ -1,8 +1,18 @@
-/* Battle replay. Shared by explore fights, the 天劫, and later party/PvP. */
+/* Battle replay. Shared by explore fights, the 天劫, dungeons and PvP. */
 
+/*
+ * Height is `min(100dvh, 100%)` rather than `inset: 0`: the ink frame grows
+ * past the viewport whenever a page's content is longer than one screen, and a
+ * replay pinned to the frame would then hang its chronicle below the fold.
+ * `100%` keeps it inside the album leaf on a desktop, where the frame is the
+ * shorter of the two.
+ */
 .replay {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: min(100dvh, 100%);
   z-index: 45;
   display: flex;
   flex-direction: column;
@@ -33,10 +43,14 @@
 }
 
 /* Combatants sit at the top; the space under them stays bare paper rather than
- * stretching either the cards or the chronicle into a hollow box. */
+ * stretching either the cards or the chronicle into a hollow box. A party fills
+ * this column with up to four cards, and the verdict card takes height away
+ * from it when the fight ends — so it scrolls rather than bleeding over the
+ * chronicle underneath. */
 .replay__field {
   flex: 1;
   min-height: 0;
+  overflow-y: auto;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: start;
@@ -89,6 +103,12 @@
   overflow: hidden;
   border-radius: var(--radius);
   background: var(--paper-sunk);
+}
+
+/* A duel gets full-length portraits; a party of four would run off the screen
+ * at that height, so a stacked side crops its plates square. */
+.replay__side:has(> .fighter + .fighter) .fighter__art {
+  aspect-ratio: 1 / 1;
 }
 
 .fighter__name {
@@ -275,4 +295,60 @@
 .spoil--gold {
   border-color: var(--gold);
   color: var(--ink);
+}
+
+/* ------------------------------------------------------- 多波次之间的过场 */
+
+/* A 秘境 run is several fights in a row; this beat between them names the next
+ * wave and makes the carried 气血 legible as a deliberate pause. */
+.wave-gate {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: min(100dvh, 100%);
+  z-index: 46;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  background-color: var(--paper);
+  background-image: var(--paper-grain);
+  background-size: var(--paper-grain-size);
+  animation: fade-in var(--dur) var(--ease-brush);
+}
+
+.wave-gate__count {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.4em;
+  color: var(--ink-soft);
+}
+
+.wave-gate__title {
+  font-family: var(--font-display);
+  font-size: 2.75rem;
+  letter-spacing: 0.22em;
+  padding-left: 0.22em;
+  color: var(--ink);
+  animation: wave-gate-in var(--dur-slow) var(--ease-brush) both;
+}
+
+.wave-gate__rule {
+  width: 3.5rem;
+  height: 2px;
+  background: var(--cinnabar);
+}
+
+.wave-gate__note {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  letter-spacing: 0.08em;
+}
+
+@keyframes wave-gate-in {
+  from {
+    opacity: 0;
+    letter-spacing: 0.6em;
+  }
 }

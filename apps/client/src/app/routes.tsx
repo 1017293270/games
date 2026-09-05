@@ -8,6 +8,7 @@ import { ExplorePage } from '../features/explore/ExplorePage';
 import { RealmPage } from '../features/realm/RealmPage';
 import { SocialPage } from '../features/social/SocialPage';
 import { CharacterPage } from '../features/character/CharacterPage';
+import { TownPage } from '../features/npc/TownPage';
 
 const AdminPage = lazy(() => import('../admin'));
 
@@ -21,6 +22,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <CultivationPage /> },
       { path: 'explore', element: <ExplorePage /> },
+      { path: 'town', element: <TownPage /> },
       { path: 'realm', element: <RealmPage /> },
       { path: 'social', element: <SocialPage /> },
       { path: 'character', element: <CharacterPage /> },

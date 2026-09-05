@@ -3,11 +3,15 @@ import { ArtImage } from '../art/ArtImage';
 import { ProgressBar, StoneMark } from '../design';
 import { useLiveCultivation } from '../features/cultivation/useLiveCultivation';
 import { useCharacterStore } from '../store/character';
+import { usePartyStore } from '../store/party';
 import { useUiStore } from '../store/ui';
+// Carries `.topbar__party`; the badge belongs to 组队, not to the shell kit.
+import '../features/party/party.css';
 
 export function TopBar() {
   const view = useCharacterStore((state) => state.view);
   const onlineCount = useUiStore((state) => state.onlineCount);
+  const partySize = usePartyStore((state) => state.party?.members.length ?? 0);
   const live = useLiveCultivation();
   const navigate = useNavigate();
 
@@ -48,7 +52,14 @@ export function TopBar() {
           <StoneMark />
           {character.spiritStones.toLocaleString('zh-CN')}
         </span>
-        <span className="topbar__online numeral">在线 {onlineCount || 1}</span>
+        <span className="topbar__online numeral">
+          在线 {onlineCount || 1}
+          {partySize > 0 && (
+            <span className="topbar__party numeral" aria-label={`队伍 ${partySize} 人`}>
+              队 {partySize}
+            </span>
+          )}
+        </span>
       </div>
     </header>
   );

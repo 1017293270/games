@@ -1,0 +1,161 @@
+/* 任务簿: chapters, the three quest kinds, and what each one is still waiting on. */
+
+.quests {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  padding: 0 var(--sp-4) calc(var(--sp-5) + var(--safe-bottom));
+}
+
+.chapter {
+  padding: var(--sp-3);
+  border: var(--hair) solid var(--ink-hair);
+  border-left: 2px solid var(--indigo);
+  border-radius: var(--radius);
+  background: var(--indigo-veil);
+}
+
+.chapter__title {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  letter-spacing: 0.1em;
+}
+
+.chapter__summary {
+  margin-top: var(--sp-1);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  line-height: 1.7;
+}
+
+.quest-group__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-2);
+}
+
+.quest-group__label {
+  font-family: var(--font-display);
+  font-size: var(--fs-lead);
+  letter-spacing: 0.16em;
+}
+
+.quest-group__count {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+.quest-group__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+/* ------------------------------------------------------------------ 任务条 */
+
+.quest {
+  position: relative;
+  padding: var(--sp-3);
+  border: var(--hair) solid var(--ink-hair);
+  border-radius: var(--radius);
+  background-color: var(--paper-raised);
+  background-image: var(--paper-grain);
+  background-size: var(--paper-grain-size);
+}
+
+/* 可领赏: struck through with cinnabar so it is impossible to miss. */
+.quest--claimable {
+  border-color: var(--cinnabar);
+  background-color: var(--cinnabar-veil);
+}
+
+.quest--claimed {
+  opacity: 0.6;
+}
+
+.quest__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+}
+
+.quest__name {
+  font-family: var(--font-display);
+  font-size: var(--fs-lead);
+  letter-spacing: 0.08em;
+}
+
+.quest__kind {
+  flex: none;
+  font-size: var(--fs-xs);
+  letter-spacing: 0.1em;
+  padding: 1px var(--sp-2);
+  border: var(--hair) solid var(--ink-hair-strong);
+  border-radius: var(--radius);
+  color: var(--ink-soft);
+}
+
+.quest__kind--main {
+  color: var(--cinnabar);
+  border-color: var(--cinnabar);
+}
+
+.quest__giver {
+  margin-left: auto;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+.quest__desc {
+  margin-top: var(--sp-2);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  line-height: 1.7;
+}
+
+.quest__objectives {
+  margin-top: var(--sp-2);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.quest__objective {
+  font-size: var(--fs-sm);
+  letter-spacing: 0.02em;
+}
+
+.quest__objective::before {
+  content: '·';
+  margin-right: var(--sp-2);
+  color: var(--ink-soft);
+}
+
+.quest__objective--done {
+  color: var(--ink-soft);
+  text-decoration: line-through;
+  text-decoration-color: var(--ink-hair-strong);
+}
+
+.quest__reward {
+  margin-top: var(--sp-2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1) var(--sp-2);
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+.quest__foot {
+  margin-top: var(--sp-3);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.quest__gate {
+  font-size: var(--fs-xs);
+  color: var(--cinnabar);
+  align-self: center;
+  margin-right: auto;
+}

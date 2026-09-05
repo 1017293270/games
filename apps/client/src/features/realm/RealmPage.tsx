@@ -1,82 +1,95 @@
 import { useEffect, useState } from 'react';
-import { stageName, type API, type ResponseOf } from '@xianxia/shared';
-import { api } from '../../api/endpoints';
-import { ArtImage } from '../../art/ArtImage';
+import { useNavigate } from 'react-router';
 import { CloudRule } from '../../design';
-import { useCharacterStore } from '../../store/character';
+import { useArenaStore } from '../../store/arena';
+import { usePartyStore } from '../../store/party';
+import { ArenaChallengedModal } from '../arena/ArenaChallengedModal';
+import { ArenaPanel } from '../arena/ArenaPanel';
+import { DungeonLobby } from '../dungeon/DungeonLobby';
+import { DungeonRunReplay } from '../dungeon/DungeonRunReplay';
+import { RaidBoard } from '../raid/RaidBoard';
 import '../social/social.css';
 
-// `DungeonListResponse` has no exported type in the shared package yet, so the
-// row type is derived from the endpoint itself.
-type Dungeons = ResponseOf<typeof API.explore.dungeons>['dungeons'];
+type Segment = 'dungeon' | 'arena' | 'raid';
+
+const SEGMENTS: { id: Segment; label: string; note: string }[] = [
+  { id: 'dungeon', label: '秘境', note: '洞天福地，结伴则易。' },
+  { id: 'arena', label: '论道', note: '同境相邀，只论输赢。' },
+  { id: 'raid', label: '围攻', note: '血池共用，赏金分账。' },
+];
 
 /**
- * 秘境论道 placeholder.
- *
- * The dungeons and the arena both need a party and a live opponent, which land
- * with the multiplayer milestone. Listing the real content now — with honest
- * unlock levels — is more use than an empty tab.
+ * 秘境论道 — the three things cultivators do to each other: run an instance
+ * together, spar on the ladder, or gang up on a bot with a shared blood pool.
  */
 export function RealmPage() {
-  const view = useCharacterStore((state) => state.view);
-  const [dungeons, setDungeons] = useState<Dungeons>([]);
+  const [segment, setSegment] = useState<Segment>('dungeon');
+  const navigate = useNavigate();
+
+  const party = usePartyStore((state) => state.party);
+  const loadParty = usePartyStore((state) => state.load);
+  const incomingRun = usePartyStore((state) => state.incomingRun);
+  const clearIncomingRun = usePartyStore((state) => state.clearIncomingRun);
+  const challenged = useArenaStore((state) => state.challenged);
 
   useEffect(() => {
-    void api
-      .dungeons()
-      .then((response) => setDungeons(response.dungeons))
-      .catch(() => setDungeons([]));
-  }, []);
+    void loadParty();
+  }, [loadParty]);
 
-  const stage = view?.character.stageIndex ?? 0;
+  const current = SEGMENTS.find((s) => s.id === segment);
 
   return (
-    <div>
+    <div className="social">
       <header className="page-head">
         <h1 className="page-head__title">秘境论道</h1>
-        <p className="page-head__note">洞天福地，独行难入。</p>
+        <p className="page-head__note">{current?.note}</p>
       </header>
       <CloudRule />
 
-      <div className="soon">
-        <p className="field__hint">
-          四处秘境各镇一位妖王，气血是同阶妖兽的四倍——单人硬啃很难，结伴才是正解。
-        </p>
-
-        {dungeons.map((dungeon) => (
-          <article className="soon__card" key={dungeon.id}>
-            <div className="soon__art">
-              <ArtImage id={dungeon.art} label={dungeon.name} motif="scene" small />
-            </div>
-            <div className="soon__body">
-              <h2 className="soon__name">{dungeon.name}</h2>
-              <p className="soon__note">{dungeon.description}</p>
-              <p className="soon__note">
-                镇守 {dungeon.boss.name} · 建议 {dungeon.partySize} 人 · 每日{' '}
-                {dungeon.dailyLimit} 次
-              </p>
-              <span className="soon__flag">
-                {stage < dungeon.unlockStage ? `需 ${stageName(dungeon.unlockStage)}` : '组队后开放'}
-              </span>
-            </div>
-          </article>
+      <div className="segments" role="tablist" aria-label="秘境论道分页">
+        {SEGMENTS.map((entry) => (
+          <button
+            key={entry.id}
+            type="button"
+            role="tab"
+            aria-selected={segment === entry.id}
+            className={`segment ${segment === entry.id ? 'segment--on' : ''}`}
+            onClick={() => setSegment(entry.id)}
+          >
+            {entry.label}
+            {entry.id === 'dungeon' && party && party.members.length > 1 && (
+              <span className="segment__n numeral">{party.members.length}</span>
+            )}
+            {entry.id === 'arena' && challenged && (
+              <span className="segment__dot" aria-label="有人向你论道" />
+            )}
+          </button>
         ))}
-
-        {dungeons.length === 0 && <p className="empty">秘境入口尚未显形。</p>}
-
-        <article className="soon__card">
-          <div className="soon__art">
-            <ArtImage id="npc/xianzi" label="青鸾仙子" motif="portrait" />
-          </div>
-          <div className="soon__body">
-            <h2 className="soon__name">论道台</h2>
-            <p className="soon__note">
-              青鸾仙子主持论道。同境界附近匹配，胜负计入天梯，每日十次。
-            </p>
-            <span className="soon__flag">下一版开放</span>
-          </div>
-        </article>
       </div>
+
+      {segment === 'dungeon' && (
+        <DungeonLobby onWantParty={() => navigate('/social', { state: { tab: 'party' } })} />
+      )}
+      {segment === 'arena' && <ArenaPanel />}
+      {segment === 'raid' && <RaidBoard />}
+
+      {/* A run someone else in the party started; it waits here until watched. */}
+      {incomingRun && (
+        <DungeonRunReplay
+          dungeonId={incomingRun.dungeonId}
+          battles={incomingRun.replay}
+          cleared={incomingRun.cleared}
+          reward={{
+            exp: incomingRun.reward.exp,
+            spiritStones: incomingRun.reward.spiritStones,
+            itemNames: incomingRun.reward.items.map((item) => item.name),
+          }}
+          participantIds={incomingRun.participantIds}
+          onClose={clearIncomingRun}
+        />
+      )}
+
+      <ArenaChallengedModal />
     </div>
   );
 }

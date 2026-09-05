@@ -328,3 +328,32 @@
   border-radius: var(--radius);
   padding: 0 var(--sp-2);
 }
+
+/* ------------------------------------------------------- 分段标签上的标记 */
+
+/* Party size and the unanswered-request mark ride inline inside `.segment`, so
+ * the shared segment control itself needs no layout change. */
+.segment__n {
+  display: inline-block;
+  margin-left: var(--sp-1);
+  font-size: var(--fs-xs);
+  color: var(--cinnabar);
+}
+
+.segment--on .segment__n {
+  color: var(--gold);
+}
+
+.segment__dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-left: 5px;
+  vertical-align: 0.15em;
+  border-radius: 50%;
+  background: var(--cinnabar);
+}
+
+.segment--on .segment__dot {
+  background: var(--gold);
+}

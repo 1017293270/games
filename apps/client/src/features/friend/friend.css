@@ -1,0 +1,101 @@
+/* 道友名册 */
+
+.friends {
+  padding: 0 var(--sp-4) calc(var(--sp-5) + var(--safe-bottom));
+}
+
+.friends__group {
+  margin-bottom: var(--sp-4);
+}
+
+.friends__heading {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) 0;
+  font-size: var(--fs-xs);
+  letter-spacing: 0.3em;
+  color: var(--ink-soft);
+}
+
+.friends__heading::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--ink-hair);
+}
+
+.friends__count {
+  letter-spacing: normal;
+  font-variant-numeric: tabular-nums;
+}
+
+.friend-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) 0;
+  border-bottom: var(--hair) solid var(--ink-hair);
+}
+
+.friend-row:last-child {
+  border-bottom: 0;
+}
+
+.friend-row__art {
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: var(--hair) solid var(--ink-hair);
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--paper-sunk);
+}
+
+.friend-row--off .friend-row__art {
+  filter: grayscale(1);
+  opacity: 0.62;
+}
+
+.friend-row__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.friend-row__name {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-body);
+  letter-spacing: 0.04em;
+}
+
+.friend-row__sub {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+.friend-row__acts {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+/* A request waiting on you is the only row that should pull the eye. */
+.friend-row--pending {
+  background: var(--cinnabar-veil);
+  margin: 0 calc(var(--sp-3) * -1);
+  padding-left: var(--sp-3);
+  padding-right: var(--sp-3);
+}
+
+.friend-row__wait {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  letter-spacing: 0.1em;
+}

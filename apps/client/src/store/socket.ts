@@ -1,6 +1,9 @@
 import { connectSocket, type GameSocket } from '../api/socket';
+import { useArenaStore } from './arena';
 import { useCharacterStore } from './character';
 import { useChatStore } from './chat';
+import { useFriendsStore } from './friends';
+import { usePartyStore } from './party';
 import { useUiStore } from './ui';
 
 /**
@@ -36,6 +39,32 @@ export function openSocket(token: string): void {
 
   next.on('presence:update', (presence) => {
     useUiStore.getState().setOnlineCount(presence.onlineCount);
+  });
+
+  next.on('party:update', (update) => {
+    usePartyStore.getState().applyUpdate(update);
+  });
+
+  // A party run is broadcast to the whole room, initiator included; the party
+  // store drops the copy belonging to whoever pressed the button.
+  next.on('dungeon:start', (event) => {
+    usePartyStore.getState().receiveDungeonStart(event);
+  });
+
+  next.on('dungeon:result', (event) => {
+    usePartyStore.getState().receiveDungeonResult(event);
+  });
+
+  next.on('arena:challenged', (event) => {
+    useArenaStore.getState().receiveChallenge(event);
+  });
+
+  next.on('raid:update', (event) => {
+    useArenaStore.getState().applyRaidUpdate(event);
+  });
+
+  next.on('friend:request', (event) => {
+    useFriendsStore.getState().receiveRequest(event);
   });
 }
 

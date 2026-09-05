@@ -199,3 +199,57 @@
   text-indent: 2em;
   margin-bottom: var(--sp-4);
 }
+
+/* -------------------------------------------------------------- 青云镇入口 */
+
+.town-entry {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin: 0 var(--sp-4) var(--sp-3);
+  padding: var(--sp-3);
+  border: var(--hair) solid var(--ink-hair-strong);
+  border-radius: var(--radius);
+  background-color: var(--paper-sunk);
+  background-image: var(--paper-grain);
+  background-size: var(--paper-grain-size);
+  /* It is a card, not a run of prose: the base link ink and rule do not apply. */
+  color: var(--ink);
+  text-decoration: none;
+  transition: background-color var(--dur-fast) var(--ease-brush);
+}
+
+.town-entry:hover {
+  background-color: var(--paper-deep);
+}
+
+.town-entry__seal {
+  flex: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-items: center;
+  background: var(--cinnabar);
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  border-radius: var(--radius);
+}
+
+.town-entry__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.town-entry__name {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  letter-spacing: 0.1em;
+}
+
+.town-entry__note {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}

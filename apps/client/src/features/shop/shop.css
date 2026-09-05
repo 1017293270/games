@@ -1,0 +1,130 @@
+/* 商铺: the shelf on the left of the ledger, your bag on the right. */
+
+.shop__lede {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  line-height: 1.7;
+  text-align: center;
+  margin-bottom: var(--sp-3);
+}
+
+.shop__purse {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--sp-2);
+  padding-bottom: var(--sp-3);
+  margin-bottom: var(--sp-3);
+  border-bottom: var(--hair) solid var(--ink-hair);
+}
+
+.shop__purse-label {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  letter-spacing: 0.16em;
+}
+
+.shop__purse-value {
+  font-family: var(--font-num);
+  font-size: var(--fs-title);
+}
+
+.shop__rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.shop-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3) 0;
+  border-bottom: var(--hair) solid var(--ink-hair);
+}
+
+.shop-row:last-child {
+  border-bottom: 0;
+}
+
+.shop-row--blocked {
+  opacity: 0.55;
+}
+
+.shop-row__art {
+  flex: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: var(--hair) solid var(--ink-hair);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--paper-sunk);
+}
+
+.shop-row__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.shop-row__name {
+  font-size: var(--fs-body);
+  letter-spacing: 0.06em;
+}
+
+.shop-row__note {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  line-height: 1.5;
+  /* One line only: a wrapped 「单价 360」 leaves a stray number under the name. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shop-row__note--gate {
+  color: var(--cinnabar);
+}
+
+.shop-row__price {
+  flex: none;
+  font-family: var(--font-num);
+  font-size: var(--fs-sm);
+  min-width: 4rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------- quantity stepper */
+
+.stepper {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.stepper__btn {
+  width: 1.75rem;
+  height: 1.75rem;
+  display: grid;
+  place-items: center;
+  border: var(--hair) solid var(--ink-hair-strong);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  font-size: var(--fs-sm);
+  line-height: 1;
+}
+
+.stepper__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.stepper__value {
+  min-width: 1.5rem;
+  text-align: center;
+  font-family: var(--font-num);
+  font-size: var(--fs-sm);
+}

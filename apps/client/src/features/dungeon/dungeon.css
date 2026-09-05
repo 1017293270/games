@@ -1,0 +1,148 @@
+/* 秘境: the lobby of four instances and what a run costs. */
+
+.dungeons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: 0 var(--sp-4) calc(var(--sp-5) + var(--safe-bottom));
+}
+
+.dungeon-lede {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  line-height: 1.65;
+  padding-bottom: var(--sp-1);
+}
+
+.dungeon-card {
+  display: flex;
+  flex-direction: column;
+  border: var(--hair) solid var(--ink-hair);
+  border-radius: var(--radius);
+  background-color: var(--paper-raised);
+  background-image: var(--paper-grain);
+  background-size: var(--paper-grain-size);
+}
+
+.dungeon-card--locked {
+  opacity: 0.55;
+}
+
+.dungeon-card__top {
+  display: flex;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+}
+
+.dungeon-card__art {
+  position: relative;
+  flex: none;
+  width: 5.5rem;
+  aspect-ratio: 3 / 4;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: var(--hair) solid var(--ink-hair);
+  background: var(--paper-sunk);
+}
+
+/* The BOSS name sits on the plate itself so the card needs no second caption. */
+.dungeon-card__boss {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 10px 2px 2px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.1em;
+  color: var(--paper);
+  background: linear-gradient(180deg, transparent, rgba(30, 27, 24, 0.78));
+}
+
+.dungeon-card__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.dungeon-card__name {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  letter-spacing: 0.1em;
+}
+
+.dungeon-card__desc {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.dungeon-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1) var(--sp-3);
+  margin-top: auto;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+.dungeon-card__lock {
+  color: var(--cinnabar);
+  letter-spacing: 0.1em;
+}
+
+/* Runs left reads as a tally rather than a number: 三次画三笔. */
+.runs {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.runs__pip {
+  width: 7px;
+  height: 7px;
+  border: var(--hair) solid var(--ink-hair-strong);
+  border-radius: 50%;
+}
+
+.runs__pip--used {
+  background: var(--ink-hair-strong);
+}
+
+.runs .numeral {
+  margin-left: 3px;
+}
+
+.dungeon-card__acts {
+  display: flex;
+  gap: var(--sp-2);
+  padding: 0 var(--sp-3) var(--sp-3);
+}
+
+.dungeon-card__acts .btn {
+  flex: 1;
+}
+
+.dungeon-card__hint {
+  padding: 0 var(--sp-3) var(--sp-3);
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+.dungeon-card__hint button {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--indigo);
+  font-size: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

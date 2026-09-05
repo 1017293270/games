@@ -17,6 +17,11 @@ export interface BattleReplayProps {
   battle: BattleResult;
   teamA: ReplayFighter[];
   teamB: ReplayFighter[];
+  /**
+   * 气血 each fighter opens on, keyed by id; anyone missing starts at `maxHp`.
+   * Read once, on mount — a multi-wave run remounts per wave.
+   */
+  startHp?: Record<string, number>;
   title?: string;
   /** Rendered under the verdict — drops, rating change, and so on. */
   spoils?: ReactNode;
@@ -63,6 +68,7 @@ export function BattleReplay({
   battle,
   teamA,
   teamB,
+  startHp,
   title = '战',
   spoils,
   onClose,
@@ -76,9 +82,9 @@ export function BattleReplay({
 
   const initialHp = useMemo(() => {
     const map: Record<string, number> = {};
-    for (const fighter of fighters) map[fighter.id] = fighter.maxHp;
+    for (const fighter of fighters) map[fighter.id] = startHp?.[fighter.id] ?? fighter.maxHp;
     return map;
-  }, [fighters]);
+  }, [fighters, startHp]);
 
   const [cursor, setCursor] = useState(0);
   const [hp, setHp] = useState<Record<string, number>>(initialHp);
@@ -187,6 +193,12 @@ export function BattleReplay({
     },
     [describe],
   );
+
+  // The overlay is pinned to the top of the ink frame, which on a long page is
+  // taller than the viewport — so start the fight where the fight is drawn.
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, []);
 
   useEffect(() => {
     if (done || cursor >= battle.log.length) return;

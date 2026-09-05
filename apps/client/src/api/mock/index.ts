@@ -16,6 +16,7 @@ import {
 import { setMockTransport } from '../http';
 import { setSocketFactory, type GameSocket } from '../socket';
 import { findHandler, makeCtx, MockFail } from './handlers';
+import { startMultiplayerFeed } from './multiplayer';
 import { buildView, emit, getWorld, isOnline, settleInto, statsFor } from './world';
 
 export { DEMO_PASSWORD, DEMO_USERNAME, resetWorld } from './world';
@@ -74,6 +75,9 @@ export function createMockSocket(): GameSocket {
     for (const fn of listeners.get(event) ?? []) fn(...(args as unknown[]));
   };
   world.listeners.add(bridge as never);
+
+  // 围攻 blood pools, one inbound 论道 and one friend request.
+  const stopMultiplayerFeed = startMultiplayerFeed();
 
   const bots = [...world.characters.values()].filter((c) => c.isBot);
   const onlineCount = () => bots.filter(isOnline).length + 1;
@@ -172,6 +176,7 @@ export function createMockSocket(): GameSocket {
     disconnect() {
       clearInterval(timer);
       clearInterval(settleTimer);
+      stopMultiplayerFeed();
       world.listeners.delete(bridge as never);
       listeners.clear();
     },

@@ -1,19 +1,40 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router';
 import { CloudRule } from '../../design';
+import { useFriendsStore } from '../../store/friends';
+import { usePartyStore } from '../../store/party';
 import { ChatPanel } from '../chat/ChatPanel';
+import { FriendsPanel } from '../friend/FriendsPanel';
+import { PartyPanel } from '../party/PartyPanel';
 import { RankingsPanel } from '../rankings/RankingsPanel';
 import './social.css';
 
-type Tab = 'chat' | 'ranks' | 'friends';
+type Tab = 'chat' | 'ranks' | 'party' | 'friends';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'chat', label: '世界' },
   { id: 'ranks', label: '榜单' },
+  { id: 'party', label: '组队' },
   { id: 'friends', label: '道友' },
 ];
 
 export function SocialPage() {
-  const [tab, setTab] = useState<Tab>('chat');
+  // 秘境论道 sends people here to build a party; the tab it wants rides along in
+  // the navigation state so no extra route is needed.
+  const wanted = (useLocation().state as { tab?: Tab } | null)?.tab;
+  const [tab, setTab] = useState<Tab>(wanted ?? 'chat');
+  const partySize = usePartyStore((state) => state.party?.members.length ?? 0);
+  const friends = useFriendsStore((state) => state.friends);
+  const loadFriends = useFriendsStore((state) => state.load);
+  const friendsLoaded = useFriendsStore((state) => state.loaded);
+
+  // The 道友 tab wears a mark when someone is waiting on an answer, so the
+  // request is visible without opening the tab.
+  useEffect(() => {
+    if (!friendsLoaded) void loadFriends();
+  }, [friendsLoaded, loadFriends]);
+
+  const waiting = friends.filter((f) => f.state === 'pending_in').length;
 
   return (
     <div className="social">
@@ -34,20 +55,20 @@ export function SocialPage() {
             onClick={() => setTab(entry.id)}
           >
             {entry.label}
+            {entry.id === 'party' && partySize > 0 && (
+              <span className="segment__n numeral">{partySize}</span>
+            )}
+            {entry.id === 'friends' && waiting > 0 && (
+              <span className="segment__dot" aria-label={`${waiting} 份申请待回`} />
+            )}
           </button>
         ))}
       </div>
 
       {tab === 'chat' && <ChatPanel />}
       {tab === 'ranks' && <RankingsPanel />}
-      {tab === 'friends' && (
-        <div className="soon">
-          <p className="empty" style={{ padding: 'var(--sp-5) 0' }}>
-            尚无道友。加为好友后可见对方境界与在线，一同下秘境。
-          </p>
-          <span className="soon__flag">好友与组队 · 下一版开放</span>
-        </div>
-      )}
+      {tab === 'party' && <PartyPanel />}
+      {tab === 'friends' && <FriendsPanel />}
     </div>
   );
 }

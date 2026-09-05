@@ -1,0 +1,219 @@
+/* 青云镇: the roster, the conversation and the shelves behind them. */
+
+.town {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: 0 var(--sp-4) calc(var(--sp-5) + var(--safe-bottom));
+}
+
+.town-note {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  line-height: 1.7;
+  text-indent: 2em;
+  padding: 0 var(--sp-4) var(--sp-3);
+}
+
+/* ------------------------------------------------------------- NPC roster */
+
+.npc-card {
+  position: relative;
+  display: flex;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: var(--sp-3);
+  text-align: left;
+  border: var(--hair) solid var(--ink-hair);
+  border-radius: var(--radius);
+  background-color: var(--paper-raised);
+  background-image: var(--paper-grain);
+  background-size: var(--paper-grain-size);
+  transition: border-color var(--dur-fast) var(--ease-brush);
+}
+
+.npc-card:hover:not(:disabled) {
+  border-color: var(--ink-hair-strong);
+}
+
+.npc-card--locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.npc-card__art {
+  flex: none;
+  width: 4.25rem;
+  aspect-ratio: 3 / 4;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: var(--hair) solid var(--ink-hair);
+  background: var(--paper-sunk);
+}
+
+.npc-card__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.npc-card__name {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  letter-spacing: 0.08em;
+}
+
+.npc-card__title {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  letter-spacing: 0.12em;
+}
+
+.npc-card__desc {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.npc-card__foot {
+  display: flex;
+  gap: var(--sp-2);
+  margin-top: auto;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+/* 朱砂 seal in the corner: this one has business with you. */
+.npc-card__mark {
+  position: absolute;
+  top: var(--sp-2);
+  right: var(--sp-2);
+  min-width: 1.375rem;
+  height: 1.375rem;
+  display: grid;
+  place-items: center;
+  padding: 0 3px;
+  background: var(--cinnabar);
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: 0;
+  border-radius: var(--radius);
+}
+
+.npc-card__lock {
+  color: var(--cinnabar);
+  letter-spacing: 0.1em;
+}
+
+/* ---------------------------------------------------------------- 对话 */
+
+.dialogue__role {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  letter-spacing: 0.2em;
+  text-align: center;
+  margin-bottom: var(--sp-4);
+}
+
+/* Portrait on the left, the spoken line beside it — the 立绘 keeps its place on
+ * screen while the text below it changes from node to node. */
+.dialogue__stage {
+  display: flex;
+  gap: var(--sp-3);
+  align-items: stretch;
+  margin-bottom: var(--sp-4);
+}
+
+.dialogue__portrait {
+  flex: none;
+  width: 6rem;
+  aspect-ratio: 3 / 4;
+  border: var(--hair) solid var(--ink-hair);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--paper-sunk);
+}
+
+.dialogue__line {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-body);
+  line-height: 1.9;
+  letter-spacing: 0.02em;
+  padding: var(--sp-3);
+  border: var(--hair) solid var(--ink-hair);
+  border-left: 2px solid var(--ink-hair-strong);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+}
+
+.dialogue__choices {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.dialogue__spoils {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+}
+
+.dialogue__spoil {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.08em;
+  padding: 2px var(--sp-2);
+  border: var(--hair) solid var(--gold);
+  border-radius: var(--radius);
+  background: var(--gold-veil);
+}
+
+/* The dialogue's own option button. Deliberately not shared with 奇遇: this one
+ * carries a 条件未满足 line the encounter dialog has no room for. */
+.town-choice {
+  width: 100%;
+  text-align: left;
+  padding: var(--sp-3);
+  border: var(--hair) solid var(--ink-hair-strong);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  font-size: var(--fs-body);
+  letter-spacing: 0.04em;
+  transition: background-color var(--dur-fast) var(--ease-brush);
+}
+
+.town-choice:hover:not(:disabled) {
+  background: var(--paper-sunk);
+}
+
+.town-choice:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.town-choice__gate {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--fs-xs);
+  color: var(--cinnabar);
+}
+
+/* ---------------------------------------------------------------- 页面骨架 */
+
+.town-page {
+  display: flex;
+  flex-direction: column;
+}
+
+.town-page__scroll {
+  flex: 1;
+}

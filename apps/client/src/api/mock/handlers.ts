@@ -50,6 +50,8 @@ import {
   type MockUser,
   type MockWorld,
 } from './world';
+import { registerMultiplayerHandlers } from './multiplayer';
+import { registerContentHandlers } from './content';
 
 export class MockFail extends Error {
   readonly code: ApiErrorCode;
@@ -705,6 +707,19 @@ on(API.social.chatHistory, (ctx, input) => {
 });
 
 on(API.social.friends, () => ({ friends: [] }));
+
+// ---- 组队 / 秘境 / 论道 / 围攻 / 好友
+//
+// Registered from `./multiplayer` with the helpers above lent to it, so the W3
+// surface keeps its own file. It re-registers `social.friends` over the empty
+// M1 placeholder, which is why this call comes last.
+registerMultiplayerHandlers({ on, Fail: MockFail, refresh, save, rollDailyReset, page });
+
+// ---- 青云镇: NPC 对话 / 任务链 / 商店
+//
+// Also wraps `explore.battle` with the 击杀 counter the real server bumps
+// inside `explore()`, which is why the current handler is handed over.
+registerContentHandlers({ on, Fail: MockFail, save, exploreBattle: findHandler(API.explore.battle) });
 
 // ------------------------------------------------------------------ dispatch
 

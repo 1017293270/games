@@ -193,7 +193,9 @@
   position: relative;
   width: 100%;
   max-width: 480px;
-  min-height: 100dvh;
+  /* A definite height: the shell, the auth pages and every sheet scroll inside
+   * the frame, and an absolutely positioned scrim must cover the viewport. */
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   background-color: var(--paper);
@@ -204,7 +206,7 @@
 
 @media (min-width: 560px) {
   .frame {
-    min-height: min(100dvh, 920px);
+    height: min(100dvh, 920px);
     align-self: center;
     box-shadow: var(--shadow-frame);
   }

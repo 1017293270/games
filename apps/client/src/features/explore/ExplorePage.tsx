@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router';
 import {
   formatDuration,
   stageName,
@@ -87,6 +88,14 @@ export function ExplorePage() {
         <p className="page-head__note">境界愈高，可去的地方愈远。</p>
       </header>
       <CloudRule />
+
+      <Link to="/town" className="town-entry">
+        <span className="town-entry__seal" aria-hidden="true">镇</span>
+        <span className="town-entry__body">
+          <span className="town-entry__name">青云镇</span>
+          <span className="town-entry__note">八位镇民在此。领任务、买丹药、听消息。</span>
+        </span>
+      </Link>
 
       <div className="maps">
         {maps.map((map) => (

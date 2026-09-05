@@ -1,0 +1,228 @@
+/* 论道台: the ladder standing, the opponent board, and past bouts. */
+
+.arena {
+  padding: 0 var(--sp-4) calc(var(--sp-5) + var(--safe-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+/* ---------------------------------------------------------------- 天梯分 */
+
+.standing {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  border: var(--hair) solid var(--ink-hair-strong);
+  border-left: 3px solid var(--cinnabar);
+  border-radius: var(--radius);
+  background-color: var(--paper-raised);
+  background-image: var(--paper-grain);
+  background-size: var(--paper-grain-size);
+}
+
+.standing__score {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.standing__label {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.3em;
+  color: var(--ink-soft);
+  margin-bottom: 4px;
+}
+
+.standing__value {
+  font-family: var(--font-display);
+  font-size: 2.25rem;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+}
+
+.standing__meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+.standing__meta .bar {
+  margin-top: 2px;
+}
+
+/* ------------------------------------------------------------- 对手名录 */
+
+.opponent {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) 0;
+  border-bottom: var(--hair) solid var(--ink-hair);
+}
+
+.opponent:last-child {
+  border-bottom: 0;
+}
+
+.opponent__art {
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: var(--hair) solid var(--ink-hair);
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--paper-sunk);
+}
+
+.opponent__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.opponent__name {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-body);
+  letter-spacing: 0.04em;
+}
+
+.opponent__sub {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+.opponent__odds {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+.opponent__odds .bar {
+  width: 3.5rem;
+}
+
+/* A column of twenty seals would shout; the tracking comes back in. */
+.opponent .btn--seal {
+  letter-spacing: 0.1em;
+  padding: 0 var(--sp-3);
+}
+
+/* ------------------------------------------------------------- 近日战绩 */
+
+.records {
+  display: flex;
+  flex-direction: column;
+}
+
+.record {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) 0;
+  border-bottom: var(--hair) solid var(--ink-hair);
+  font-size: var(--fs-sm);
+}
+
+.record:last-child {
+  border-bottom: 0;
+}
+
+/* 胜 / 负 as a struck character, the same mark the replay verdict uses. */
+.record__mark {
+  flex: none;
+  width: 1.6rem;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: var(--fs-lead);
+}
+
+.record__mark--win {
+  color: var(--cinnabar);
+}
+
+.record__mark--lose {
+  color: var(--ink-soft);
+}
+
+.record__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.record__line {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.record__when {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+.record__delta {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-sm);
+}
+
+.record__delta--up {
+  color: var(--cinnabar);
+}
+
+.record__delta--down {
+  color: var(--ink-soft);
+}
+
+/* --------------------------------------------------------- 被论道的通报 */
+
+.challenged__head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+
+.challenged__mark {
+  flex: none;
+  width: 3rem;
+  height: 3rem;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  color: var(--paper);
+  background: var(--cinnabar);
+  border-radius: var(--radius);
+}
+
+.challenged__line {
+  font-size: var(--fs-body);
+  line-height: 1.6;
+}
+
+.challenged__acts {
+  display: flex;
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
+}
+
+.challenged__acts .btn {
+  flex: 1;
+}

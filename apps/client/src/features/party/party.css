@@ -1,0 +1,222 @@
+/* 组队: the invite code, the roster, and the small badge the top bar shows. */
+
+.party {
+  padding: 0 var(--sp-4) calc(var(--sp-5) + var(--safe-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+/* ------------------------------------------------------------- 邀请码 */
+
+/* The code is the one thing a player reads out loud to a friend, so it is set
+ * as a struck seal: wide tracking inside a cinnabar keyline. The face is the
+ * numeral stack, not the brush display font — that one is a CJK subset with
+ * patchy Latin coverage, so a code would come out half-brushed, half-serif. */
+.code-seal {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-4) var(--sp-4) var(--sp-3);
+  border: 2px solid var(--cinnabar);
+  border-radius: var(--radius);
+  background-color: var(--paper-raised);
+  background-image: var(--paper-grain);
+  background-size: var(--paper-grain-size);
+}
+
+/* An inner keyline, the way a seal is cut with a border inside its border. */
+.code-seal::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border: var(--hair) solid var(--cinnabar-veil);
+  border-color: rgba(178, 58, 46, 0.35);
+  pointer-events: none;
+}
+
+.code-seal__label {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.34em;
+  color: var(--cinnabar);
+  padding-left: 0.34em;
+}
+
+.code-seal__code {
+  font-family: var(--font-num);
+  font-size: 2.25rem;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: 0.24em;
+  padding-left: 0.24em;
+  color: var(--ink);
+  word-break: break-all;
+  text-align: center;
+}
+
+.code-seal__note {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  text-align: center;
+  line-height: 1.6;
+}
+
+.code-seal__copy {
+  margin-top: var(--sp-1);
+}
+
+/* ------------------------------------------------------------- 队伍名册 */
+
+.roster {
+  display: flex;
+  flex-direction: column;
+}
+
+.roster__row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) 0;
+  border-bottom: var(--hair) solid var(--ink-hair);
+}
+
+.roster__row:last-child {
+  border-bottom: 0;
+}
+
+.roster__art {
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: var(--hair) solid var(--ink-hair);
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--paper-sunk);
+}
+
+.roster__row--off .roster__art {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+
+.roster__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.roster__name {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-body);
+  letter-spacing: 0.04em;
+}
+
+.roster__sub {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+/* 气血 sits on its own line: four items plus a kick button wrapped mid-word. */
+.roster__hp {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+.roster__hp .bar {
+  flex: 1;
+}
+
+.leader-seal {
+  font-family: var(--font-display);
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--paper);
+  background: var(--cinnabar);
+  border-radius: 2px;
+  padding: 0 4px;
+  letter-spacing: 0.1em;
+}
+
+.roster__slot {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) 0;
+  border-bottom: var(--hair) solid var(--ink-hair);
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+}
+
+.roster__slot:last-child {
+  border-bottom: 0;
+}
+
+.roster__slot-mark {
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: grid;
+  place-items: center;
+  border: var(--hair) dashed var(--ink-hair-strong);
+  border-radius: 50%;
+  font-family: var(--font-display);
+  color: var(--ink-hair-strong);
+}
+
+/* --------------------------------------------------------------- 入队 */
+
+.party__join {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: flex-end;
+}
+
+.party__join .field {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.party__join .field__input {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+.party__foot {
+  display: flex;
+  gap: var(--sp-2);
+}
+
+.party__foot .btn {
+  flex: 1;
+}
+
+/* ------------------------------------------------- 顶栏小队角标 (TopBar) */
+
+.topbar__party {
+  margin-left: var(--sp-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--fs-xs);
+  color: var(--cinnabar);
+  border: var(--hair) solid var(--cinnabar);
+  border-radius: var(--radius);
+  padding: 0 4px;
+  letter-spacing: 0.08em;
+}
