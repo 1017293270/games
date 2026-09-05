@@ -1,0 +1,178 @@
+/*
+ * Reset and page-level typography.
+ *
+ * The display face is a subset of Ma Shan Zheng (SIL OFL), produced by
+ * `scripts/subset-font.mjs`. If that file is absent the stack falls through to
+ * a system 楷体 and the layout is unchanged — the subset is an upgrade, never a
+ * dependency.
+ */
+
+@font-face {
+  font-family: 'MaShanZheng';
+  src: url('/fonts/mashanzheng-subset.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--paper-deep);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior-y: none;
+}
+
+h1,
+h2,
+h3,
+h4,
+p,
+figure,
+blockquote {
+  margin: 0;
+}
+
+ul,
+ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: var(--indigo);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--cinnabar);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--gold-veil);
+}
+
+/* -------------------------------------------------------------- typography */
+
+.ink-display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: var(--lh-tight);
+  letter-spacing: 0.04em;
+}
+
+/*
+ * Eyebrow: a two-character seal-script-ish label with a cinnabar tick. Used to
+ * name a region of a screen; never decorative.
+ */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.34em;
+  color: var(--ink-soft);
+  text-transform: none;
+}
+
+.eyebrow::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--cinnabar);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  flex: none;
+}
+
+.numeral {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+.muted {
+  color: var(--ink-soft);
+}
+
+.vertical-rl {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+}
+
+/* Screen-reader-only text for icon-labelled controls. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --------------------------------------------------------------- surfaces */
+
+.paper {
+  background-color: var(--paper);
+  background-image: var(--paper-grain);
+  background-size: var(--paper-grain-size);
+}
+
+.hairline {
+  border: none;
+  border-top: var(--hair) solid var(--ink-hair);
+  margin: 0;
+}
+
+/* Thin scrollbars that read as an ink rule rather than a chrome widget. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ink-hair-strong) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--ink-hair-strong);
+  border-radius: 2px;
+}

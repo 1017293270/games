@@ -1,0 +1,22 @@
+.boot {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+}
+
+.boot__mark {
+  font-size: var(--fs-display);
+  letter-spacing: 0.5em;
+  padding-left: 0.5em;
+  color: var(--ink);
+  opacity: 0.9;
+}
+
+.boot__note {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  letter-spacing: 0.3em;
+}

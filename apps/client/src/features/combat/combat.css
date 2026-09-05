@@ -1,0 +1,278 @@
+/* Battle replay. Shared by explore fights, the 天劫, and later party/PvP. */
+
+.replay {
+  position: absolute;
+  inset: 0;
+  z-index: 45;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--paper);
+  background-image: var(--paper-grain);
+  background-size: var(--paper-grain-size);
+}
+
+.replay__head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: calc(var(--safe-top) + var(--sp-3)) var(--sp-4) var(--sp-2);
+  border-bottom: var(--hair) solid var(--ink-hair);
+}
+
+.replay__title {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  letter-spacing: 0.18em;
+}
+
+.replay__round {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+
+/* Combatants sit at the top; the space under them stays bare paper rather than
+ * stretching either the cards or the chronicle into a hollow box. */
+.replay__field {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: start;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-3);
+}
+
+.replay__versus {
+  align-self: center;
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  color: var(--ink-soft);
+  writing-mode: vertical-rl;
+  letter-spacing: 0.2em;
+}
+
+.replay__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.fighter {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  padding: var(--sp-2);
+  border: var(--hair) solid var(--ink-hair);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  transition:
+    border-color var(--dur-fast) var(--ease-brush),
+    opacity var(--dur) var(--ease-brush);
+}
+
+.fighter--acting {
+  border-color: var(--cinnabar);
+  box-shadow: 0 0 0 2px var(--cinnabar-veil);
+}
+
+.fighter--down {
+  opacity: 0.34;
+  filter: grayscale(1);
+}
+
+.fighter__art {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: var(--paper-sunk);
+}
+
+.fighter__name {
+  font-size: var(--fs-sm);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fighter__hp {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.fighter__hp .bar {
+  flex: 1;
+}
+
+.fighter__hpnum {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  min-width: 3.2rem;
+  text-align: right;
+}
+
+.fighter__mods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  min-height: 1.1rem;
+}
+
+.mod-chip {
+  font-size: 10px;
+  line-height: 1.4;
+  padding: 0 4px;
+  border-radius: 2px;
+  border: var(--hair) solid currentColor;
+}
+
+.mod-chip--up {
+  color: var(--indigo);
+}
+
+.mod-chip--down {
+  color: var(--cinnabar);
+}
+
+/* -------------------------------------------------------- damage numbers */
+
+.floats {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.float {
+  position: absolute;
+  left: 50%;
+  top: 34%;
+  transform: translateX(-50%);
+  font-size: 1.4rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  animation: float-up 1000ms var(--ease-brush) forwards;
+  text-shadow: 0 1px 0 var(--paper);
+}
+
+.float--hit {
+  color: var(--ink);
+}
+.float--crit {
+  color: var(--cinnabar);
+  font-size: 1.9rem;
+}
+.float--miss {
+  color: var(--ink-soft);
+  font-size: 1.1rem;
+}
+.float--heal {
+  color: var(--indigo);
+}
+
+@keyframes float-up {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 8px) scale(0.85);
+  }
+  22% {
+    opacity: 1;
+    transform: translate(-50%, -4px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -34px) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .float {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+/* -------------------------------------------------------------- log feed */
+
+.replay__feed {
+  flex: none;
+  height: 7.5rem;
+  overflow: hidden;
+  padding: var(--sp-2) var(--sp-4);
+  border-top: var(--hair) solid var(--ink-hair);
+  background: var(--paper-sunk);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.replay__line {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.replay__line:last-child {
+  color: var(--ink);
+}
+
+.replay__foot {
+  flex: none;
+  padding: var(--sp-3) var(--sp-4) calc(var(--sp-4) + var(--safe-bottom));
+  border-top: var(--hair) solid var(--ink-hair);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.replay__verdict {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--sp-3);
+}
+
+.replay__verdict-mark {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  letter-spacing: 0.2em;
+  padding-left: 0.2em;
+}
+
+.replay__verdict-mark--win {
+  color: var(--cinnabar);
+}
+
+.replay__verdict-mark--lose {
+  color: var(--ink-soft);
+}
+
+.spoils {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  justify-content: center;
+  font-size: var(--fs-sm);
+}
+
+.spoil {
+  border: var(--hair) solid var(--ink-hair);
+  border-radius: var(--radius);
+  padding: 2px var(--sp-2);
+  background: var(--paper-raised);
+}
+
+.spoil--gold {
+  border-color: var(--gold);
+  color: var(--ink);
+}

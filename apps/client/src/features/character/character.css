@@ -1,0 +1,312 @@
+/* 角色: 资质 / 神通 / 行囊 */
+
+.char-body {
+  padding: 0 var(--sp-4) calc(var(--sp-5) + var(--safe-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+/* ------------------------------------------------------------------ 道体 */
+
+.identity {
+  display: flex;
+  gap: var(--sp-4);
+  align-items: center;
+}
+
+.identity__art {
+  flex: none;
+  width: 5rem;
+  height: 5rem;
+  border-radius: 50%;
+  overflow: hidden;
+  border: var(--hair) solid var(--ink-hair-strong);
+  background: var(--paper-sunk);
+}
+
+.identity__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.identity__name {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  letter-spacing: 0.1em;
+}
+
+.identity__stage {
+  font-size: var(--fs-sm);
+  color: var(--indigo);
+  letter-spacing: 0.12em;
+}
+
+.identity__root {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: var(--sp-1);
+  margin-top: var(--sp-1);
+  padding: 1px var(--sp-2);
+  border: var(--hair) solid var(--ink-hair-strong);
+  border-radius: var(--radius);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.12em;
+}
+
+.identity__root--heaven {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.identity__root--rare {
+  border-color: var(--indigo);
+  color: var(--indigo);
+}
+
+.identity__power {
+  flex: none;
+  text-align: right;
+}
+
+.identity__power-k {
+  display: block;
+  font-size: var(--fs-xs);
+  letter-spacing: 0.24em;
+  color: var(--ink-soft);
+}
+
+/* Calligraphic Latin digits are unreadable below display size, so data keeps
+ * the body face with tabular figures; only the label stays in the brush face. */
+.identity__power-v {
+  font-size: 1.6rem;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  color: var(--cinnabar);
+}
+
+/* ------------------------------------------------------------------ 属性 */
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 var(--sp-4);
+}
+
+.stat {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  padding: var(--sp-2) 0;
+  border-bottom: var(--hair) solid var(--ink-hair);
+  font-size: var(--fs-sm);
+}
+
+.stat__k {
+  color: var(--ink-soft);
+  letter-spacing: 0.16em;
+}
+
+.stat__v {
+  font-size: var(--fs-body);
+}
+
+/* ------------------------------------------------------------------ 神通 */
+
+.slots {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-2);
+}
+
+.slot {
+  aspect-ratio: 3 / 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-1);
+  padding: var(--sp-1);
+  border: var(--hair) solid var(--ink-hair-strong);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  text-align: center;
+}
+
+.slot--empty {
+  border-style: dashed;
+  border-color: var(--ink-hair);
+  color: var(--ink-soft);
+}
+
+.slot__order {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--ink-soft);
+}
+
+.slot__name {
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  line-height: 1.25;
+  letter-spacing: 0.04em;
+}
+
+.slot__el {
+  font-size: 10px;
+  color: var(--cinnabar);
+}
+
+.skill-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: var(--sp-3) 0;
+  border: 0;
+  border-bottom: var(--hair) solid var(--ink-hair);
+  background: none;
+  text-align: left;
+}
+
+.skill-row__el {
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  display: grid;
+  place-items: center;
+  border: var(--hair) solid var(--ink-hair-strong);
+  border-radius: var(--radius);
+  font-family: var(--font-display);
+  font-size: var(--fs-lead);
+}
+
+.skill-row__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.skill-row__name {
+  font-size: var(--fs-body);
+  letter-spacing: 0.04em;
+}
+
+.skill-row__note {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
+.skill-row__tag {
+  flex: none;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+/* ------------------------------------------------------------------ 功法 */
+
+.tech-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: var(--sp-3) 0;
+  border: 0;
+  border-bottom: var(--hair) solid var(--ink-hair);
+  background: none;
+  text-align: left;
+}
+
+.tech-row:last-child {
+  border-bottom: 0;
+}
+
+.tech-row--on .tech-row__name {
+  color: var(--cinnabar);
+}
+
+.tech-row__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tech-row__name {
+  font-family: var(--font-display);
+  font-size: var(--fs-lead);
+  letter-spacing: 0.08em;
+}
+
+.tech-row__note {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  line-height: 1.55;
+}
+
+.tech-row__note--desc {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ------------------------------------------------------------------ 行囊 */
+
+.equip-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-2);
+}
+
+.equip-slot {
+  aspect-ratio: 3 / 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-2) var(--sp-1);
+  border: var(--hair) solid var(--ink-hair-strong);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  text-align: center;
+}
+
+.equip-slot--empty {
+  border-style: dashed;
+  border-color: var(--ink-hair);
+}
+
+.equip-slot__art {
+  width: 2.5rem;
+  height: 2.5rem;
+  overflow: hidden;
+  border-radius: var(--radius);
+}
+
+.equip-slot__k {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--ink-soft);
+}
+
+.equip-slot__v {
+  font-size: var(--fs-xs);
+  line-height: 1.3;
+}
+
+.bag-actions {
+  flex: none;
+  display: flex;
+  gap: var(--sp-2);
+}

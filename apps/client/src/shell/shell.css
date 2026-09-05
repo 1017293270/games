@@ -1,0 +1,222 @@
+/* App chrome: the status band, the scene, and the five tabs. */
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ----------------------------------------------------------------- topbar */
+
+.topbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: calc(var(--safe-top) + var(--sp-2)) var(--sp-4) var(--sp-2);
+  border-bottom: var(--hair) solid var(--ink-hair);
+  background: linear-gradient(180deg, var(--paper-raised), var(--paper));
+  position: relative;
+  z-index: 5;
+}
+
+.topbar__avatar {
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: var(--hair) solid var(--ink-hair-strong);
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--paper-sunk);
+  padding: 0;
+}
+
+.topbar__id {
+  flex: 1;
+  min-width: 0;
+}
+
+.topbar__line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+}
+
+.topbar__name {
+  font-size: var(--fs-lead);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar__stage {
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  color: var(--indigo);
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+.topbar__meter {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: 3px;
+}
+
+.topbar__meter .bar {
+  flex: 1;
+}
+
+.topbar__pct {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  min-width: 2.6rem;
+  text-align: right;
+}
+
+.topbar__stones {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.topbar__stone-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--fs-sm);
+  color: var(--ink);
+}
+
+.topbar__online {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+/* ------------------------------------------------------------------ scene */
+
+.scene {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  /* A flex column gives page roots a definite height to grow into, so a short
+   * screen still reaches the tab bar instead of leaving a band of bare paper. */
+  display: flex;
+  flex-direction: column;
+}
+
+.scene > * {
+  flex: 1 0 auto;
+}
+
+.scene--pad {
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+/* ----------------------------------------------------------------- tabbar */
+
+.tabbar {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  border-top: var(--hair) solid var(--ink-hair);
+  background: var(--paper-raised);
+  padding-bottom: var(--safe-bottom);
+  position: relative;
+  z-index: 5;
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: var(--tabbar-h);
+  border: 0;
+  background: none;
+  color: var(--ink-soft);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.16em;
+  text-decoration: none;
+  transition: color var(--dur-fast) var(--ease-brush);
+}
+
+.tab:hover {
+  color: var(--ink);
+}
+
+.tab--on {
+  color: var(--ink);
+}
+
+.tab__mark {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: transparent;
+  margin-top: 1px;
+}
+
+.tab--on .tab__mark {
+  background: var(--cinnabar);
+}
+
+/* ------------------------------------------------------------ page header */
+
+.page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-4) var(--sp-2);
+}
+
+.page-head__title {
+  font-family: var(--font-display);
+  font-size: var(--fs-display);
+  letter-spacing: 0.1em;
+  line-height: 1.2;
+}
+
+.page-head__note {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  text-align: right;
+  max-width: 12rem;
+}
+
+/* --------------------------------------------------------- segmented tabs */
+
+.segments {
+  display: flex;
+  gap: var(--sp-1);
+  padding: 0 var(--sp-4) var(--sp-3);
+}
+
+.segment {
+  flex: 1;
+  min-height: 2.25rem;
+  border: var(--hair) solid var(--ink-hair);
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+  letter-spacing: 0.14em;
+  border-radius: var(--radius);
+}
+
+.segment--on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}

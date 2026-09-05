@@ -1,0 +1,384 @@
+/* 主修炼场. The one screen allowed a bold gesture: 运气周天. */
+
+.cultivation {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.cultivation__stage {
+  position: relative;
+  flex: 1;
+  min-height: 24rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-4);
+  padding: var(--sp-5) var(--sp-4) var(--sp-4);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.cultivation__bg {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+}
+
+.cultivation__bg .art,
+.cultivation__bg .placeholder {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cultivation__bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(243, 235, 220, 0.44) 0%,
+    rgba(243, 235, 220, 0.14) 42%,
+    rgba(243, 235, 220, 0.92) 100%
+  );
+}
+
+.cultivation__bg--night::after {
+  background: linear-gradient(
+    180deg,
+    rgba(59, 95, 107, 0.34) 0%,
+    rgba(59, 95, 107, 0.12) 42%,
+    rgba(243, 235, 220, 0.9) 100%
+  );
+}
+
+.cultivation__particles {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* ----------------------------------------------------------- 运气周天 ring */
+
+.zhoutian {
+  position: relative;
+  width: min(17rem, 74vw);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+}
+
+.zhoutian__ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* A paper halo under the circuit so the ring reads over any painting behind it. */
+.zhoutian__halo {
+  fill: none;
+  stroke: rgba(250, 244, 232, 0.72);
+  stroke-width: 6;
+}
+
+.zhoutian__trough {
+  fill: none;
+  stroke: rgba(30, 27, 24, 0.2);
+  stroke-width: 2;
+}
+
+.zhoutian__progress {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 900ms linear;
+}
+
+.zhoutian--full .zhoutian__progress {
+  stroke: var(--gold);
+  stroke-width: 4;
+  filter: drop-shadow(0 0 7px rgba(201, 160, 99, 0.9));
+  animation: breathe 3.2s ease-in-out infinite;
+}
+
+.zhoutian__orbit {
+  transform-origin: 100px 100px;
+  animation: circulate 26s linear infinite;
+}
+
+.zhoutian--full .zhoutian__orbit {
+  animation-duration: 9s;
+}
+
+.zhoutian__spark {
+  fill: var(--cinnabar);
+}
+
+.zhoutian--full .zhoutian__spark {
+  fill: var(--gold);
+}
+
+.zhoutian__tick {
+  stroke: rgba(30, 27, 24, 0.34);
+  stroke-width: 2;
+  stroke-linecap: round;
+  paint-order: stroke;
+}
+
+.zhoutian__tick--done {
+  stroke: var(--ink);
+}
+
+.zhoutian__tick--now {
+  stroke: var(--cinnabar);
+  stroke-width: 2.6;
+}
+
+.zhoutian__figure {
+  position: relative;
+  width: 62%;
+  height: 78%;
+  display: grid;
+  place-items: end center;
+}
+
+.zhoutian__figure .art,
+.zhoutian__figure .placeholder {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+@keyframes circulate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.62;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zhoutian__orbit,
+  .zhoutian--full .zhoutian__progress {
+    animation: none;
+  }
+  .zhoutian__progress {
+    transition: none;
+  }
+}
+
+/* ------------------------------------------------------------ stage plate */
+
+.cultivation__plate {
+  position: relative;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.cultivation__stagename {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  letter-spacing: 0.16em;
+  padding-left: 0.16em;
+  color: var(--ink);
+}
+
+.cultivation__eta {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  letter-spacing: 0.08em;
+}
+
+.cultivation__eta--full {
+  color: var(--cinnabar);
+}
+
+/* ------------------------------------------------------------------- deck */
+
+.cultivation__deck {
+  flex: none;
+  border-top: var(--hair) solid var(--ink-hair);
+  background: var(--paper-raised);
+  padding: var(--sp-3) var(--sp-4) var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.readouts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-2);
+}
+
+.readout {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--sp-2) 0;
+  border-top: var(--hair) solid var(--ink-hair);
+}
+
+.readout__k {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.2em;
+  color: var(--ink-soft);
+}
+
+.readout__v {
+  font-size: var(--fs-lead);
+  letter-spacing: 0.02em;
+}
+
+.readout__v small {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  margin-left: 2px;
+}
+
+.buffs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.buff-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: 2px var(--sp-2);
+  border: var(--hair) solid var(--gold);
+  border-radius: var(--radius);
+  background: var(--gold-veil);
+  font-size: var(--fs-xs);
+  color: var(--ink);
+}
+
+/* ------------------------------------------------------ breakthrough modal */
+
+.bt__odds {
+  text-align: center;
+  margin-bottom: var(--sp-4);
+}
+
+.bt__chance {
+  font-family: var(--font-display);
+  font-size: 3rem;
+  line-height: 1;
+  color: var(--cinnabar);
+}
+
+.bt__chance small {
+  font-size: 1rem;
+  margin-left: 2px;
+}
+
+.bt__pills {
+  display: flex;
+  gap: var(--sp-2);
+  justify-content: center;
+  margin: var(--sp-3) 0;
+}
+
+.pill-pick {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: var(--hair) solid var(--ink-hair-strong);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  font-size: var(--fs-body);
+}
+
+.pill-pick--on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+.pill-pick:disabled {
+  opacity: 0.32;
+  cursor: not-allowed;
+}
+
+.bt__result {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.bt__verdict {
+  font-family: var(--font-display);
+  font-size: 2.75rem;
+  letter-spacing: 0.2em;
+  padding-left: 0.2em;
+  animation: bloom 520ms var(--ease-brush);
+}
+
+.bt__verdict--win {
+  color: var(--gold);
+  text-shadow: 0 0 18px rgba(201, 160, 99, 0.55);
+}
+
+.bt__verdict--lose {
+  color: var(--ink);
+  position: relative;
+}
+
+.bt__crack {
+  width: 9rem;
+  height: 2.5rem;
+  color: var(--ink);
+  opacity: 0.75;
+}
+
+/* ------------------------------------------------------- offline summary */
+
+.settle-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+}
+
+.settle-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding-bottom: var(--sp-2);
+  border-bottom: var(--hair) solid var(--ink-hair);
+  font-size: var(--fs-sm);
+}
+
+.settle-row__k {
+  color: var(--ink-soft);
+  letter-spacing: 0.12em;
+}
+
+.settle-row__v {
+  font-size: var(--fs-body);
+}
+
+.settle-row__v--gain {
+  color: var(--cinnabar);
+}

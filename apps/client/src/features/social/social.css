@@ -1,0 +1,330 @@
+/* 社交: 世界频道 / 榜单 / 好友 */
+
+.social {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+/* ------------------------------------------------------------------ 聊天 */
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.chat__log {
+  flex: 1;
+  min-height: 12rem;
+  overflow-y: auto;
+  padding: 0 var(--sp-4) var(--sp-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.msg {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.msg__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+.msg__who {
+  border: 0;
+  background: none;
+  padding: 0;
+  font-size: var(--fs-sm);
+  color: var(--indigo);
+  letter-spacing: 0.04em;
+}
+
+.msg__stage {
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+}
+
+.msg__body {
+  font-size: var(--fs-body);
+  line-height: 1.65;
+}
+
+.msg--mine .msg__who {
+  color: var(--cinnabar);
+}
+
+/* A system broadcast is a rule with words set into it, not a chat bubble. */
+.notice {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+  letter-spacing: 0.06em;
+}
+
+.notice::before,
+.notice::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--ink-hair);
+}
+
+.notice__seal {
+  flex: none;
+  color: var(--cinnabar);
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  border: var(--hair) solid var(--cinnabar);
+  border-radius: 2px;
+  padding: 0 3px;
+}
+
+.chat__compose {
+  flex: none;
+  display: flex;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4) calc(var(--sp-4) + var(--safe-bottom));
+  border-top: var(--hair) solid var(--ink-hair);
+  background: var(--paper-raised);
+}
+
+.chat__compose .field__input {
+  flex: 1;
+}
+
+/* ------------------------------------------------------------------ 榜单 */
+
+.board-tabs {
+  display: flex;
+  gap: var(--sp-4);
+  padding: 0 var(--sp-4) var(--sp-2);
+}
+
+.board-tab {
+  border: 0;
+  background: none;
+  padding: 0 0 var(--sp-1);
+  font-size: var(--fs-body);
+  letter-spacing: 0.18em;
+  color: var(--ink-soft);
+  border-bottom: 2px solid transparent;
+}
+
+.board-tab[aria-selected='true'] {
+  color: var(--ink);
+  border-bottom-color: var(--cinnabar);
+}
+
+.ranks {
+  padding: 0 var(--sp-4) calc(var(--sp-5) + var(--safe-bottom));
+}
+
+.rank-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: var(--sp-2) 0;
+  border: 0;
+  border-bottom: var(--hair) solid var(--ink-hair);
+  background: none;
+  text-align: left;
+}
+
+.rank-row__n {
+  flex: none;
+  width: 2.1rem;
+  text-align: center;
+  font-size: var(--fs-lead);
+  color: var(--ink-soft);
+}
+
+.rank-row__n--1 {
+  color: var(--gold);
+  font-size: 1.5rem;
+}
+.rank-row__n--2,
+.rank-row__n--3 {
+  color: var(--cinnabar);
+  font-size: 1.25rem;
+}
+
+.rank-row__art {
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  overflow: hidden;
+  border: var(--hair) solid var(--ink-hair);
+  background: var(--paper-sunk);
+}
+
+.rank-row__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rank-row__name {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  font-size: var(--fs-body);
+}
+
+.rank-row__sub {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+.rank-row__v {
+  flex: none;
+  font-size: var(--fs-body);
+  text-align: right;
+}
+
+.puppet {
+  font-family: var(--font-display);
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--paper);
+  background: var(--ink-soft);
+  border-radius: 2px;
+  padding: 0 3px;
+  letter-spacing: 0.06em;
+}
+
+.online-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--indigo);
+  flex: none;
+}
+
+/* ------------------------------------------------------------- 公开档案 */
+
+.profile__head {
+  display: flex;
+  gap: var(--sp-3);
+  align-items: center;
+  margin-bottom: var(--sp-4);
+}
+
+.profile__art {
+  flex: none;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  overflow: hidden;
+  border: var(--hair) solid var(--ink-hair-strong);
+  background: var(--paper-sunk);
+}
+
+.profile__meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile__name {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  letter-spacing: 0.08em;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.profile__sub {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+
+.profile__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+  margin: var(--sp-3) 0;
+}
+
+.tag {
+  font-size: var(--fs-xs);
+  border: var(--hair) solid var(--ink-hair);
+  border-radius: var(--radius);
+  padding: 1px var(--sp-2);
+  color: var(--ink-soft);
+}
+
+/* --------------------------------------------------------------- 占位页 */
+
+.soon {
+  padding: var(--sp-5) var(--sp-4) calc(var(--sp-5) + var(--safe-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.soon__card {
+  display: flex;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  border: var(--hair) solid var(--ink-hair);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  opacity: 0.86;
+}
+
+.soon__art {
+  flex: none;
+  width: 4.5rem;
+  aspect-ratio: 3 / 4;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: var(--hair) solid var(--ink-hair);
+  background: var(--paper-sunk);
+}
+
+.soon__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+}
+
+.soon__name {
+  font-family: var(--font-display);
+  font-size: var(--fs-lead);
+  letter-spacing: 0.08em;
+}
+
+.soon__note {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  line-height: 1.55;
+}
+
+.soon__flag {
+  align-self: flex-start;
+  margin-top: var(--sp-1);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.16em;
+  color: var(--cinnabar);
+  border: var(--hair) solid var(--cinnabar);
+  border-radius: var(--radius);
+  padding: 0 var(--sp-2);
+}

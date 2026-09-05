@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <rect width="256" height="256" fill="#F3EBDC"/>
+  <rect x="15.36" y="15.36" width="225.28" height="225.28" rx="5.12" fill="#B23A2E"/>
+  <rect x="24.32" y="24.32" width="207.36" height="207.36"
+        rx="3.072" fill="none" stroke="#F3EBDC" stroke-opacity="0.5" stroke-width="3.072"/>
+  <text x="50%" y="50%" text-anchor="middle" dominant-baseline="central"
+        font-family="STKaiti, Kaiti SC, KaiTi, Songti SC, serif"
+        font-size="143.36" fill="#F3EBDC">道</text>
+</svg>

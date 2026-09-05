@@ -1,0 +1,288 @@
+/* Login and character creation. */
+
+.login {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/*
+ * The plate is a painting; the wordmark and seal sit on it the way a painter's
+ * inscription (题款) sits on the silk — down the right edge, seal beneath.
+ */
+.login__plate {
+  position: relative;
+  flex: none;
+  height: 42vh;
+  min-height: 17rem;
+  max-height: 24rem;
+  overflow: hidden;
+  border-bottom: var(--hair) solid var(--ink-hair-strong);
+}
+
+.login__plate::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(243, 235, 220, 0.1) 0%, rgba(243, 235, 220, 0.86) 100%);
+}
+
+/* 题款: the title runs down the right edge with its seal beneath and the
+ * inscription line set smaller alongside — the way a painter signs silk. */
+.login__inscription {
+  position: absolute;
+  top: calc(var(--safe-top) + var(--sp-5));
+  right: var(--sp-5);
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-4);
+}
+
+.login__title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.login__wordmark {
+  writing-mode: vertical-rl;
+  font-family: var(--font-display);
+  font-size: var(--fs-hero);
+  line-height: 1.05;
+  letter-spacing: 0.12em;
+  color: var(--ink);
+}
+
+.login__seal {
+  width: 2.25rem;
+  height: 2.25rem;
+  display: grid;
+  place-items: center;
+  background: var(--cinnabar);
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px rgba(243, 235, 220, 0.45);
+}
+
+.login__tag {
+  writing-mode: vertical-rl;
+  margin-top: 2.25rem;
+  font-size: var(--fs-sm);
+  letter-spacing: 0.34em;
+  color: var(--ink-soft);
+}
+
+.login__form {
+  flex: 1;
+  padding: var(--sp-5) var(--sp-4) calc(var(--sp-5) + var(--safe-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.login__switch {
+  display: flex;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-2);
+}
+
+.login__switch button {
+  border: 0;
+  background: none;
+  padding: 0 0 var(--sp-1);
+  font-size: var(--fs-lead);
+  letter-spacing: 0.24em;
+  color: var(--ink-soft);
+  border-bottom: 2px solid transparent;
+}
+
+.login__switch button[aria-selected='true'] {
+  color: var(--ink);
+  border-bottom-color: var(--cinnabar);
+}
+
+.login__error {
+  min-height: 1.2rem;
+  font-size: var(--fs-sm);
+  color: var(--cinnabar);
+}
+
+.login__demo {
+  margin-top: auto;
+  padding-top: var(--sp-4);
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+
+/* ------------------------------------------------------------- create page */
+
+.create {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: calc(var(--sp-5) + var(--safe-bottom));
+}
+
+.create__body {
+  padding: 0 var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.gender {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-2);
+}
+
+.avatars {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-2);
+}
+
+.avatar-pick {
+  position: relative;
+  aspect-ratio: 1;
+  padding: 0;
+  border: var(--hair) solid var(--ink-hair);
+  border-radius: var(--radius);
+  background: var(--paper-sunk);
+  overflow: hidden;
+}
+
+.avatar-pick--on {
+  border-color: var(--cinnabar);
+  box-shadow: 0 0 0 2px var(--cinnabar-veil);
+}
+
+.avatar-pick--on::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: var(--hair) solid var(--cinnabar);
+  border-radius: 1px;
+  pointer-events: none;
+}
+
+/* --------------------------------------------------------- root reveal */
+
+.reveal {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-4);
+  background-color: var(--paper);
+  background-image: var(--paper-grain);
+  background-size: var(--paper-grain-size);
+  padding: var(--sp-5);
+  text-align: center;
+}
+
+.reveal__ring {
+  position: relative;
+  width: 13rem;
+  height: 13rem;
+  display: grid;
+  place-items: center;
+}
+
+.reveal__circle {
+  position: absolute;
+  inset: 0;
+}
+
+.reveal__circle circle {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-dasharray: 302;
+  stroke-dashoffset: 302;
+  animation: draw-ring 900ms var(--ease-brush) forwards;
+}
+
+.reveal__element {
+  font-family: var(--font-display);
+  font-size: 5.5rem;
+  line-height: 1;
+  color: var(--ink);
+  opacity: 0;
+  animation: bloom 700ms var(--ease-brush) 520ms forwards;
+}
+
+.reveal__quality {
+  font-family: var(--font-display);
+  font-size: var(--fs-display);
+  letter-spacing: 0.3em;
+  padding-left: 0.3em;
+  opacity: 0;
+  animation: bloom 600ms var(--ease-brush) 900ms forwards;
+}
+
+.reveal__quality--heaven {
+  color: var(--gold);
+}
+
+.reveal__quality--rare {
+  color: var(--indigo);
+}
+
+.reveal__note {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  max-width: 18rem;
+  opacity: 0;
+  animation: bloom 600ms var(--ease-brush) 1100ms forwards;
+}
+
+.reveal__go {
+  opacity: 0;
+  animation: bloom 500ms var(--ease-brush) 1300ms forwards;
+}
+
+@keyframes draw-ring {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes bloom {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal__circle circle,
+  .reveal__element,
+  .reveal__quality,
+  .reveal__note,
+  .reveal__go {
+    animation: none;
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
+}

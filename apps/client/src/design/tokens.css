@@ -1,0 +1,95 @@
+/*
+ * Ink-wash design tokens.
+ *
+ * The palette is fixed: this is a painted surface, not a themeable app shell,
+ * so there is deliberately no dark mode. Every colour in the UI resolves to one
+ * of the six pigments below or a stated wash of them.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* -------------------------------------------------- pigments */
+  --paper: #f3ebdc; /* 宣纸 */
+  --ink: #1e1b18; /* 墨 */
+  --ink-soft: #5c5650; /* 淡墨 */
+  --cinnabar: #b23a2e; /* 朱砂 */
+  --indigo: #3b5f6b; /* 青黛 */
+  --gold: #c9a063; /* 金 */
+
+  /* -------------------------------------------------- washes derived from them */
+  --paper-raised: #faf4e8;
+  --paper-sunk: #e8ddc8;
+  --paper-deep: #ded1b8;
+  --ink-hair: rgba(30, 27, 24, 0.16);
+  --ink-hair-strong: rgba(30, 27, 24, 0.34);
+  --ink-veil: rgba(30, 27, 24, 0.06);
+  --ink-scrim: rgba(30, 27, 24, 0.52);
+  --cinnabar-veil: rgba(178, 58, 46, 0.1);
+  --indigo-veil: rgba(59, 95, 107, 0.09);
+  --gold-veil: rgba(201, 160, 99, 0.18);
+
+  /* A fine speckle so large paper areas never read as flat #F3EBDC fill. */
+  --paper-grain:
+    radial-gradient(circle at 22% 34%, rgba(92, 86, 80, 0.045) 0 0.5px, transparent 0.5px),
+    radial-gradient(circle at 68% 72%, rgba(92, 86, 80, 0.035) 0 0.5px, transparent 0.5px),
+    radial-gradient(circle at 84% 18%, rgba(178, 58, 46, 0.02) 0 0.5px, transparent 0.5px);
+  --paper-grain-size:
+    7px 7px,
+    11px 13px,
+    19px 17px;
+
+  /* -------------------------------------------------- type */
+  --font-display: 'MaShanZheng', 'STKaiti', 'Kaiti SC', 'KaiTi', serif;
+  --font-body: 'PingFang SC', 'Noto Sans CJK SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --font-num: 'SF Mono', ui-monospace, 'Menlo', 'Consolas', monospace;
+
+  --fs-hero: 3rem; /* 48px — login wordmark only */
+  --fs-display: 1.75rem; /* 28px — page + modal titles */
+  --fs-title: 1.25rem; /* 20px */
+  --fs-lead: 1.0625rem; /* 17px */
+  --fs-body: 0.9375rem; /* 15px */
+  --fs-sm: 0.8125rem; /* 13px */
+  --fs-xs: 0.6875rem; /* 11px */
+
+  --lh-tight: 1.15;
+  --lh-body: 1.65;
+
+  /* -------------------------------------------------- metrics */
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.5rem;
+  --sp-6: 2rem;
+  --sp-7: 3rem;
+
+  /* Album-leaf geometry: corners are cut, not rounded. */
+  --radius: 2px;
+  --hair: 1px;
+
+  --shadow-lift: 0 2px 10px rgba(30, 27, 24, 0.1);
+  --shadow-sheet: 0 -10px 32px rgba(30, 27, 24, 0.18);
+  --shadow-frame: 0 0 0 1px rgba(30, 27, 24, 0.14), 0 24px 60px rgba(30, 27, 24, 0.22);
+
+  --topbar-h: 3.5rem;
+  --tabbar-h: 3.75rem;
+
+  --ease-brush: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --dur-fast: 140ms;
+  --dur: 260ms;
+  --dur-slow: 640ms;
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 1ms;
+    --dur: 1ms;
+    --dur-slow: 1ms;
+  }
+}
