@@ -1,8 +1,10 @@
+import { randomUUID } from 'node:crypto';
 import { Server } from 'socket.io';
 import {
   CLIENT_EVENT_SCHEMAS,
   HandshakeAuthSchema,
   ROOMS,
+  stageName,
   type ClientToServerEvents,
   type InterServerEvents,
   type ServerToClientEvents,
@@ -77,6 +79,14 @@ export function attachSocketIo(app: FastifyInstance, ctx: AppContext): GameServe
     void socket.join(ROOMS.world());
     void socket.join(ROOMS.character(characterId));
 
+    // A reconnecting member walks straight back into the party room, so a
+    // refresh never silently drops someone out of 队伍频道 or a 秘境 run.
+    const party = ctx.parties.byMember(characterId);
+    if (party) {
+      void socket.join(ROOMS.party(party.id));
+      socket.data.partyId = party.id;
+    }
+
     const character = ctx.characters.byId(characterId);
     const name = character?.name ?? '无名修士';
     if (character) ctx.characters.touchSeen(characterId, now);
@@ -109,8 +119,25 @@ export function attachSocketIo(app: FastifyInstance, ctx: AppContext): GameServe
       if (!speaker) return;
       lastChatAt.set(characterId, at);
 
-      // 队伍频道 needs a party to route to; that arrives with the party module,
-      // so until then every line lands in 世界频道.
+      if (parsed.data.channel === 'party') {
+        // 队伍频道 is delivered live and not written down: `chat_messages` has
+        // no per-party read path, so persisting these lines would put one
+        // party's talk in every other party's scrollback.
+        const current = ctx.parties.byMember(characterId);
+        if (!current) return;
+        socket.data.partyId = current.id;
+        ctx.realtime.toParty(current.id, 'chat:message', {
+          id: randomUUID(),
+          channel: 'party',
+          senderId: speaker.id,
+          senderName: speaker.name,
+          senderStageName: stageName(speaker.stageIndex),
+          text: parsed.data.text,
+          sentAt: at,
+        });
+        return;
+      }
+
       const message = recordMessage(
         ctx,
         {

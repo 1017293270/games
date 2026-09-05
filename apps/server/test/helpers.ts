@@ -46,6 +46,8 @@ export interface HarnessOptions {
   config?: Partial<ServerConfig>;
   /** Extra handlers merged over the default registry, for modules not yet wired into app.ts. */
   handlers?: HandlerRegistry;
+  /** Replaces the whole registry, for tests that need some endpoints to stay unimplemented. */
+  registry?: HandlerRegistry;
 }
 
 export function createHarness(options: HarnessOptions = {}): Harness {
@@ -70,7 +72,9 @@ export function createHarness(options: HarnessOptions = {}): Harness {
     config,
     now: clock.now,
     startBots: options.startBots ?? false,
-    handlers: options.handlers ? { ...defaultHandlers, ...options.handlers } : undefined,
+    handlers:
+      options.registry ??
+      (options.handlers ? { ...defaultHandlers, ...options.handlers } : undefined),
   });
 
   return {

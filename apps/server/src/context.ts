@@ -11,6 +11,9 @@ import { SettingsStore } from './game/settings.js';
 import { PresenceTracker } from './game/presence.js';
 import { Realtime } from './realtime.js';
 import { BotEngine } from './engine/bots/engine.js';
+import { PartyStore } from './modules/party/store.js';
+import { FriendRepo } from './modules/friend/repo.js';
+import { DungeonRunRepo } from './modules/dungeon/repo.js';
 
 /**
  * A pending 奇遇 waiting for the player's choice.
@@ -73,11 +76,15 @@ export interface AppContext {
   chat: ChatRepo;
   battles: BattleRepo;
   counters: CounterRepo;
+  friends: FriendRepo;
+  dungeonRuns: DungeonRunRepo;
 
   settings: SettingsStore;
   presence: PresenceTracker;
   realtime: Realtime;
   encounters: EncounterStore;
+  /** Live parties. In memory: a party lasts one session (see `PartyStore`). */
+  parties: PartyStore;
   /** The bot world loop. Assigned during `createContext`. */
   bots: BotEngine;
 }
@@ -113,11 +120,14 @@ export function createContext(options: {
     chat: new ChatRepo(db),
     battles: new BattleRepo(db),
     counters: new CounterRepo(db),
+    friends: new FriendRepo(db),
+    dungeonRuns: new DungeonRunRepo(db),
 
     settings: new SettingsStore(settingsRepo, now),
     presence,
     realtime: new Realtime(presence),
     encounters: new EncounterStore(),
+    parties: new PartyStore(),
     bots: null as unknown as BotEngine,
   };
 

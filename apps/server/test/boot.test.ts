@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { allEndpoints } from '@xianxia/shared';
 import { appliedMigrations } from '../src/db/index.js';
 import { handlers } from '../src/app.js';
+import { authHandlers } from '../src/modules/auth/routes.js';
+import { characterHandlers } from '../src/modules/character/routes.js';
 import { createHarness, expectFail, makePlayer, auth, type Harness } from './helpers.js';
 
 describe('boot', () => {
@@ -30,7 +32,7 @@ describe('boot', () => {
   });
 
   it('answers 功能尚未开放 on an endpoint without a handler', async () => {
-    h = createHarness();
+    h = createHarness({ registry: { ...authHandlers, ...characterHandlers } });
     const player = await makePlayer(h);
     const response = await h.app.inject({
       method: 'GET',
@@ -44,7 +46,7 @@ describe('boot', () => {
   });
 
   it('checks auth before reporting an endpoint as unimplemented', async () => {
-    h = createHarness();
+    h = createHarness({ registry: { ...authHandlers, ...characterHandlers } });
     const response = await h.app.inject({ method: 'GET', url: '/api/party' });
     expect(response.statusCode).toBe(401);
     expect(expectFail(response.json()).code).toBe('UNAUTHORIZED');

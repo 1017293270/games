@@ -19,6 +19,11 @@ import { inventoryHandlers } from './modules/inventory/routes.js';
 import { exploreHandlers } from './modules/explore/routes.js';
 import { socialHandlers } from './modules/social/routes.js';
 import { adminHandlers } from './modules/admin/routes.js';
+import { partyHandlers } from './modules/party/routes.js';
+import { dungeonHandlers } from './modules/dungeon/routes.js';
+import { arenaHandlers } from './modules/arena/routes.js';
+import { raidHandlers } from './modules/raid/routes.js';
+import { friendHandlers } from './modules/friend/routes.js';
 
 /** Every implemented endpoint, keyed `group.name`. */
 export const handlers: HandlerRegistry = {
@@ -28,6 +33,11 @@ export const handlers: HandlerRegistry = {
   ...exploreHandlers,
   ...socialHandlers,
   ...adminHandlers,
+  ...partyHandlers,
+  ...dungeonHandlers,
+  ...arenaHandlers,
+  ...raidHandlers,
+  ...friendHandlers,
 };
 
 export interface BuildAppOptions {
