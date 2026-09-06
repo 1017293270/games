@@ -119,6 +119,61 @@ function cancelRespawnTimer(): void {
   respawnTimer = null;
 }
 
+/**
+ * Shortest gap between two `zone:enter` sends.
+ *
+ * The server takes one 进图 a second per cultivator and answers anything closer
+ * with `RATE_LIMITED` (`apps/server/src/engine/zone/socket.ts`). Two callers ask
+ * on schedules of their own — `store/socket.ts` resyncs whenever the socket
+ * opens, `shell/AppShell.tsx` re-enters when the tab becomes visible — and an
+ * Android browser returning to the foreground trips both at once. The 100ms
+ * over the server's second is slack for the jitter between two arrivals.
+ */
+const ENTER_MIN_GAP_MS = 1100;
+
+/** Runs while the gap is unspent; a send made inside it waits for the flush. */
+let enterGateTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** The last zone asked for during the wait; `null` asks the server to restore. */
+let queuedEnter: { zoneId: string | null } | null = null;
+
+/** Whether the running streak of `RATE_LIMITED` has had its silent retry. */
+let enterRetried = false;
+
+function openEnterGate(): void {
+  enterGateTimer = setTimeout(() => {
+    enterGateTimer = null;
+    const queued = queuedEnter;
+    queuedEnter = null;
+    if (queued) sendEnter(queued.zoneId);
+  }, ENTER_MIN_GAP_MS);
+}
+
+/**
+ * Sends one `zone:enter`, or holds it until the gap runs out.
+ *
+ * Only the newest zone survives the wait: an enter and a resync inside one
+ * window are the same question asked twice. `defer` holds a send back even with
+ * the gap spent — a refused 进图 is worth repeating only once the server's own
+ * second has run out.
+ */
+function sendEnter(zoneId: string | null, defer = false): void {
+  if (enterGateTimer === null && !defer) {
+    getSocket()?.emit('zone:enter', { zoneId });
+    openEnterGate();
+    return;
+  }
+  queuedEnter = { zoneId };
+  if (enterGateTimer === null) openEnterGate();
+}
+
+function clearEnterQueue(): void {
+  if (enterGateTimer !== null) clearTimeout(enterGateTimer);
+  enterGateTimer = null;
+  queuedEnter = null;
+  enterRetried = false;
+}
+
 const EMPTY_BOSS = { alive: false, nextAt: null } as const;
 
 export const useZoneStore = create<ZoneState>((set, get) => ({
@@ -139,7 +194,7 @@ export const useZoneStore = create<ZoneState>((set, get) => ({
     // must not blank it back to the skeleton.
     const watching = state.status === 'in' && state.zoneId === zoneId;
     set({ zoneId, status: watching ? 'in' : 'joining', error: null });
-    getSocket()?.emit('zone:enter', { zoneId });
+    sendEnter(zoneId);
   },
 
   /**
@@ -158,6 +213,8 @@ export const useZoneStore = create<ZoneState>((set, get) => ({
     // card can still be read after walking out.
     cancelRespawnTimer();
     clearFrames();
+    // A queued 进图 would walk straight back onto the field just left.
+    queuedEnter = null;
     set({
       status: 'out',
       zoneId: null,
@@ -172,13 +229,14 @@ export const useZoneStore = create<ZoneState>((set, get) => ({
 
   /** Asks for a fresh full frame; `null` lets the server restore the zone. */
   resync() {
-    getSocket()?.emit('zone:enter', { zoneId: get().zoneId });
+    sendEnter(get().zoneId);
   },
 
   applyJoined(payload) {
     const fresh = get().enteredAt !== payload.enteredAt || get().zoneId !== payload.zoneId;
     clearFrames();
     cancelRespawnTimer();
+    enterRetried = false;
     set({
       status: 'in',
       zoneId: payload.zoneId,
@@ -292,12 +350,25 @@ export const useZoneStore = create<ZoneState>((set, get) => ({
   },
 
   applyError(payload) {
-    set({ error: payload, ...(get().status === 'joining' ? { status: 'out' as const } : {}) });
+    const state = get();
+    // 走得太急了: the tab waking and the socket reconnecting both ask to enter,
+    // and the server's gate refuses whichever lands second. The field is still
+    // where it was, so the first refusal is answered by asking again once the
+    // gate has reopened, with nothing said to the player and the screen left
+    // alone. A second refusal in a row is a real one.
+    if (payload.code === 'RATE_LIMITED' && state.zoneId !== null && !enterRetried) {
+      enterRetried = true;
+      sendEnter(state.zoneId, true);
+      return;
+    }
+    enterRetried = false;
+    set({ error: payload, ...(state.status === 'joining' ? { status: 'out' as const } : {}) });
     toast(payload.message, 'warn');
   },
 
   reset() {
     cancelRespawnTimer();
+    clearEnterQueue();
     clearFrames();
     set({
       status: 'out',

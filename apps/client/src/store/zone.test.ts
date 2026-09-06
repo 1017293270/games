@@ -3,9 +3,14 @@ import type { ZoneFrame, ZoneJoined, ZoneLoot, ZoneRosterEntry } from '@xianxia/
 import { ZONE_FLAGS } from '@xianxia/shared';
 import type { GameSocket } from '../api/socket';
 import * as socketStore from './socket';
+import { useUiStore } from './ui';
 import { useZoneStore, zoneFrames } from './zone';
 
 const ZONE = 'map-qingyun-mountain';
+const FAR_ZONE = 'map-kunlun-ruins';
+/** The store's own send gap, a hair over the server's one-a-second 进图 cap. */
+const GAP_MS = 1100;
+const RATE_LIMITED = { code: 'RATE_LIMITED', message: '走得太急了，缓一口气再进图' } as const;
 
 const emit = vi.fn();
 
@@ -278,5 +283,95 @@ describe('zone store · 离场', () => {
 
     expect(useZoneStore.getState().status).toBe('out');
     expect(useZoneStore.getState().error?.code).toBe('MAP_LOCKED');
+  });
+});
+
+/**
+ * Waking an Android tab fires `enter` from the shell and `resync` from the
+ * reconnecting socket at practically the same instant, and the server's
+ * one-a-second gate refuses the second of them. None of that is the player's
+ * business, so the store queues the sends and swallows the first refusal.
+ */
+describe('zone store · 进图节流', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    useUiStore.setState({ toasts: [] });
+  });
+
+  it('merges the sends inside one gap and follows up with the last zone asked for', () => {
+    useZoneStore.getState().enter(ZONE);
+    expect(emit).toHaveBeenCalledTimes(1);
+    expect(emit).toHaveBeenLastCalledWith('zone:enter', { zoneId: ZONE });
+
+    vi.advanceTimersByTime(300);
+    useZoneStore.getState().resync();
+    useZoneStore.getState().enter(FAR_ZONE);
+    expect(emit).toHaveBeenCalledTimes(1);
+
+    vi.advanceTimersByTime(GAP_MS - 300);
+    expect(emit).toHaveBeenCalledTimes(2);
+    expect(emit).toHaveBeenLastCalledWith('zone:enter', { zoneId: FAR_ZONE });
+
+    // Nothing is left ticking once the queue has drained.
+    vi.advanceTimersByTime(10_000);
+    expect(emit).toHaveBeenCalledTimes(2);
+  });
+
+  it('answers a refusal by asking again in silence, leaving the screen alone', () => {
+    useZoneStore.getState().enter(ZONE);
+    useZoneStore.getState().applyError(RATE_LIMITED);
+
+    expect(useZoneStore.getState().status).toBe('joining');
+    expect(useZoneStore.getState().error).toBeNull();
+    expect(useUiStore.getState().toasts).toHaveLength(0);
+    expect(emit).toHaveBeenCalledTimes(1);
+
+    vi.advanceTimersByTime(GAP_MS);
+    expect(emit).toHaveBeenCalledTimes(2);
+    expect(emit).toHaveBeenLastCalledWith('zone:enter', { zoneId: ZONE });
+    expect(useZoneStore.getState().status).toBe('joining');
+  });
+
+  it('keeps a field already on screen while the refused resync is retried', () => {
+    useZoneStore.getState().applyJoined(joined());
+    useZoneStore.getState().resync();
+    useZoneStore.getState().applyError(RATE_LIMITED);
+
+    expect(useZoneStore.getState().status).toBe('in');
+    expect(useUiStore.getState().toasts).toHaveLength(0);
+
+    vi.advanceTimersByTime(GAP_MS);
+    expect(emit).toHaveBeenLastCalledWith('zone:enter', { zoneId: ZONE });
+  });
+
+  it('speaks up on the second refusal in a row', () => {
+    useZoneStore.getState().enter(ZONE);
+    useZoneStore.getState().applyError(RATE_LIMITED);
+    vi.advanceTimersByTime(GAP_MS);
+    useZoneStore.getState().applyError(RATE_LIMITED);
+
+    expect(useZoneStore.getState().status).toBe('out');
+    expect(useZoneStore.getState().error?.code).toBe('RATE_LIMITED');
+    expect(useUiStore.getState().toasts.map((row) => row.text)).toEqual([RATE_LIMITED.message]);
+  });
+
+  it('has nothing to retry when it does not know which field it was', () => {
+    useZoneStore.getState().resync();
+    expect(emit).toHaveBeenLastCalledWith('zone:enter', { zoneId: null });
+
+    useZoneStore.getState().applyError(RATE_LIMITED);
+    expect(useUiStore.getState().toasts).toHaveLength(1);
+
+    vi.advanceTimersByTime(10_000);
+    expect(emit).toHaveBeenCalledTimes(1);
+  });
+
+  it('drops a queued 进图 when the socket closes', () => {
+    useZoneStore.getState().enter(ZONE);
+    useZoneStore.getState().resync();
+    useZoneStore.getState().reset();
+
+    vi.advanceTimersByTime(10_000);
+    expect(emit).toHaveBeenCalledTimes(1);
   });
 });
