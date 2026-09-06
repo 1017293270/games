@@ -287,6 +287,59 @@ describe('zone store · 离场', () => {
 });
 
 /**
+ * The socket asks the server to restore a field the moment it opens, on every
+ * connect, whether or not the player is on one. The answer to «you are on none»
+ * is `zone:left {reason:'none'}`, and for anyone who was never on a field it is
+ * not news — it must pass without a word on screen.
+ */
+describe('zone store · 恢复留场', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    useUiStore.setState({ toasts: [] });
+  });
+
+  it('says nothing when the restore finds no field to come back to', () => {
+    useZoneStore.getState().resync();
+    expect(emit).toHaveBeenLastCalledWith('zone:enter', { zoneId: null });
+
+    useZoneStore.getState().applyLeft({ reason: 'none' });
+
+    expect(useUiStore.getState().toasts).toHaveLength(0);
+    const state = useZoneStore.getState();
+    expect(state.status).toBe('out');
+    expect(state.zoneId).toBeNull();
+    expect(state.error).toBeNull();
+  });
+
+  it('speaks up when the field it believed it was on is gone', () => {
+    useZoneStore.getState().applyJoined(joined());
+    useZoneStore.getState().applyLeft({ reason: 'none' });
+
+    expect(useUiStore.getState().toasts.map((row) => row.text)).toEqual(['已离开此地。']);
+    expect(useZoneStore.getState().status).toBe('out');
+    expect(zoneFrames.size).toBe(0);
+  });
+
+  it('swallows a NOT_FOUND from a server that answers the restore the old way', () => {
+    useZoneStore.getState().resync();
+    useZoneStore.getState().applyError({ code: 'NOT_FOUND', message: '你此刻不在任何大地图上' });
+
+    expect(useUiStore.getState().toasts).toHaveLength(0);
+    expect(useZoneStore.getState().error).toBeNull();
+    expect(useZoneStore.getState().status).toBe('out');
+  });
+
+  it('still reports a NOT_FOUND for a field the player picked', () => {
+    useZoneStore.getState().enter(FAR_ZONE);
+    useZoneStore.getState().applyError({ code: 'NOT_FOUND', message: '没有这张战斗大地图' });
+
+    expect(useUiStore.getState().toasts.map((row) => row.text)).toEqual(['没有这张战斗大地图']);
+    expect(useZoneStore.getState().error?.code).toBe('NOT_FOUND');
+    expect(useZoneStore.getState().status).toBe('out');
+  });
+});
+
+/**
  * Waking an Android tab fires `enter` from the shell and `resync` from the
  * reconnecting socket at practically the same instant, and the server's
  * one-a-second gate refuses the second of them. None of that is the player's

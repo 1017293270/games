@@ -67,10 +67,14 @@ export function registerZoneSocketHandlers(
         : ctx.zones.enter(characterId, requested, now);
 
     // `resume` answers null when the cultivator is on no field at all — there is
-    // nothing to restore, which is a normal answer for a client that asks on
-    // every reconnect.
+    // nothing to restore, which is the ordinary answer for a client that asks on
+    // every reconnect. So it is reported as a 离场 that already happened rather
+    // than an error: `none` is the leave reason the contract keeps for it, and a
+    // client that is not on a map has nothing to be warned about. An explicit
+    // `zone:enter` for a field that does not exist still comes back as an error,
+    // because that one is a request that failed.
     if (result === null) {
-      socket.emit('zone:error', { code: 'NOT_FOUND', message: '你此刻不在任何大地图上' });
+      socket.emit('zone:left', { reason: 'none' });
       return;
     }
     if (!result.ok) {

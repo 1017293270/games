@@ -318,6 +318,12 @@ export const useZoneStore = create<ZoneState>((set, get) => ({
   },
 
   applyLeft(payload) {
+    // `none` answers the restore the socket asks for on every connect: there was
+    // no field to come back to. Somebody who was already 场外 never asked to
+    // leave anything, so that pairing is a plain reset with nothing said. The
+    // same reason reaching a tab that believed it was on a field is news, and
+    // `LEFT_TEXT.none` is what it reads.
+    const silent = payload.reason === 'none' && get().status === 'out';
     cancelRespawnTimer();
     clearFrames();
     set({
@@ -330,6 +336,7 @@ export const useZoneStore = create<ZoneState>((set, get) => ({
       lastSeq: 0,
       death: null,
     });
+    if (silent) return;
     toast(LEFT_TEXT[payload.reason], payload.reason === 'retreat' ? 'gain' : 'info');
   },
 
@@ -359,6 +366,14 @@ export const useZoneStore = create<ZoneState>((set, get) => ({
     if (payload.code === 'RATE_LIMITED' && state.zoneId !== null && !enterRetried) {
       enterRetried = true;
       sendEnter(state.zoneId, true);
+      return;
+    }
+    // A restore — `zoneId: null`, sent whenever the socket opens — against a
+    // server old enough to answer 「你此刻不在任何大地图上」 as an error. Nobody
+    // asked for a field, so nothing is warned about; a NOT_FOUND for a zone the
+    // player actually picked still is.
+    if (payload.code === 'NOT_FOUND' && state.zoneId === null) {
+      enterRetried = false;
       return;
     }
     enterRetried = false;

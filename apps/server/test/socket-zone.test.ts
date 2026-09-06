@@ -110,10 +110,13 @@ class FakeZoneService implements ZoneService {
 function once<T>(socket: ClientSocket, event: keyof ServerToClientEvents, ms = 4000): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error(`timed out waiting for ${event}`)), ms);
-    socket.once(event as never, ((payload: T) => {
-      clearTimeout(timer);
-      resolve(payload);
-    }) as never);
+    socket.once(
+      event as never,
+      ((payload: T) => {
+        clearTimeout(timer);
+        resolve(payload);
+      }) as never,
+    );
   });
 }
 
@@ -327,16 +330,10 @@ describe('socket 战斗大地图', () => {
     expect(zones.enters).toHaveLength(2);
   });
 
-  it('restores the current field when zoneId is null, and says so when there is none', async () => {
+  it('restores the current field when zoneId is null', async () => {
     const alice = await makePlayer(h, { name: '林素' });
     const socket = await openSocket(alice.token);
 
-    const missing = once<{ code: string }>(socket, 'zone:error');
-    socket.emit('zone:enter', { zoneId: null });
-    expect((await missing).code).toBe('NOT_FOUND');
-    expect(zones.resumes).toHaveLength(1);
-
-    h.clock.advance(1000);
     const joined = once<ZoneJoined>(socket, 'zone:joined');
     socket.emit('zone:enter', { zoneId: QINGYUN });
     await joined;
@@ -346,7 +343,48 @@ describe('socket 战斗大地图', () => {
     const resumed = once<ZoneJoined>(socket, 'zone:joined');
     socket.emit('zone:enter', { zoneId: null });
     expect((await resumed).zoneId).toBe(QINGYUN);
-    expect(zones.resumes).toHaveLength(2);
+    expect(zones.resumes).toHaveLength(1);
+  });
+
+  it('answers a restore with no field to come back to as 离场, not as an error', async () => {
+    const alice = await makePlayer(h, { name: '林素' });
+    const socket = await openSocket(alice.token);
+
+    let errors = 0;
+    socket.on('zone:error', () => {
+      errors += 1;
+    });
+
+    // The client sends this on every connect, so somebody who is simply not on
+    // a map must not be handed a warning to read.
+    const left = once<ZoneLeft>(socket, 'zone:left');
+    socket.emit('zone:enter', { zoneId: null });
+    expect((await left).reason).toBe('none');
+    expect(zones.resumes).toHaveLength(1);
+
+    await settle();
+    expect(errors).toBe(0);
+  });
+
+  it('still refuses an explicit 进图 for a field that is not there', async () => {
+    const alice = await makePlayer(h, { name: '林素' });
+    const socket = await openSocket(alice.token);
+
+    let left = 0;
+    socket.on('zone:left', () => {
+      left += 1;
+    });
+
+    zones.fail = { code: 'NOT_FOUND', message: '没有这张战斗大地图' };
+    const pending = once<{ code: string; message: string }>(socket, 'zone:error');
+    socket.emit('zone:enter', { zoneId: 'map-nowhere' });
+    const missing = await pending;
+    expect(missing.code).toBe('NOT_FOUND');
+    expect(missing.message).toBe('没有这张战斗大地图');
+
+    // A zone the player picked and missed is a failed request, not a 离场.
+    await settle();
+    expect(left).toBe(0);
   });
 
   it('drops a malformed zone:enter without answering', async () => {
