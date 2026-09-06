@@ -449,13 +449,19 @@
   white-space: nowrap;
 }
 
-.adm-realms__perfection {
+/* A section head's right-hand reading: soft, tabular, its figures in full ink. */
+.adm-realms__perfection,
+.adm-zones__budget {
+  display: block;
   font-family: var(--font-num);
   font-size: var(--fs-xs);
+  line-height: 1.7;
+  text-align: right;
   color: var(--ink-soft);
 }
 
-.adm-realms__perfection strong {
+.adm-realms__perfection strong,
+.adm-zones__budget strong {
   color: var(--ink);
   font-weight: 400;
 }

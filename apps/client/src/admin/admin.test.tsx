@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { API, DEFAULT_WORLD_SETTINGS, type WorldSettings } from '@xianxia/shared';
+import { API, DEFAULT_WORLD_SETTINGS, type AdminStats, type WorldSettings } from '@xianxia/shared';
 import { ApiError } from '../api/http';
 import AdminPage from './index';
 import { adminCall, readAdminToken, writeAdminToken } from './api';
@@ -20,6 +20,11 @@ interface Recorded {
 
 let calls: Recorded[] = [];
 let world: WorldSettings;
+/**
+ * `undefined` = the server has no zone loop running, so `stats.zones` is
+ * absent — which is the contract's way of saying 大地图未开.
+ */
+let zones: AdminStats['zones'];
 /** Overrides keyed by `METHOD /path`, for the failure paths. */
 let responses: Record<string, { status: number; payload: unknown }> = {};
 
@@ -88,6 +93,7 @@ function install(): void {
           },
           version: '0.1.0',
         },
+        ...(zones ? { zones } : {}),
       });
     } else if (path === '/api/admin/bot-archetypes') {
       payload = ok({
@@ -126,6 +132,7 @@ describe('admin transport', () => {
     calls = [];
     responses = {};
     world = { ...DEFAULT_WORLD_SETTINGS };
+    zones = undefined;
     writeAdminToken(null);
     install();
   });
@@ -179,6 +186,7 @@ describe('admin panel', () => {
     calls = [];
     responses = {};
     world = { ...DEFAULT_WORLD_SETTINGS };
+    zones = undefined;
     writeAdminToken(null);
     install();
   });
@@ -269,5 +277,93 @@ describe('admin panel', () => {
     expect(announcement).toHaveValue('');
     expect(screen.getByText('尚无改动。')).toBeInTheDocument();
     expect(calls.some((c) => c.method === 'PUT')).toBe(false);
+  });
+
+  it('patches a single 战斗大地图 knob without touching its neighbours', async () => {
+    const user = userEvent.setup();
+    writeAdminToken('tok-123');
+    render(<AdminPage />);
+
+    await user.click(await screen.findByRole('button', { name: /世界/ }));
+    const tick = await screen.findByLabelText(/每步毫秒/, { selector: 'input' });
+    expect(tick).toHaveValue(DEFAULT_WORLD_SETTINGS.zoneTickMs);
+
+    await user.clear(tick);
+    await user.type(tick, '500');
+    expect(screen.getByText(/1 项待存档：每步毫秒/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '存档' }));
+
+    await waitFor(() => {
+      const put = calls.find((c) => c.method === 'PUT' && c.path === '/api/admin/settings');
+      expect(put).toBeDefined();
+      expect(put!.body).toEqual({ zoneTickMs: 500 });
+    });
+  });
+
+  it('writes the 图内互斗 switch as a one-key patch', async () => {
+    const user = userEvent.setup();
+    writeAdminToken('tok-123');
+    render(<AdminPage />);
+
+    await user.click(await screen.findByRole('button', { name: /世界/ }));
+    const pvp = await screen.findByRole('switch', { name: /图内互斗/ });
+    expect(pvp).toHaveAttribute('aria-checked', 'false');
+
+    await user.click(pvp);
+    expect(pvp).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByText(/1 项待存档：图内互斗/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '存档' }));
+
+    await waitFor(() => {
+      const put = calls.find((c) => c.method === 'PUT' && c.path === '/api/admin/settings');
+      expect(put).toBeDefined();
+      expect(put!.body).toEqual({ mapPvp: true });
+    });
+  });
+
+  it('says 大地图未开 when the stats carry no zones at all', async () => {
+    writeAdminToken('tok-123');
+    render(<AdminPage />);
+
+    expect(await screen.findByText(/大地图未开/)).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: '妖兽' })).not.toBeInTheDocument();
+  });
+
+  it('draws one 山河 row per running zone, named after its 地图', async () => {
+    zones = [
+      {
+        zoneId: 'map-qingyun-mountain',
+        players: 2,
+        bots: 7,
+        monsters: 31,
+        bossAlive: true,
+        lastStepMs: 3.4,
+        watchers: 1,
+      },
+      {
+        zoneId: 'map-luoshui-city',
+        players: 0,
+        bots: 4,
+        monsters: 22,
+        bossAlive: false,
+        lastStepMs: 1.25,
+        watchers: 0,
+      },
+    ];
+    writeAdminToken('tok-123');
+    render(<AdminPage />);
+
+    const qingyun = (await screen.findByText('青云山')).closest('tr')!;
+    expect(within(qingyun).getByText('在场')).toBeInTheDocument();
+    expect(within(qingyun).getByText('3.4 ms')).toBeInTheDocument();
+
+    const luoshui = screen.getByText('洛水城').closest('tr')!;
+    expect(within(luoshui).getByText('未现')).toBeInTheDocument();
+
+    // 2 + 7 + 0 + 4 cultivators standing on the two maps.
+    expect(screen.getByText(/场上/, { selector: 'span' })).toHaveTextContent('场上 13 名修士');
+    expect(screen.queryByText(/大地图未开/)).not.toBeInTheDocument();
   });
 });

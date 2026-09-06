@@ -10,7 +10,7 @@ import { NumField, Notice, Section, TextArea, Toggle, useAsync } from './ui';
  * Every knob is written back as a *patch* of the keys the operator actually
  * touched, so two people tuning different halves of the world cannot clobber
  * each other. The 朱批 strip at the foot names exactly those keys before they
- * are committed — on a seventeen-field form, "what am I about to change?" is
+ * are committed — on a twenty-seven-field form, "what am I about to change?" is
  * the only question worth answering.
  */
 
@@ -24,11 +24,29 @@ interface Knob {
   unit?: string;
 }
 
+interface Switch {
+  key: BooleanKey;
+  label: string;
+  hint: string;
+}
+
+interface Group {
+  title: string;
+  lede: string;
+  /** Drawn above the knobs: a master switch is read before its consequences. */
+  switches?: Switch[];
+  knobs: Knob[];
+}
+
 type NumericKey = {
   [K in keyof WorldSettings]: WorldSettings[K] extends number ? K : never;
 }[keyof WorldSettings];
 
-const GROUPS: { title: string; lede: string; knobs: Knob[] }[] = [
+type BooleanKey = {
+  [K in keyof WorldSettings]: WorldSettings[K] extends boolean ? K : never;
+}[keyof WorldSettings];
+
+const GROUPS: Group[] = [
   {
     title: '修炼',
     lede: '决定一个道号从练气到渡劫要花多久。改动对所有人立即生效，下一次结算就按新值算。',
@@ -174,6 +192,107 @@ const GROUPS: { title: string; lede: string; knobs: Knob[] }[] = [
       },
     ],
   },
+  {
+    title: '战斗大地图',
+    lede: '四张图各跑一个持续模拟：妖兽按刷新点复活，修士自动寻怪出手，人下线了角色仍留在场上。这一组决定这个循环跑多快、场上有多挤。',
+    knobs: [
+      {
+        key: 'zoneTickMs',
+        label: '每步毫秒',
+        hint: '地图模拟一步覆盖的时间。改动立刻重排定时器，无需重启。调小更跟手也更吃 CPU；250 已足够顺滑。',
+        min: 100,
+        max: 1000,
+        step: 50,
+        unit: '毫秒',
+      },
+      {
+        key: 'zoneSnapshotHz',
+        label: '每秒推帧',
+        hint: '每张图每秒推给观众的增量帧数。客户端会插值，4 帧就看不出跳；房里没人时不序列化，机器人照打。',
+        min: 1,
+        max: 10,
+        step: 1,
+        unit: '帧',
+      },
+      {
+        key: 'monsterDensity',
+        label: '妖兽密度',
+        hint: '乘在每个刷新点的数量上。调高只在下一次复活时兑现，不会凭空冒出一片。',
+        min: 0.2,
+        max: 3,
+        step: 0.1,
+      },
+      {
+        key: 'respawnMultiplier',
+        label: '妖兽复活倍率',
+        hint: '乘在每个刷新点的复活间隔上。小于 1 刷得更快，大于 1 更稀。',
+        min: 0.2,
+        max: 5,
+        step: 0.1,
+      },
+      {
+        key: 'bossIntervalMinutes',
+        label: 'BOSS 间隔',
+        hint: '一图一只，按这个间隔现身。场上已有 BOSS 时不打断它，下一次才按新值算。',
+        min: 1,
+        max: 720,
+        step: 5,
+        unit: '分钟',
+      },
+    ],
+  },
+  {
+    title: '图内收益',
+    lede: '地图是全自动的，所以它必须比手动玩法便宜——否则挂机打怪会盖过其余一切玩法。',
+    knobs: [
+      {
+        key: 'zoneRewardScale',
+        label: '地图收益折扣',
+        hint: '地图击杀的修为、灵石与掉落概率都乘这个数，BOSS 不打折。自动战斗十几秒一杀，调到 1 等于挂机修炼的 6–9 倍。',
+        min: 0,
+        max: 10,
+        step: 0.05,
+      },
+      {
+        key: 'zoneOfflineYield',
+        label: '离线留场收益',
+        hint: '离线的属主留在图里时，收益在上面的折扣之外再乘这个数。0 = 离线不产出，1 = 与在线同酬。',
+        min: 0,
+        max: 1,
+        step: 0.05,
+      },
+    ],
+  },
+  {
+    title: '图内生死',
+    lede: '倒下之后会怎样，以及修士之间能不能动手。',
+    switches: [
+      {
+        key: 'mapPvp',
+        label: '图内互斗',
+        hint: '开启后修士之间可以动手：机器人按好斗度挑境界 ±4 阶的在线玩家，离线与保护期内的人打不到。关闭立刻清空所有修士对修士的目标。',
+      },
+    ],
+    knobs: [
+      {
+        key: 'mapPvpStoneLoss',
+        label: '互斗灵石损失',
+        hint: '被修士击杀时被搜走的灵石比例，0.05 = 5%。被妖兽杀死不掉灵石。',
+        min: 0,
+        max: 0.5,
+        step: 0.01,
+      },
+      {
+        key: 'mapDeathRespawnSec',
+        label: '阵亡复活等待',
+        hint: '倒下后回入口复活要等的秒数。复活满血，并获 60 秒免修士攻击。',
+        min: 1,
+        max: 120,
+        step: 1,
+        unit: '秒',
+      },
+    ],
+  },
 ];
 
 /** Keys shown outside the numeric groups, for the change summary's labels. */
@@ -187,6 +306,8 @@ function labelOf(key: keyof WorldSettings): string {
   for (const group of GROUPS) {
     const knob = group.knobs.find((k) => k.key === key);
     if (knob) return knob.label;
+    const toggle = group.switches?.find((t) => t.key === key);
+    if (toggle) return toggle.label;
   }
   return EXTRA_LABELS[key] ?? key;
 }
@@ -246,6 +367,16 @@ export function World() {
       {GROUPS.map((group) => (
         <Section key={group.title} title={group.title} lede={group.lede}>
           <div className="adm-grid">
+            {(group.switches ?? []).map((toggle) => (
+              <Toggle
+                key={toggle.key}
+                label={toggle.label}
+                hint={toggle.hint}
+                value={draft[toggle.key]}
+                onChange={(next) => edit(toggle.key, next)}
+                dirty={base[toggle.key] !== draft[toggle.key]}
+              />
+            ))}
             {group.knobs.map((knob) => (
               <NumField
                 key={knob.key}

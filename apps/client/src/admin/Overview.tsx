@@ -3,13 +3,14 @@ import {
   REALM_NAMES,
   SUB_STAGE_NAMES,
   SUB_STAGES_PER_REALM,
+  zoneMap,
   type AdminStats,
   type BotArchetype,
   type WorldSettings,
 } from '@xianxia/shared';
 import { errorMessage } from '../api/http';
 import { adminApi } from './api';
-import { duration, Notice, Section, stamp, Stat, useTicker } from './ui';
+import { duration, Notice, Section, stamp, Stat, TableScroll, useTicker } from './ui';
 
 /** How often the dashboard re-reads the server. */
 const POLL_MS = 2000;
@@ -78,6 +79,10 @@ export function Overview() {
   const archetypeName = (id: string): string =>
     archetypes.find((a) => a.id === id)?.name ?? (id === '' ? '无原型' : id);
   const lastTick = stats.server.lastTick;
+  // Absent (not empty) means the zone loop never came up: an empty array would
+  // be four running maps that nobody is standing in.
+  const zones = stats.zones;
+  const zoneSouls = (zones ?? []).reduce((sum, zone) => sum + zone.players + zone.bots, 0);
 
   return (
     <>
@@ -136,6 +141,61 @@ export function Overview() {
             </div>
           </dl>
         ) : null}
+      </Section>
+
+      <Section
+        title="山河"
+        lede="战斗大地图。每张图一个模拟循环：妖兽按刷新点复活，修士自动寻怪出手，属主下线了角色仍留在场上。"
+        actions={
+          <span className="adm-zones__budget numeral">
+            {zones ? (
+              <>
+                场上 <strong>{zoneSouls}</strong> 名修士 ·{' '}
+              </>
+            ) : null}
+            一步 <strong>{settings.zoneTickMs}</strong> ms · 每秒{' '}
+            <strong>{settings.zoneSnapshotHz}</strong> 帧
+          </span>
+        }
+      >
+        {zones === undefined ? (
+          <p className="adm-empty">大地图未开 —— 服务端没有启动地图循环。</p>
+        ) : zones.length === 0 ? (
+          <p className="adm-empty">地图循环已启动，但一张图也没在跑。</p>
+        ) : (
+          <TableScroll>
+            <table className="adm-table">
+              <thead>
+                <tr>
+                  <th scope="col">地图</th>
+                  <th scope="col">玩家</th>
+                  <th scope="col">机器人</th>
+                  <th scope="col">妖兽</th>
+                  <th scope="col">BOSS</th>
+                  <th scope="col">每步耗时</th>
+                  <th scope="col">观众</th>
+                </tr>
+              </thead>
+              <tbody>
+                {zones.map((zone) => (
+                  <tr className="adm-row" key={zone.zoneId}>
+                    <th scope="row" className="adm-row__name">
+                      {zoneName(zone.zoneId)}
+                    </th>
+                    <td className="numeral">{zone.players}</td>
+                    <td className="numeral">{zone.bots}</td>
+                    <td className="numeral">{zone.monsters}</td>
+                    <td className={zone.bossAlive ? undefined : 'adm-cell--soft'}>
+                      {zone.bossAlive ? '在场' : '未现'}
+                    </td>
+                    <td className="numeral">{zone.lastStepMs.toFixed(1)} ms</td>
+                    <td className="numeral">{zone.watchers}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableScroll>
+        )}
       </Section>
 
       <Section title="世相" lede="今日截至此刻的全服数字。">
@@ -262,6 +322,11 @@ export function Overview() {
       </Section>
     </>
   );
+}
+
+/** A zone's 地图 name, falling back to the id if content has no such map. */
+function zoneName(zoneId: string): string {
+  return zoneMap(zoneId)?.name ?? zoneId;
 }
 
 /** The four 小境界 counts inside one 大境界, 前期 first. */
