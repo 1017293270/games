@@ -36,6 +36,24 @@ export function attachSocketIo(app: FastifyInstance, ctx: AppContext): GameServe
     cors: { origin: true, credentials: true },
     // The client reconnects on its own; a short window keeps presence honest.
     pingTimeout: 20_000,
+    // 战斗大地图 frames are the heaviest thing on this socket: a hundred-odd
+    // rows of small integers, four times a second, which deflate compresses
+    // several-fold because every row looks like the last one. Mobile data is
+    // what is being bought, and it is bought twice over: 8 KB/s of frames
+    // becomes about 2.
+    //
+    // `serverNoContextTakeover` is not a detail — `ws` only honours
+    // `threshold` when it is set (see `permessage-deflate.js`), and without it
+    // *every* frame goes through zlib, including one-line chat and presence
+    // events that a deflate header makes bigger rather than smaller. Resetting
+    // the window per message also keeps a connection's zlib memory flat, which
+    // matters far more here than the last few percent of ratio.
+    //
+    // The remaining price is that engine.io can no longer reuse one
+    // pre-encoded WebSocket frame across a room, so a busy field pays a deflate
+    // per watcher. At the room sizes this game plans for that is the cheaper
+    // half of the trade.
+    perMessageDeflate: { threshold: 1024, serverNoContextTakeover: true },
   });
 
   io.use((socket, next) => {

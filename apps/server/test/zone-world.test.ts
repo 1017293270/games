@@ -8,6 +8,7 @@ import {
   MONSTER_BY_ID,
   ZONE_BY_ID,
   ZONE_PVP_PROTECT_MS,
+  zoneBotLimit,
   type CharacterState,
   type Stats,
   type ZoneKill,
@@ -425,6 +426,46 @@ describe('zone world', () => {
     expect(h.ctx.zones.enterBot({ ...bot, isBot: true }, ZONE, h.clock.now())).toBe(false);
   });
 
+  it('turns bots away at their share of the field, and still lets a player in', async () => {
+    const zone = ZONE_BY_ID.get(ZONE);
+    const limit = zoneBotLimit(zone as NonNullable<typeof zone>);
+    const world = worldOf(h);
+    const stats = plainStats(1);
+    const fill = (n: number): void => {
+      for (let i = 0; i < n; i += 1) {
+        world.add(
+          {
+            id: `share-${world.cultivators}`,
+            kind: 'bot',
+            name: '填场散修',
+            art: null,
+            stageIndex: 1,
+            stats,
+            skills: [],
+            hpShare: 1,
+            online: true,
+            aggression: 0,
+          },
+          h.clock.now(),
+        );
+      }
+    };
+
+    fill(limit - 1);
+    const last = h.ctx.characters.byId((await makePlayer(h)).characterId) as CharacterState;
+    expect(h.ctx.zones.enterBot({ ...last, isBot: true }, ZONE, h.clock.now())).toBe(true);
+    expect(world.cultivators).toBe(limit);
+
+    // One over the share, and with the field nowhere near its 120 capacity.
+    const surplus = h.ctx.characters.byId((await makePlayer(h)).characterId) as CharacterState;
+    expect(h.ctx.zones.enterBot({ ...surplus, isBot: true }, ZONE, h.clock.now())).toBe(false);
+    expect(world.cultivators).toBeLessThan((zone?.capacity ?? 0) - 20);
+
+    // The slots the bots did not take are exactly what this is for.
+    const player = await makePlayer(h);
+    expect(h.ctx.zones.enter(player.characterId, ZONE, h.clock.now()).ok).toBe(true);
+  });
+
   it('reports nothing until the loop has run, then one row per field', async () => {
     expect(h.ctx.zones.stats()).toEqual([]);
     const p = await makePlayer(h);
@@ -443,15 +484,15 @@ describe('zone world', () => {
     expect(row?.lastStepMs).toBeGreaterThanOrEqual(0);
   });
 
-  it('steps 200 修士 and 40 妖兽 in well under a frame', () => {
+  it('steps 200 修士 and a full 妖兽 table in well under a frame', () => {
     h.ctx.settings.patch({ botCount: 200, monsterDensity: 1.3 });
     h.ctx.bots.ensurePopulation(h.clock.now());
     const bots = h.ctx.characters.allBots();
     expect(bots.length).toBe(200);
 
-    // Straight onto the field: `enterBot` deliberately stops 20 short of the
-    // 120-cultivator capacity, and the number under test here is the cost of a
-    // step, not of the gate.
+    // Straight onto the field: `enterBot` deliberately stops at a fraction of
+    // the 120-cultivator capacity, and the number under test here is the cost
+    // of a step, not of the gate.
     const world = worldOf(h);
     for (const bot of bots) {
       world.add(
@@ -471,7 +512,7 @@ describe('zone world', () => {
       );
     }
     const monsters = world.stats().monsters;
-    expect(monsters).toBeGreaterThanOrEqual(38);
+    expect(monsters).toBeGreaterThanOrEqual(90);
     expect(world.stats().bots).toBe(200);
 
     // Half a minute of field time first, so the measurement is taken with the

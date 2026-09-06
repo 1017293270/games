@@ -4,6 +4,8 @@ import {
   setOnline,
   setRules,
   stageName,
+  zoneBotCount,
+  zoneBotLimit,
   zoneMap,
   ZONES,
   ZONE_BOT_CAPACITY_MARGIN,
@@ -325,6 +327,11 @@ export class ZoneServiceImpl implements ZoneService {
     // Bots stop short of the cap, so the field filling up is never the reason a
     // player is turned away from it.
     if (world.cultivators >= Math.max(0, zone.capacity - ZONE_BOT_CAPACITY_MARGIN)) return false;
+    // And they stop far short of it in their own right: the 妖兽 a spawn table
+    // hands out per second is the scarce resource, and forty bots ate it before
+    // a new player could reach anything. One turned away here simply cultivates
+    // at home this tick and tries again on the next.
+    if (zoneBotCount(world.sim) >= zoneBotLimit(zone)) return false;
 
     const previous = this.where.get(state.id);
     if (previous !== undefined) this.detach(previous, state.id, now);

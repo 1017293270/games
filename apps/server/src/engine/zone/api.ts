@@ -46,8 +46,9 @@ export interface ZoneService {
   retreat(characterId: string, now: number): boolean;
 
   /**
-   * Sends a bot to a field. Bots stop at `capacity - ZONE_BOT_CAPACITY_MARGIN`,
-   * so a player is never turned away because the world filled itself up.
+   * Sends a bot to a field. Bots stop at `zoneBotLimit(zone)` (a share of the
+   * capacity) and, failing that, at `capacity - ZONE_BOT_CAPACITY_MARGIN`, so a
+   * player is never turned away because the world filled itself up.
    */
   enterBot(state: CharacterState, zoneId: string, now: number): boolean;
   retreatBot(characterId: string, now: number): boolean;

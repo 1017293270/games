@@ -9,6 +9,15 @@
  *
  * Populations are authored at `monsterDensity = 1`; the world settings scale
  * them at runtime, so these numbers are the shape of the map, not its load.
+ *
+ * The counts are sized off `zoneSpawnThroughput`, not off how the field looks:
+ * a cultivator with nothing alive nearby walks to the nearest 妖兽 anywhere on
+ * the map, so a field that spawns fewer kills per second than the crowd
+ * standing on it consumes degenerates into everyone jogging after everyone
+ * else's target. Every low tier therefore respawns in 5–6 秒 and is the
+ * densest band on the map, and every zone's throughput sits at roughly three
+ * times the `ZONE_KILL_BUDGET_PER_SEC` floor so that most of the population is
+ * alive rather than waiting on a timer.
  */
 
 import { indexById } from '../core/util.js';
@@ -22,7 +31,11 @@ import { EXPLORE_MAP_BY_ID } from './maps.js';
 
 /** Milliseconds between two actions at 速度 10; 速度 scales it. */
 export const ZONE_ACTION_MS = 1200;
-/** How far a cultivator looks for something to fight, in cells. */
+/**
+ * Reference sight, in cells. It is the hard radius for picking a PvP rival, and
+ * the penalty a crowded 妖兽 carries when cultivators pick their next kill —
+ * 妖兽 themselves are hunted at any distance, so a thin field means long walks.
+ */
 export const ZONE_SEEK_RADIUS = 14;
 /** Melee reach. */
 export const ZONE_ATTACK_RANGE = 1.6;
@@ -46,6 +59,27 @@ export const ZONE_BOSS_LOOT_SHARE_TOP = 5;
 export const ZONE_BOT_MIN_STAY_MS = 600_000;
 /** Slots kept clear of bots, so a player is never turned away by the population. */
 export const ZONE_BOT_CAPACITY_MARGIN = 20;
+/**
+ * Share of a field's `capacity` bots may occupy — 36 of 120.
+ *
+ * The margin above only stops bots filling the last twenty slots; it did
+ * nothing about the ninety-nine before them. Measured on a 200-bot world, 40
+ * bots crowded 青云山 and took 妖兽 faster than the spawn points gave them
+ * back, which left a new 练气 player walking after kills other people had
+ * already made. Bots turned away here simply stay home and cultivate.
+ */
+export const ZONE_BOT_SHARE = 0.3;
+
+/**
+ * Kills per second a field must be able to hand out, per cultivator standing
+ * on it, for the 10–15 秒一杀 pace `docs/GDD.md` §8.1 is priced against.
+ *
+ * `zoneSpawnThroughput` measures a layout against it: every zone below clears
+ * `(floor(capacity x ZONE_BOT_SHARE) + 8 players) x ZONE_KILL_BUDGET_PER_SEC`
+ * with room to spare, because supply that merely matches demand leaves every
+ * 妖兽 dead and waiting.
+ */
+export const ZONE_KILL_BUDGET_PER_SEC = 1 / 12;
 
 // ------------------------------------------------------------------ sprites
 
@@ -83,31 +117,33 @@ const ZONE_SPECS: Zone[] = [
     height: 90,
     entrance: { x: 30, y: 84 },
     spawns: [
-      // 山道两侧的狼群，新来的弟子一进门就撞得上。
+      // 入口两侧的狼群贴着山道铺开，新弟子一落地就有得打；五秒一复活，
+      // 让四十个机器人抢完之后仍有下一只。
       {
         monsterId: 'monster-qingyun-wolf',
-        count: 8,
-        respawnSec: 20,
-        area: { x: 6, y: 60, w: 20, h: 16 },
+        count: 24,
+        respawnSec: 5,
+        area: { x: 2, y: 60, w: 26, h: 22 },
       },
       {
         monsterId: 'monster-qingyun-wolf',
-        count: 8,
-        respawnSec: 20,
-        area: { x: 34, y: 58, w: 20, h: 16 },
+        count: 24,
+        respawnSec: 5,
+        area: { x: 32, y: 60, w: 26, h: 22 },
       },
-      // 半山腰的灵猿，硬一档。
+      // 半山腰的灵猿，硬一档，人少一点。
       {
         monsterId: 'monster-spirit-ape',
-        count: 9,
-        respawnSec: 35,
-        area: { x: 12, y: 34, w: 36, h: 16 },
+        count: 16,
+        respawnSec: 10,
+        area: { x: 10, y: 32, w: 40, h: 20 },
       },
+      // 再往北是灵猿王的地界：数量最少、复活最慢，是练气期不该久留的地方。
       {
         monsterId: 'monster-spirit-ape',
-        count: 6,
-        respawnSec: 40,
-        area: { x: 20, y: 20, w: 22, h: 12 },
+        count: 10,
+        respawnSec: 14,
+        area: { x: 18, y: 16, w: 24, h: 14 },
       },
     ],
     boss: { monsterId: 'boss-qingyun-tiger-king', area: { x: 22, y: 5, w: 16, h: 10 } },
@@ -122,27 +158,27 @@ const ZONE_SPECS: Zone[] = [
     spawns: [
       {
         monsterId: 'monster-river-bandit',
-        count: 9,
-        respawnSec: 22,
-        area: { x: 8, y: 62, w: 18, h: 16 },
+        count: 24,
+        respawnSec: 5,
+        area: { x: 2, y: 62, w: 26, h: 21 },
       },
       {
         monsterId: 'monster-river-bandit',
-        count: 9,
-        respawnSec: 22,
-        area: { x: 34, y: 60, w: 18, h: 16 },
+        count: 24,
+        respawnSec: 5,
+        area: { x: 32, y: 62, w: 26, h: 21 },
+      },
+      {
+        monsterId: 'monster-luoshui-flood-dragon',
+        count: 16,
+        respawnSec: 11,
+        area: { x: 8, y: 30, w: 44, h: 20 },
       },
       {
         monsterId: 'monster-luoshui-flood-dragon',
         count: 9,
-        respawnSec: 38,
-        area: { x: 10, y: 32, w: 40, h: 18 },
-      },
-      {
-        monsterId: 'monster-luoshui-flood-dragon',
-        count: 5,
-        respawnSec: 45,
-        area: { x: 22, y: 18, w: 18, h: 10 },
+        respawnSec: 15,
+        area: { x: 20, y: 16, w: 20, h: 12 },
       },
     ],
     boss: { monsterId: 'boss-luoshui-dragon-lord', area: { x: 21, y: 4, w: 18, h: 10 } },
@@ -157,27 +193,27 @@ const ZONE_SPECS: Zone[] = [
     spawns: [
       {
         monsterId: 'monster-ghost-lantern',
-        count: 10,
-        respawnSec: 25,
-        area: { x: 6, y: 58, w: 22, h: 18 },
+        count: 26,
+        respawnSec: 5,
+        area: { x: 2, y: 58, w: 26, h: 24 },
       },
       {
         monsterId: 'monster-ghost-lantern',
-        count: 8,
-        respawnSec: 25,
-        area: { x: 32, y: 62, w: 22, h: 14 },
+        count: 24,
+        respawnSec: 5,
+        area: { x: 32, y: 60, w: 26, h: 22 },
       },
       {
         monsterId: 'monster-bone-general',
-        count: 10,
-        respawnSec: 40,
-        area: { x: 12, y: 30, w: 36, h: 18 },
+        count: 16,
+        respawnSec: 11,
+        area: { x: 10, y: 30, w: 40, h: 20 },
       },
       {
         monsterId: 'monster-bone-general',
-        count: 5,
-        respawnSec: 45,
-        area: { x: 20, y: 18, w: 20, h: 10 },
+        count: 9,
+        respawnSec: 15,
+        area: { x: 19, y: 16, w: 22, h: 12 },
       },
     ],
     boss: { monsterId: 'boss-youming-ghost-emperor', area: { x: 22, y: 4, w: 16, h: 10 } },
@@ -192,27 +228,27 @@ const ZONE_SPECS: Zone[] = [
     spawns: [
       {
         monsterId: 'monster-ice-qilin',
-        count: 9,
-        respawnSec: 28,
-        area: { x: 8, y: 60, w: 20, h: 16 },
+        count: 24,
+        respawnSec: 6,
+        area: { x: 2, y: 60, w: 26, h: 24 },
       },
       {
         monsterId: 'monster-ice-qilin',
-        count: 9,
-        respawnSec: 28,
-        area: { x: 33, y: 60, w: 20, h: 16 },
+        count: 24,
+        respawnSec: 6,
+        area: { x: 32, y: 60, w: 26, h: 24 },
       },
       {
         monsterId: 'monster-golden-crow',
-        count: 11,
-        respawnSec: 42,
-        area: { x: 10, y: 30, w: 40, h: 18 },
+        count: 18,
+        respawnSec: 12,
+        area: { x: 8, y: 30, w: 44, h: 20 },
       },
       {
         monsterId: 'monster-golden-crow',
-        count: 7,
-        respawnSec: 45,
-        area: { x: 18, y: 16, w: 24, h: 10 },
+        count: 10,
+        respawnSec: 16,
+        area: { x: 17, y: 16, w: 26, h: 10 },
       },
     ],
     boss: { monsterId: 'boss-kunlun-heaven-beast', area: { x: 20, y: 4, w: 20, h: 10 } },
@@ -223,6 +259,28 @@ const ZONE_SPECS: Zone[] = [
 export const ZONES: readonly Zone[] = ZONE_SPECS.map((z) => ZoneSchema.parse(z));
 export const ZONE_BY_ID: ReadonlyMap<string, Zone> = indexById(ZONES);
 export const ZONE_IDS: readonly string[] = ZONES.map((z) => z.id);
+
+/** Bots a field will hold at once, the tighter of the share and the margin. */
+export function zoneBotLimit(zone: Zone): number {
+  return Math.max(
+    0,
+    Math.min(zone.capacity - ZONE_BOT_CAPACITY_MARGIN, Math.floor(zone.capacity * ZONE_BOT_SHARE)),
+  );
+}
+
+/**
+ * Kills per second a zone's spawn points can hand out when demand is unlimited,
+ * at `monsterDensity`/`respawnMultiplier` 1. Every spawn point is its own queue
+ * of `count` slots on a `respawnSec` timer, so the ceiling is just their sum.
+ */
+export function zoneSpawnThroughput(zone: Zone): number {
+  return zone.spawns.reduce((sum, s) => sum + s.count / s.respawnSec, 0);
+}
+
+/** Kills per second a full field of bots plus `players` will ask of it. */
+export function zoneKillDemand(zone: Zone, players = 8): number {
+  return (zoneBotLimit(zone) + players) * ZONE_KILL_BUDGET_PER_SEC;
+}
 
 /** The `ExploreMap` a zone borrows its name, description and gating from. */
 export function zoneMap(zoneId: string): ExploreMap | undefined {

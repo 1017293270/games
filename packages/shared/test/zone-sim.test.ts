@@ -2,7 +2,16 @@ import { describe, expect, it } from 'vitest';
 import { ZoneSchema, type Zone } from '../src/domain/zone.js';
 import { DEFAULT_WORLD_SETTINGS } from '../src/domain/world.js';
 import { baseStatsForStage } from '../src/cultivation/attributes.js';
-import { ZONES, ZONE_BY_ID, ZONE_PVP_PROTECT_MS, zoneFor } from '../src/content/zones.js';
+import {
+  ZONES,
+  ZONE_BOT_CAPACITY_MARGIN,
+  ZONE_BY_ID,
+  ZONE_PVP_PROTECT_MS,
+  zoneBotLimit,
+  zoneFor,
+  zoneKillDemand,
+  zoneSpawnThroughput,
+} from '../src/content/zones.js';
 import { EXPLORE_MAP_BY_ID } from '../src/content/maps.js';
 import { ZONE_FLAGS } from '../src/protocol/zone.js';
 import {
@@ -633,13 +642,38 @@ describe('zone content', () => {
       expect(map).toBeDefined();
       expect(zone.spawns.length).toBeGreaterThanOrEqual(3);
       const population = zone.spawns.reduce((sum, s) => sum + s.count, 0);
-      expect(population).toBeGreaterThanOrEqual(24);
-      expect(population).toBeLessThanOrEqual(36);
+      expect(population).toBeGreaterThanOrEqual(60);
+      expect(population).toBeLessThanOrEqual(90);
       // Every 妖兽 on the field belongs to the map it stands on.
       for (const spawn of zone.spawns) expect(map?.monsterIds).toContain(spawn.monsterId);
       expect(zone.entrance.y).toBeGreaterThan(zone.height * 0.75);
       expect(zone.boss.area.y).toBeLessThan(zone.height * 0.25);
       expect(zone.capacity).toBe(120);
+    }
+  });
+
+  it('spawns fast enough to feed a full field, with room to spare', () => {
+    for (const zone of ZONES) {
+      // A field of bots at their cap plus eight players, each wanting a kill
+      // every twelve seconds. Supply that merely matches demand would leave
+      // every 妖兽 dead and waiting, so the layouts carry a wide margin.
+      const demand = zoneKillDemand(zone);
+      expect(demand).toBeCloseTo((36 + 8) / 12, 6);
+      expect(zoneSpawnThroughput(zone)).toBeGreaterThan(demand * 2.5);
+      // The band by the entrance is the one a 练气 newcomer can reach, so it
+      // has to be both the densest and the fastest to come back.
+      const low = zone.spawns[0] as (typeof zone.spawns)[number];
+      expect(low.respawnSec).toBeLessThanOrEqual(6);
+      for (const spawn of zone.spawns) {
+        expect(low.count / low.respawnSec).toBeGreaterThanOrEqual(spawn.count / spawn.respawnSec);
+      }
+    }
+  });
+
+  it('lets bots take under a third of a field', () => {
+    for (const zone of ZONES) {
+      expect(zoneBotLimit(zone)).toBe(36);
+      expect(zoneBotLimit(zone)).toBeLessThan(zone.capacity - ZONE_BOT_CAPACITY_MARGIN);
     }
   });
 
@@ -655,9 +689,12 @@ describe('zone content', () => {
 describe('performance', () => {
   it('steps a busy field well inside one tick', () => {
     const zone = ZONE_BY_ID.get('map-kunlun-ruins') as Zone;
-    // 36 authored 妖兽 at density 1.1 -> 40 on the field.
+    // The heaviest field there is, turned up one more notch: every spawn point
+    // rounded up by density, and PvP on so the crowd re-targets each other too.
     const sim = createZoneSim(zone, rules({ monsterDensity: 1.1, mapPvp: true }), 101, T0);
-    expect(zoneMonsterCount(sim)).toBe(40);
+    const expected = zone.spawns.reduce((sum, s) => sum + Math.round(s.count * 1.1), 0);
+    expect(expected).toBeGreaterThan(80);
+    expect(zoneMonsterCount(sim)).toBe(expected);
     for (let n = 0; n < 100; n += 1) {
       addCultivator(
         sim,
@@ -678,7 +715,9 @@ describe('performance', () => {
       buildFrame(sim, false);
     }
     const perStep = (performance.now() - started) / samples;
-    console.log(`zone step: ${perStep.toFixed(3)} ms/step (100 修士 + 40 妖兽, frame included)`);
+    console.log(
+      `zone step: ${perStep.toFixed(3)} ms/step (100 修士 + ${expected} 妖兽, frame included)`,
+    );
     expect(perStep).toBeLessThan(5);
   });
 });
