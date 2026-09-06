@@ -7,6 +7,7 @@ import { OfflineReturnModal } from '../features/cultivation/OfflineReturnModal';
 import { useCharacterStore } from '../store/character';
 import { useSessionStore } from '../store/session';
 import { closeSocket, openSocket } from '../store/socket';
+import { useZoneStore } from '../store/zone';
 import { TabBar } from './TabBar';
 import { TopBar } from './TopBar';
 
@@ -71,6 +72,26 @@ export function AppShell() {
       window.removeEventListener('focus', onWake);
     };
   }, [status, characterId, resettle]);
+
+  /**
+   * A 战斗大地图 pushes four frames a second, which is pure waste against a tab
+   * nobody is looking at — and the character does not need watching to keep
+   * fighting. So the room is left when the tab goes away and re-entered when it
+   * comes back, which also answers with a full frame and resyncs the field.
+   */
+  useEffect(() => {
+    if (status !== 'ready' || !characterId) return;
+    const onVisibility = () => {
+      const zone = useZoneStore.getState();
+      if (document.visibilityState === 'hidden') {
+        if (zone.zoneId) zone.leave();
+      } else if (zone.zoneId) {
+        zone.enter(zone.zoneId);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [status, characterId]);
 
   if (status === 'anon') return <Navigate to="/login" replace />;
   if (status === 'ready' && !characterId) return <Navigate to="/create" replace />;

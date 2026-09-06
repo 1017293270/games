@@ -1,5 +1,6 @@
 import { formatDuration, type SettleResponse } from '@xianxia/shared';
 import { Button, CloudRule, Modal } from '../../design';
+import { useZoneStore } from '../../store/zone';
 import './cultivation.css';
 
 export interface OfflineReturnModalProps {
@@ -9,8 +10,14 @@ export interface OfflineReturnModalProps {
 
 /** The 闭关归来 summary: what the wall clock was worth while you were away. */
 export function OfflineReturnModal({ summary, onClose }: OfflineReturnModalProps) {
+  // Whatever the character banked on a 战斗大地图 while the tab was shut. The
+  // socket asks the server to restore the field as soon as it opens, so the
+  // 挂机 tally is usually here by the time this panel is.
+  const loot = useZoneStore((state) => state.loot);
+  const zoneId = useZoneStore((state) => state.zoneId);
   if (!summary) return null;
   const forfeited = summary.forfeitedSec > 1;
+  const fought = Boolean(loot && (loot.kills > 0 || loot.exp > 0));
 
   return (
     <Modal
@@ -46,8 +53,50 @@ export function OfflineReturnModal({ summary, onClose }: OfflineReturnModalProps
         )}
       </div>
 
+      {fought && loot && (
+        <>
+          <CloudRule />
+          <h3 className="settle-sub">挂机战果</h3>
+          <div className="settle-rows">
+            <div className="settle-row">
+              <span className="settle-row__k">斩妖</span>
+              <span className="settle-row__v numeral">
+                {loot.kills.toLocaleString('zh-CN')}
+                {loot.bossKills > 0 ? ` （秘境 ${loot.bossKills}）` : ''}
+              </span>
+            </div>
+            <div className="settle-row">
+              <span className="settle-row__k">场中所得</span>
+              <span className="settle-row__v settle-row__v--gain numeral">
+                修为 +{loot.exp.toLocaleString('zh-CN')} · 灵石 +
+                {loot.spiritStones.toLocaleString('zh-CN')}
+              </span>
+            </div>
+            {loot.items.length > 0 && (
+              <div className="settle-row">
+                <span className="settle-row__k">拾得</span>
+                <span className="settle-row__v">
+                  {loot.items
+                    .map((item) => `${item.name}${item.qty > 1 ? `×${item.qty}` : ''}`)
+                    .join(' · ')}
+                </span>
+              </div>
+            )}
+            {zoneId && (
+              <div className="settle-row">
+                <span className="settle-row__k">仍在场</span>
+                <span className="settle-row__v muted">尚未撤离，还在替你打</span>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
       <CloudRule />
-      <p className="muted" style={{ fontSize: 'var(--fs-sm)', textAlign: 'center', margin: 'var(--sp-3) 0' }}>
+      <p
+        className="muted"
+        style={{ fontSize: 'var(--fs-sm)', textAlign: 'center', margin: 'var(--sp-3) 0' }}
+      >
         {summary.stageUps > 0
           ? '闭关一场，小境已过。'
           : forfeited

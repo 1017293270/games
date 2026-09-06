@@ -25,15 +25,37 @@ export default defineConfig(({ command }) => ({
   build: {
     target: 'es2022',
     // React, the router and the socket client change far less often than game
-    // code, so they get their own long-lived chunk.
+    // code, so they get their own long-lived chunk. PixiJS gets a second one:
+    // only the 战斗大地图 imports it, and it does so dynamically, so a player who
+    // never walks onto a map pays nothing for it.
+    //
+    // Written as rolldown's `advancedChunks` rather than `manualChunks` for one
+    // reason: `vite/preload-helper` is a virtual module and `manualChunks` is
+    // never consulted about it, so rolldown parks it in the `pixi` chunk — and
+    // then the entry, which needs the same helper for its lazy routes, imports
+    // 866 kB of PixiJS on the login screen. Pinning the helper to `vendor` (a
+    // higher-priority group wins) keeps the pixi chunk reachable only through
+    // the dynamic `import('pixi.js')` in `features/zone/ZoneCanvas.tsx`.
     rollupOptions: {
       output: {
-        manualChunks(id: string) {
-          return /node_modules[/\\](react|react-dom|react-router|scheduler|zustand|socket\.io-client|engine\.io-client|socket\.io-parser)[/\\]/.test(
-            id,
-          )
-            ? 'vendor'
-            : undefined;
+        advancedChunks: {
+          groups: [
+            {
+              name: 'vendor',
+              priority: 10,
+              test: (id: string) =>
+                id.includes('vite/preload-helper') ||
+                /node_modules[/\\](react|react-dom|react-router|scheduler|zustand|socket\.io-client|engine\.io-client|socket\.io-parser)[/\\]/.test(
+                  id,
+                ),
+            },
+            {
+              name: 'pixi',
+              priority: 1,
+              // PixiJS and the handful of packages only it depends on.
+              test: /node_modules[/\\](pixi\.js|@pixi|earcut|eventemitter3|parse-svg-path|ismobilejs|tiny-lru|gifuct-js|@xmldom)[/\\]/,
+            },
+          ],
         },
       },
     },

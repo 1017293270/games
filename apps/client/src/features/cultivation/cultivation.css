@@ -360,6 +360,14 @@
   margin-bottom: var(--sp-4);
 }
 
+/* 挂机战果: what the 战斗大地图 banked while the tab was shut. */
+.settle-sub {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  letter-spacing: 0.12em;
+  margin: var(--sp-3) 0 var(--sp-2);
+}
+
 .settle-row {
   display: flex;
   align-items: baseline;

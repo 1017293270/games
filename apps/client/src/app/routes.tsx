@@ -4,7 +4,7 @@ import { AppShell } from '../shell/AppShell';
 import { LoginPage } from '../features/auth/LoginPage';
 import { CreateCharacterPage } from '../features/auth/CreateCharacterPage';
 import { CultivationPage } from '../features/cultivation/CultivationPage';
-import { ExplorePage } from '../features/explore/ExplorePage';
+import { ZonePage } from '../features/zone/ZonePage';
 import { RealmPage } from '../features/realm/RealmPage';
 import { SocialPage } from '../features/social/SocialPage';
 import { CharacterPage } from '../features/character/CharacterPage';
@@ -21,7 +21,7 @@ export const router = createBrowserRouter([
     element: <AppShell />,
     children: [
       { index: true, element: <CultivationPage /> },
-      { path: 'explore', element: <ExplorePage /> },
+      { path: 'explore', element: <ZonePage /> },
       { path: 'town', element: <TownPage /> },
       { path: 'realm', element: <RealmPage /> },
       { path: 'social', element: <SocialPage /> },

@@ -18,6 +18,7 @@ import { setSocketFactory, type GameSocket } from '../socket';
 import { findHandler, makeCtx, MockFail } from './handlers';
 import { startMultiplayerFeed } from './multiplayer';
 import { buildView, emit, getWorld, isOnline, settleInto, statsFor } from './world';
+import { createZoneDriver } from './zone';
 
 export { DEMO_PASSWORD, DEMO_USERNAME, resetWorld } from './world';
 
@@ -78,6 +79,9 @@ export function createMockSocket(): GameSocket {
 
   // 围攻 blood pools, one inbound 论道 and one friend request.
   const stopMultiplayerFeed = startMultiplayerFeed();
+
+  // The 战斗大地图, run in-browser off the shared simulation core.
+  const zone = createZoneDriver(bridge);
 
   const bots = [...world.characters.values()].filter((c) => c.isBot);
   const onlineCount = () => bots.filter(isOnline).length + 1;
@@ -155,6 +159,19 @@ export function createMockSocket(): GameSocket {
       else listeners.get(event)?.delete(fn as Listener);
     },
     emit(event, ...args) {
+      if (event === 'zone:enter') {
+        const payload = args[0] as Parameters<ClientToServerEvents['zone:enter']>[0];
+        zone.enter(payload.zoneId);
+        return;
+      }
+      if (event === 'zone:leave') {
+        zone.leave();
+        return;
+      }
+      if (event === 'zone:retreat') {
+        zone.retreat();
+        return;
+      }
       if (event !== 'chat:send') return;
       const payload = args[0] as Parameters<ClientToServerEvents['chat:send']>[0];
       const [firstToken] = [...world.tokens.keys()];
@@ -177,6 +194,7 @@ export function createMockSocket(): GameSocket {
       clearInterval(timer);
       clearInterval(settleTimer);
       stopMultiplayerFeed();
+      zone.stop();
       world.listeners.delete(bridge as never);
       listeners.clear();
     },

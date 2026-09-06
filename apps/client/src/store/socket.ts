@@ -5,6 +5,7 @@ import { useChatStore } from './chat';
 import { useFriendsStore } from './friends';
 import { usePartyStore } from './party';
 import { useUiStore } from './ui';
+import { useZoneStore } from './zone';
 
 /**
  * One socket per session, opened after login and torn down on logout. Inbound
@@ -66,9 +67,39 @@ export function openSocket(token: string): void {
   next.on('friend:request', (event) => {
     useFriendsStore.getState().receiveRequest(event);
   });
+
+  // 战斗大地图. The character may already be on a field from a previous session,
+  // so the socket asks the server to restore it as soon as it opens; a `null`
+  // zone is answered with nothing when there is no field to come back to.
+  next.on('zone:joined', (payload) => {
+    useZoneStore.getState().applyJoined(payload);
+  });
+
+  next.on('zone:frame', (frame) => {
+    useZoneStore.getState().applyFrame(frame);
+  });
+
+  next.on('zone:left', (payload) => {
+    useZoneStore.getState().applyLeft(payload);
+  });
+
+  next.on('zone:loot', (payload) => {
+    useZoneStore.getState().applyLoot(payload);
+  });
+
+  next.on('zone:death', (payload) => {
+    useZoneStore.getState().applyDeath(payload);
+  });
+
+  next.on('zone:error', (payload) => {
+    useZoneStore.getState().applyError(payload);
+  });
+
+  useZoneStore.getState().resync();
 }
 
 export function closeSocket(): void {
+  useZoneStore.getState().reset();
   socket?.disconnect();
   socket = null;
   openedFor = null;

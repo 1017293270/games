@@ -1,0 +1,308 @@
+/*
+ * 战斗大地图.
+ *
+ * The field is the one dark surface in a game painted on paper: it is looked
+ * *into*, not read off, so the HUD sits on it as translucent paper cards rather
+ * than as another panel in the page flow. The 画风 pass in M4c reworks the art;
+ * the geometry here is the album-leaf grid the rest of the game uses.
+ */
+
+:root {
+  /* 远山黛色: the field reads as dusk, so the ink-wash HUD keeps its contrast. */
+  --zone-ground: #26303a;
+  /* Roster rows sit *under* the HUD bands, so those must be opaque paper — a
+   * wash lets the names behind them show through and both become unreadable. */
+  --zone-card: var(--paper-sunk);
+}
+
+.zone-scene {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  background: var(--zone-ground);
+}
+
+.zone-wait {
+  display: grid;
+  place-items: center;
+  padding: var(--sp-6) var(--sp-4);
+}
+
+.zone-canvas,
+.zone-plain {
+  flex: 1;
+  min-height: 0;
+}
+
+.zone-canvas--wait {
+  background: var(--zone-ground);
+}
+
+/* The roster fallback scrolls under both HUD bands. */
+.zone-plain {
+  overflow-y: auto;
+  padding: 4.25rem var(--sp-3) 15rem;
+}
+
+/* --------------------------------------------------------------- 花名册 */
+
+.zone-roster {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.zone-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  padding: var(--sp-2) var(--sp-3);
+  border: var(--hair) solid var(--ink-hair);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+}
+
+.zone-row--self {
+  border-color: var(--cinnabar);
+  background: var(--paper);
+}
+
+.zone-row--boss {
+  border-color: var(--gold);
+}
+
+.zone-row--dead {
+  opacity: 0.5;
+}
+
+.zone-row__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+
+.zone-row__name {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  font-size: var(--fs-body);
+  letter-spacing: 0.06em;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zone-row__you {
+  flex: none;
+  padding: 0 4px;
+  background: var(--cinnabar);
+  color: var(--paper);
+  font-size: var(--fs-xs);
+  border-radius: var(--radius);
+}
+
+.zone-row__stage {
+  flex: none;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+.zone-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-1) var(--sp-2);
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+.zone-row__target {
+  color: var(--indigo);
+}
+
+.zone-tag {
+  padding: 0 4px;
+  border: var(--hair) solid var(--ink-hair-strong);
+  border-radius: var(--radius);
+  font-size: var(--fs-xs);
+  color: var(--ink);
+}
+
+.zone-tag--gold {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* ------------------------------------------------------------------ HUD */
+
+.zone-hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: var(--sp-2) var(--sp-3);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.zone-hud__bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-1) var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border: var(--hair) solid var(--ink-hair-strong);
+  border-radius: var(--radius);
+  background-color: var(--zone-card);
+  background-image: var(--paper-grain);
+  background-size: var(--paper-grain-size);
+  box-shadow: var(--shadow-lift);
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+.zone-hud__name {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  letter-spacing: 0.1em;
+  color: var(--ink);
+}
+
+.zone-hud__stat b {
+  color: var(--ink);
+}
+
+.zone-hud__boss {
+  margin-left: auto;
+  color: var(--indigo);
+  letter-spacing: 0.06em;
+}
+
+.zone-hud__boss--alive {
+  color: var(--cinnabar);
+}
+
+/* --------------------------------------------------------------- 战果条 */
+
+/*
+ * One plate, not two cards with a gap: the roster scrolls underneath, and any
+ * bare strip between the tally and the buttons shows a stranger's 气血 bar
+ * running through them.
+ */
+.zone-foot {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border-top: var(--hair) solid var(--ink-hair-strong);
+  background-color: var(--zone-card);
+  background-image: var(--paper-grain);
+  background-size: var(--paper-grain-size);
+  box-shadow: var(--shadow-sheet);
+  z-index: 2;
+}
+
+.zone-spoils {
+  background: none;
+  border: 0;
+  padding: 0;
+}
+
+.zone-spoils__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: var(--fs-xs);
+  letter-spacing: 0.1em;
+  margin-bottom: var(--sp-2);
+}
+
+.zone-spoils__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-2);
+}
+
+.zone-spoils__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: center;
+}
+
+.zone-spoils__k {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+.zone-spoils__v {
+  font-size: var(--fs-lead);
+}
+
+.zone-spoils__drops {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+  margin-top: var(--sp-2);
+}
+
+.zone-acts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-2);
+}
+
+/* ---------------------------------------------------------------- 身死 */
+
+.zone-death__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-5) var(--sp-6);
+  border: var(--hair) solid var(--ink-hair-strong);
+  border-radius: var(--radius);
+  background-color: var(--paper);
+  background-image: var(--paper-grain);
+  background-size: var(--paper-grain-size);
+  box-shadow: var(--shadow-frame);
+  text-align: center;
+}
+
+.zone-death__by {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+
+.zone-death__loss {
+  font-size: var(--fs-sm);
+  color: var(--cinnabar);
+}
+
+.zone-death__count {
+  font-size: var(--fs-hero);
+  line-height: 1;
+  color: var(--cinnabar);
+}
+
+.zone-lost {
+  text-align: center;
+  font-size: var(--fs-sm);
+}
+
+/* The 入场 cue at the foot of a 山河图 card. */
+.map-card__go {
+  color: var(--indigo);
+  letter-spacing: 0.1em;
+}
