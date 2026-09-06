@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { io as connect, type Socket } from 'socket.io-client';
 import {
   ZoneJoinedSchema,
+  ZoneLootSchema,
   type CharacterState,
   type ClientToServerEvents,
   type ServerToClientEvents,
@@ -9,6 +10,7 @@ import {
   type ZoneFrame,
   type ZoneJoined,
   type ZoneLeft,
+  type ZoneLoot,
 } from '@xianxia/shared';
 import type { ZoneEnterResult, ZoneService, ZoneStats } from '../src/engine/zone/api.js';
 import { attachSocketIo } from '../src/socket.js';
@@ -60,6 +62,8 @@ class FakeZoneService implements ZoneService {
   readonly standing = new Map<string, string>();
   /** Forced refusal for the next `enter`, for the error paths. */
   fail: { code: ZoneErrorCode; message: string } | null = null;
+  /** 离线战果 the next successful enter/resume hands back, then forgets. */
+  pendingLoot: ZoneLoot | null = null;
   private seq = 0;
 
   enter(characterId: string, zoneId: string, now: number): ZoneEnterResult {
@@ -103,7 +107,18 @@ class FakeZoneService implements ZoneService {
 
   private joined(zoneId: string, now: number): ZoneEnterResult {
     this.seq += 1;
-    return { ok: true, zoneId, self: 0, enteredAt: now, frame: frameOf(zoneId, now, this.seq) };
+    // The real service clears the tally as it builds the result, so a second
+    // 进图 carries nothing; the fake does the same.
+    const pendingLoot = this.pendingLoot ?? undefined;
+    this.pendingLoot = null;
+    return {
+      ok: true,
+      zoneId,
+      self: 0,
+      enteredAt: now,
+      frame: frameOf(zoneId, now, this.seq),
+      pendingLoot,
+    };
   }
 }
 
@@ -344,6 +359,53 @@ describe('socket 战斗大地图', () => {
     socket.emit('zone:enter', { zoneId: null });
     expect((await resumed).zoneId).toBe(QINGYUN);
     expect(zones.resumes).toHaveLength(1);
+  });
+
+  it('sends the 离线战果 as a zone:loot right behind zone:joined, once', async () => {
+    const alice = await makePlayer(h, { name: '林素' });
+    const tabA = await openSocket(alice.token);
+    const tabB = await openSocket(alice.token);
+
+    zones.standing.set(alice.characterId, QINGYUN);
+    zones.pendingLoot = {
+      exp: 4200,
+      spiritStones: 130,
+      items: [{ itemId: 'pill-qi', qty: 3, name: '聚气丹' }],
+      kills: 57,
+      bossKills: 1,
+      since: h.clock.now() - 3_600_000,
+    };
+
+    // Order is the contract: `zone:joined` for a cultivator that never left
+    // carries its original `enteredAt`, so the client keeps its tally and the
+    // 战果 that follows merges into it rather than being wiped by it.
+    const order: string[] = [];
+    for (const event of ['zone:joined', 'zone:loot'] as const) {
+      tabA.on(event, () => order.push(event));
+    }
+
+    // Every tab the player has open, not just the one that asked.
+    const onB = once<ZoneLoot>(tabB, 'zone:loot');
+    tabA.emit('zone:enter', { zoneId: null });
+
+    const received = await onB;
+    expect(received.kills).toBe(57);
+    expect(received.bossKills).toBe(1);
+    expect(received.exp).toBe(4200);
+    expect(received.items).toEqual([{ itemId: 'pill-qi', qty: 3, name: '聚气丹' }]);
+    // Exactly the payload `zone:loot` has always carried — no protocol change.
+    expect(() => ZoneLootSchema.parse(received)).not.toThrow();
+
+    await settle();
+    expect(order).toEqual(['zone:joined', 'zone:loot']);
+
+    // A reconnect a second later is handed a field and no receipt.
+    h.clock.advance(1000);
+    const rejoined = once<ZoneJoined>(tabA, 'zone:joined');
+    tabA.emit('zone:enter', { zoneId: null });
+    await rejoined;
+    await settle();
+    expect(order).toEqual(['zone:joined', 'zone:loot', 'zone:joined']);
   });
 
   it('answers a restore with no field to come back to as 离场, not as an error', async () => {

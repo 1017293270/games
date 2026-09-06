@@ -31,6 +31,11 @@ import type { ZoneDelta, ZoneWorld } from './world.js';
  * The whole pass is one transaction — the `inventory` rows and the character
  * rows either all land or none do — and every socket push happens after the
  * commit, so nothing is announced that is not durable.
+ *
+ * Each window also produces a receipt. A connected player is pushed it as
+ * `zone:loot`; a logged-out one has it filed on its 图籍 by
+ * `ZoneWorld.bankOffline`, inside the same transaction, and is handed the whole
+ * tally the next time it walks back in.
  */
 
 /** What one flush pass did, for tests and the caller's own bookkeeping. */
@@ -147,20 +152,24 @@ export function flushZone(
       dirty.push(next);
       result.exp += delta.exp;
       result.stones += delta.stones;
+      if (next.isBot) continue;
 
-      if (!next.isBot && ctx.presence.isOnline(next.id)) {
-        pushes.push({
-          state: next,
-          loot: {
-            exp: delta.exp,
-            spiritStones: delta.stones,
-            items,
-            kills: delta.kills,
-            bossKills: delta.bossKills,
-            since: delta.since,
-          },
-        });
-      }
+      const loot: ZoneLoot = {
+        exp: delta.exp,
+        spiritStones: delta.stones,
+        items,
+        kills: delta.kills,
+        bossKills: delta.bossKills,
+        since: delta.since,
+      };
+
+      // Somebody is watching: the receipt goes straight out after the commit.
+      // Nobody is: it is filed against the 图籍 instead, and handed over whole
+      // on the 进图 that brings the player back. Without that, the spoils still
+      // reached the character row — they always did — but the 「闭关归来 ›
+      // 挂机战果」 panel had nothing to show for a night on the field.
+      if (ctx.presence.isOnline(next.id)) pushes.push({ state: next, loot });
+      else world.bankOffline(next.id, loot);
     }
 
     ctx.characters.saveMany(dirty);

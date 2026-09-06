@@ -1,0 +1,19 @@
+-- 战斗大地图 离线战果汇总: what the field banked while its owner was logged out.
+--
+-- 修为, 灵石 and 掉落 already land on the character row at every flush, online or
+-- not. What was missing is the *receipt*: an online player is pushed a
+-- `zone:loot` every five seconds, and a logged-out one had nothing to come back
+-- to, so the 「闭关归来 › 挂机战果」 panel was always empty.
+--
+-- `loot_json` is one serialised `ZoneLoot` — the running total of the offline
+-- windows since the player was last handed a receipt, `since` marking when the
+-- first of them opened. It is written only when an offline flush actually
+-- earned something, and set back to NULL the moment the tally is delivered on
+-- 进图/恢复. NULL therefore means "nothing owed", which is what every existing
+-- row starts as.
+--
+-- It rides on `zone_members` rather than a table of its own because it has
+-- exactly the same lifetime as the 图籍: sweeping a player off the field
+-- (`offline_cap`) or a 撤离 deletes the row, and the tally goes with it — the
+-- spoils themselves are already safe on the character row.
+ALTER TABLE zone_members ADD COLUMN loot_json TEXT NULL;

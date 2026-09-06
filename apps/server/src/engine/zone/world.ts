@@ -16,11 +16,13 @@ import {
   type Zone,
   type ZoneEntity,
   type ZoneFrame,
+  type ZoneLoot,
   type ZoneRules,
   type ZoneSim,
   type ZoneStepOutput,
 } from '@xianxia/shared';
 import type { AppContext } from '../../context.js';
+import { ZoneMemberRepo } from '../../db/repo/zoneMembers.js';
 import { zoneKillRewards } from './rewards.js';
 
 /**
@@ -65,6 +67,31 @@ function emptyDelta(since: number): ZoneDelta {
     kills: 0,
     bossKills: 0,
     since,
+  };
+}
+
+/**
+ * Folds one banked window into a running offline tally.
+ *
+ * The same merge the client does on a `zone:loot` push: quantities add up, and
+ * `since` keeps the earliest window's start, so a player away for two days is
+ * told the tally covers two days rather than the last five seconds of them.
+ */
+function mergeLoot(current: ZoneLoot | null, next: ZoneLoot): ZoneLoot {
+  if (!current) return { ...next, items: next.items.map((row) => ({ ...row })) };
+  const items = current.items.map((row) => ({ ...row }));
+  for (const row of next.items) {
+    const held = items.find((item) => item.itemId === row.itemId);
+    if (held) held.qty += row.qty;
+    else items.push({ ...row });
+  }
+  return {
+    exp: current.exp + next.exp,
+    spiritStones: current.spiritStones + next.spiritStones,
+    items,
+    kills: current.kills + next.kills,
+    bossKills: current.bossKills + next.bossKills,
+    since: Math.min(current.since, next.since),
   };
 }
 
@@ -129,6 +156,20 @@ export class ZoneWorld {
   readonly deltas = new Map<string, ZoneDelta>();
   /** When each cultivator walked on, epoch ms. */
   readonly enteredAt = new Map<string, number>();
+  /**
+   * Banked-but-undelivered spoils of the players who are logged out, keyed by
+   * `characterId`.
+   *
+   * A `ZoneDelta` is what the row does not know about yet; this is what the
+   * *player* does not know about yet. The two are independent: the delta is
+   * consumed the moment it is written to the character row, and the receipt
+   * lives on here — mirrored into `zone_members.loot_json` so it survives a
+   * restart — until a 进图 hands it over.
+   */
+  readonly pendingLoot = new Map<string, ZoneLoot>();
+
+  /** 图籍 rows, for mirroring `pendingLoot` to disk. */
+  private readonly members: ZoneMemberRepo;
 
   /**
    * Milliseconds the last `step` cost, for the admin panel. Measured with
@@ -155,6 +196,7 @@ export class ZoneWorld {
     now: number,
   ) {
     this.sim = createZoneSim(zone, rules, combineSeeds('zone', zone.id), now);
+    this.members = new ZoneMemberRepo(ctx.db);
   }
 
   get id(): string {
@@ -181,6 +223,17 @@ export class ZoneWorld {
     return delta;
   }
 
+  /**
+   * Files a window a logged-out player earned, to be handed over when it
+   * returns. Called from inside the flush transaction, so the receipt and the
+   * character row it describes land together or not at all.
+   */
+  bankOffline(characterId: string, loot: ZoneLoot): void {
+    const merged = mergeLoot(this.pendingLoot.get(characterId) ?? null, loot);
+    this.pendingLoot.set(characterId, merged);
+    this.members.setLoot(characterId, merged);
+  }
+
   /** Puts a cultivator on the field and opens its accrual window. */
   add(input: AddCultivatorInput, now: number): ZoneEntity {
     const entity = addCultivator(this.sim, input);
@@ -193,6 +246,11 @@ export class ZoneWorld {
   /**
    * Takes a cultivator off the field, dropping whatever it had not banked.
    * Callers flush first; this is the bookkeeping half only.
+   *
+   * The undelivered receipt goes too, because everything that takes a player
+   * off a field — a 撤离, the offline cap, a walk to another map — deletes or
+   * rewrites the 图籍 row that stores it. A caller that means to carry the
+   * tally somewhere reads `pendingLoot` before calling this.
    */
   drop(characterId: string): boolean {
     const slot = this.slots.get(characterId);
@@ -201,6 +259,7 @@ export class ZoneWorld {
     this.slots.delete(characterId);
     this.enteredAt.delete(characterId);
     this.deltas.delete(characterId);
+    this.pendingLoot.delete(characterId);
     return true;
   }
 

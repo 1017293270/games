@@ -13,6 +13,7 @@ import {
   type CharacterState,
   type WorldSettings,
   type ZoneEntity,
+  type ZoneLoot,
 } from '@xianxia/shared';
 import type { AppContext } from '../../context.js';
 import { ZoneMemberRepo } from '../../db/repo/zoneMembers.js';
@@ -129,9 +130,13 @@ export class ZoneServiceImpl implements ZoneService {
       }
       // A capacity that shrank under a stored population leaves the row alone:
       // the 图籍 is the player's claim on the field, and the next boot may fit.
+      // Its 战果 stays in the column too, and `enter` reads it from there.
       if (world.cultivators >= world.zone.capacity) continue;
       this.place(world, state, false, now);
       world.enteredAt.set(state.id, row.enteredAt);
+      // Whatever last night's flushes owed this player comes back with it, so
+      // the next offline window merges onto the tally instead of replacing it.
+      if (row.loot) world.pendingLoot.set(row.characterId, row.loot);
     }
   }
 
@@ -260,7 +265,8 @@ export class ZoneServiceImpl implements ZoneService {
     // The client calls this on every reconnect, so it has to be free.
     const standing = this.where.get(characterId) === zoneId ? world.entityOf(characterId) : null;
     if (standing) {
-      setOnline(world.sim, standing.i, this.ctx.presence.isOnline(characterId));
+      const online = this.ctx.presence.isOnline(characterId);
+      setOnline(world.sim, standing.i, online);
       this.ctx.characters.touchSeen(characterId, now);
       return {
         ok: true,
@@ -268,6 +274,7 @@ export class ZoneServiceImpl implements ZoneService {
         self: standing.i,
         enteredAt: world.enteredAt.get(characterId) ?? now,
         frame: fullZoneFrame(world.sim),
+        pendingLoot: this.claimLoot(world, characterId, online),
       };
     }
 
@@ -300,6 +307,10 @@ export class ZoneServiceImpl implements ZoneService {
       self: entity.i,
       enteredAt: now,
       frame: fullZoneFrame(world.sim),
+      // A tally can outlive the field it was earned on: a boot that found the
+      // map full left the player's 图籍 alone, and a walk to another map drops
+      // the old world's copy. Either way `claimLoot` finds it in the row.
+      pendingLoot: this.claimLoot(world, characterId, this.ctx.presence.isOnline(characterId)),
     };
   }
 
@@ -353,6 +364,30 @@ export class ZoneServiceImpl implements ZoneService {
   }
 
   // ------------------------------------------------------------------ internals
+
+  /**
+   * The 战果 a returning cultivator is owed for the time it was logged out.
+   *
+   * Looked up on the field first and in the 图籍 row second, because the row is
+   * the durable copy: a restart, or a 进图 onto a different map, leaves the
+   * tally only there. Handing it over clears both.
+   *
+   * With nobody connected there is nothing to hand it to, so the tally is
+   * instead re-seated on the field the player now stands on — a `zone:enter`
+   * that arrives before the socket is registered as present must not silently
+   * throw a night's spoils away, and the next offline flush merges onto it.
+   */
+  private claimLoot(world: ZoneWorld, characterId: string, online: boolean): ZoneLoot | undefined {
+    const held = world.pendingLoot.get(characterId) ?? this.members.get(characterId)?.loot ?? null;
+    if (!held) return undefined;
+    if (!online) {
+      world.pendingLoot.set(characterId, held);
+      return undefined;
+    }
+    world.pendingLoot.delete(characterId);
+    this.members.setLoot(characterId, null);
+    return held;
+  }
 
   /** Banks what a field owes one cultivator, then takes it off that field. */
   private detach(zoneId: string, characterId: string, now: number): void {

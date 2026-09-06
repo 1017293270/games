@@ -419,6 +419,10 @@ socket 载荷和 HTTP body 一样不可信。房间名用 `ROOMS.world()` / `ROO
 - **ZoneWorld 不持有可写的 `CharacterState` 快照**。图里的 `ZoneEntity` 只是一份
   战斗用的投影（属性、神通、血量比例）；击杀奖励先累计成增量，`flush` 时**重新读一次
   角色行**再落库。否则一次后台发放或一次突破就会被循环里的旧快照盖回去。
+- **离线战果有回执**：`flush` 时在线的玩家照旧收 `zone:loot`；不在线的那份汇总进
+  `zone_members.loot_json`（`ZoneLoot`，`since` 取最早窗口），随 `enter`/`resume`
+  在 `zone:joined` 之后补推一条 `zone:loot`，送达即清列。协议不变，重启由
+  `restoreMembers` 读回；被 `offline_cap` 扫走或撤离时随行删除——奖励本身早已入行。
 - 时间一律靠参数传入：`stepZone(sim, now)` / `flush(now)` 都吃 `ctx.now()`，
   测试能把整张图按自己的节奏推着走。
 

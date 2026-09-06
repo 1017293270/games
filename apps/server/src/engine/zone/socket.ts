@@ -93,6 +93,16 @@ export function registerZoneSocketHandlers(
       enteredAt: result.enteredAt,
       frame: result.frame,
     });
+
+    // What the field banked while nobody was connected, if anything, right
+    // behind the 进图 that asked for it. The order matters: `zone:joined` for a
+    // cultivator that never left carries the same `enteredAt` it had, so the
+    // client keeps its running tally rather than clearing it, and this push
+    // merges into 「闭关归来 › 挂机战果」 whether that panel is already open or
+    // still on its way.
+    if (result.pendingLoot) {
+      ctx.realtime.toCharacter(characterId, 'zone:loot', result.pendingLoot);
+    }
   });
 
   // `zone:leave` and `zone:retreat` carry no payload — their entries in

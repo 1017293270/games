@@ -9,9 +9,11 @@ import {
   ZONE_BY_ID,
   ZONE_PVP_PROTECT_MS,
   zoneBotLimit,
+  ZoneLootSchema,
   type CharacterState,
   type Stats,
   type ZoneKill,
+  type ZoneLoot,
 } from '@xianxia/shared';
 import { buildApp } from '../src/app.js';
 import { resolveEquipment, statsOf } from '../src/game/character.js';
@@ -571,6 +573,117 @@ describe('zone world', () => {
     expect(resumed.zoneId).toBe(ZONE);
     expect(resumed.frame.full).toBe(true);
   });
+
+  it('files every 离线 window on the 图籍 and hands the whole tally over on 进图', async () => {
+    const p = await makePlayer(h);
+    promote(h, p.characterId, 12);
+    h.ctx.zones.enter(p.characterId, ZONE, h.clock.now());
+    // Nobody is connected as this cultivator, which is the whole case: the
+    // spoils land on the row either way, but there is no socket to tell.
+    expect(h.ctx.presence.isOnline(p.characterId)).toBe(false);
+    const world = worldOf(h);
+    const before = h.ctx.characters.byId(p.characterId) as CharacterState;
+
+    run(h, 120);
+    const firstWindow = world.deltas.get(p.characterId)?.since;
+    h.ctx.zones.flush(h.clock.now());
+    const first = memberLoot(h, p.characterId);
+    expect(first?.kills).toBeGreaterThan(0);
+    expect(first?.exp).toBeGreaterThan(0);
+    expect(first?.since).toBe(firstWindow);
+    expect(world.pendingLoot.get(p.characterId)).toEqual(first);
+
+    run(h, 120);
+    h.ctx.zones.flush(h.clock.now());
+    const second = memberLoot(h, p.characterId);
+    if (!first || !second) throw new Error('no 离线战果 was filed');
+    expect(second.kills).toBeGreaterThan(first.kills);
+    expect(second.exp).toBeGreaterThan(first.exp);
+    // The tally covers the whole absence, not the last five seconds of it.
+    expect(second.since).toBe(first.since);
+
+    // Everything on the receipt is already in the row — the receipt is a
+    // receipt, not a second payment.
+    const banked = h.ctx.characters.byId(p.characterId) as CharacterState;
+    expect(banked.spiritStones).toBe(before.spiritStones + second.spiritStones);
+
+    // Back at the keyboard: the tally rides in with the 进图 and the column
+    // is emptied in the same breath.
+    h.ctx.presence.join(p.characterId);
+    const resumed = h.ctx.zones.resume(p.characterId, h.clock.now());
+    expect(resumed?.ok).toBe(true);
+    if (!resumed?.ok) return;
+    expect(resumed.pendingLoot).toEqual(second);
+    expect(memberLoot(h, p.characterId)).toBeNull();
+    expect(world.pendingLoot.has(p.characterId)).toBe(false);
+
+    // And exactly once: a client that asks again is not paid a second time.
+    h.clock.advance(1000);
+    const again = h.ctx.zones.resume(p.characterId, h.clock.now());
+    expect(again?.ok).toBe(true);
+    if (!again?.ok) return;
+    expect(again.pendingLoot).toBeUndefined();
+  });
+
+  it('carries an unclaimed 离线战果 across a restart', async () => {
+    const fresh = createHarness();
+    fresh.ctx.settings.patch({ cultivationMultiplier: 0, dropRateMultiplier: 10 });
+    let second: ReturnType<typeof buildApp> | null = null;
+    try {
+      const p = await makePlayer(fresh);
+      promote(fresh, p.characterId, 12);
+      fresh.ctx.zones.enter(p.characterId, ZONE, fresh.clock.now());
+      run(fresh, 240);
+      fresh.ctx.zones.flush(fresh.clock.now());
+      const filed = memberLoot(fresh, p.characterId);
+      expect(filed?.kills).toBeGreaterThan(0);
+
+      const config = fresh.ctx.config;
+      await fresh.app.close();
+
+      second = buildApp({ config, now: fresh.clock.now, startBots: false, startZones: false });
+      const rebuilt = second.ctx.zones as ZoneServiceImpl;
+      rebuilt.start();
+      try {
+        // The rebuild puts the cultivator back on the field and the tally back
+        // in its hand, so the 闭关归来 panel is whole after a deploy.
+        const world = rebuilt.worlds.get(ZONE);
+        expect(world?.pendingLoot.get(p.characterId)).toEqual(filed);
+
+        second.ctx.presence.join(p.characterId);
+        const resumed = rebuilt.resume(p.characterId, fresh.clock.now());
+        expect(resumed?.ok).toBe(true);
+        if (!resumed?.ok) return;
+        expect(resumed.pendingLoot).toEqual(filed);
+        expect(memberLoot(second, p.characterId)).toBeNull();
+      } finally {
+        rebuilt.stop();
+      }
+    } finally {
+      if (second) await second.app.close();
+      rmSync(fresh.dataDir, { recursive: true, force: true });
+    }
+  });
+
+  it('lets an unclaimed 战果 go with the 图籍 when the offline cap sweeps a player out', async () => {
+    const p = await makePlayer(h);
+    promote(h, p.characterId, 12);
+    h.ctx.zones.enter(p.characterId, ZONE, h.clock.now());
+    run(h, 120);
+    h.ctx.zones.flush(h.clock.now());
+    expect(memberLoot(h, p.characterId)?.kills).toBeGreaterThan(0);
+    const banked = h.ctx.characters.byId(p.characterId) as CharacterState;
+
+    h.clock.advance(h.ctx.settings.get().offlineCapHours * 3_600_000 + 60_000);
+    h.ctx.zones.flush(h.clock.now());
+
+    expect(worldOf(h).entityOf(p.characterId)).toBeNull();
+    expect(memberRow(h, p.characterId)).toBeUndefined();
+    expect(worldOf(h).pendingLoot.has(p.characterId)).toBe(false);
+    // Only the receipt was lost; what it described was banked long ago.
+    const after = h.ctx.characters.byId(p.characterId) as CharacterState;
+    expect(after.spiritStones).toBe(banked.spiritStones);
+  });
 });
 
 /** The stored 图籍 row, straight out of SQLite. */
@@ -578,4 +691,13 @@ function memberRow(h: Harness, characterId: string): { zone_id: string } | undef
   return h.ctx.db
     .prepare('SELECT zone_id FROM zone_members WHERE character_id = ?')
     .get(characterId) as { zone_id: string } | undefined;
+}
+
+/** The 离线战果 column as the client would see it, parsed straight from SQLite. */
+function memberLoot(h: { ctx: { db: Harness['ctx']['db'] } }, characterId: string): ZoneLoot | null {
+  const row = h.ctx.db
+    .prepare('SELECT loot_json FROM zone_members WHERE character_id = ?')
+    .get(characterId) as { loot_json: string | null } | undefined;
+  if (!row || row.loot_json === null) return null;
+  return ZoneLootSchema.parse(JSON.parse(row.loot_json));
 }

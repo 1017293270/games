@@ -10,10 +10,25 @@
  * on an injectable clock so tests can advance time by hand.
  */
 
-import type { CharacterState, ZoneErrorCode, ZoneFrame } from '@xianxia/shared';
+import type { CharacterState, ZoneErrorCode, ZoneFrame, ZoneLoot } from '@xianxia/shared';
 
 export type ZoneEnterResult =
-  | { ok: true; zoneId: string; self: number; enteredAt: number; frame: ZoneFrame }
+  | {
+      ok: true;
+      zoneId: string;
+      self: number;
+      enteredAt: number;
+      frame: ZoneFrame;
+      /**
+       * What the field banked while the player was logged out, present only
+       * when there is a tally owed *and* somebody is now connected to receive
+       * it. The socket layer sends it as a `zone:loot` right behind
+       * `zone:joined`; the field forgets it as this result is built, so it is
+       * delivered exactly once. Not part of the wire contract — `zone:joined`
+       * carries what it always did.
+       */
+      pendingLoot?: ZoneLoot;
+    }
   | { ok: false; code: ZoneErrorCode; message: string };
 
 /** One row of `AdminStats.zones`. */
