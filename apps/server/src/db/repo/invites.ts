@@ -2,12 +2,14 @@ import type { DatabaseSync } from 'node:sqlite';
 import { randomBytes } from 'node:crypto';
 import type { Invite } from '@xianxia/shared';
 
-/** Stored invite, including the redemption bookkeeping `Invite` omits. */
-export interface InviteRow extends Invite {
-  /** -1 means unlimited. */
-  maxUses: number;
-  uses: number;
-}
+/**
+ * Stored invite.
+ *
+ * Identical to the wire shape: `Invite` carries the redemption bookkeeping
+ * (`maxUses` -1 for unlimited, `uses`), so the panel reads the same numbers
+ * registration checks against.
+ */
+export type InviteRow = Invite;
 
 interface RawInvite {
   code: string;

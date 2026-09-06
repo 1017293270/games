@@ -266,6 +266,158 @@ describe('admin', () => {
     expect(expectFail(response.json()).code).toBe('BOT_NOT_FOUND');
   });
 
+  it('draws a cohort from per-archetype weights, ignoring everything unlisted', async () => {
+    const generated = expectOk<{ created: number; bots: BotSummary[] }>(
+      (
+        await h.app.inject({
+          method: 'POST',
+          url: '/api/admin/bots/generate',
+          headers: adminAuth(token),
+          payload: {
+            count: 40,
+            minStageIndex: 0,
+            maxStageIndex: 5,
+            seed: 7,
+            archetypeWeights: { 'bot-sanxiu': 60, 'bot-moxiu': 40 },
+          },
+        })
+      ).json(),
+    );
+
+    expect(generated.created).toBe(40);
+    const drawn = generated.bots.map((b) => b.archetypeId);
+    expect(new Set(drawn)).toEqual(new Set(['bot-sanxiu', 'bot-moxiu']));
+    // 60/40 over 40 draws: loose bounds, but a broken weighting fails them.
+    const sanxiu = drawn.filter((id) => id === 'bot-sanxiu').length;
+    expect(sanxiu).toBeGreaterThan(drawn.length - sanxiu);
+  });
+
+  it('lets a zero weight exclude an archetype, and the map beat archetypeId', async () => {
+    const generated = expectOk<{ bots: BotSummary[] }>(
+      (
+        await h.app.inject({
+          method: 'POST',
+          url: '/api/admin/bots/generate',
+          headers: adminAuth(token),
+          payload: {
+            count: 10,
+            minStageIndex: 0,
+            maxStageIndex: 3,
+            // The single-archetype field is present and must lose to the map.
+            archetypeId: 'bot-tianjiao',
+            archetypeWeights: { 'bot-kuxiu': 1, 'bot-tianjiao': 0 },
+          },
+        })
+      ).json(),
+    );
+    expect(generated.bots.every((b) => b.archetypeId === 'bot-kuxiu')).toBe(true);
+  });
+
+  it('refuses a weight map with an unknown id or with nothing left to draw', async () => {
+    const unknown = await h.app.inject({
+      method: 'POST',
+      url: '/api/admin/bots/generate',
+      headers: adminAuth(token),
+      payload: {
+        count: 4,
+        minStageIndex: 0,
+        maxStageIndex: 3,
+        archetypeWeights: { 'bot-nope': 1 },
+      },
+    });
+    expect(expectFail(unknown.json()).code).toBe('BOT_NOT_FOUND');
+
+    const empty = await h.app.inject({
+      method: 'POST',
+      url: '/api/admin/bots/generate',
+      headers: adminAuth(token),
+      payload: {
+        count: 4,
+        minStageIndex: 0,
+        maxStageIndex: 3,
+        archetypeWeights: { 'bot-sanxiu': 0, 'bot-moxiu': 0 },
+      },
+    });
+    expect(expectFail(empty.json()).code).toBe('INVALID_SETTINGS');
+    expect(h.ctx.characters.countBots()).toBe(0);
+  });
+
+  it('breaks the bot population down by 小境界 and counts those parked at 圆满', async () => {
+    // Two 练气·圆满 (stage 3) and one 筑基·前期 (stage 4), placed by hand so the
+    // histogram has a known shape.
+    const generated = expectOk<{ bots: BotSummary[] }>(
+      (
+        await h.app.inject({
+          method: 'POST',
+          url: '/api/admin/bots/generate',
+          headers: adminAuth(token),
+          payload: { count: 3, minStageIndex: 0, maxStageIndex: 0, seed: 5 },
+        })
+      ).json(),
+    ).bots;
+
+    for (const [index, bot] of generated.entries()) {
+      await h.app.inject({
+        method: 'PUT',
+        url: '/api/admin/bots',
+        headers: adminAuth(token),
+        payload: { characterId: bot.characterId, stageIndex: index < 2 ? 3 : 4 },
+      });
+    }
+
+    const stats = expectOk<AdminStats>(
+      (
+        await h.app.inject({
+          method: 'GET',
+          url: '/api/admin/stats',
+          headers: adminAuth(token),
+        })
+      ).json(),
+    );
+
+    expect(stats.bots.byStage).toHaveLength(36);
+    expect(stats.bots.byStage[3]).toBe(2);
+    expect(stats.bots.byStage[4]).toBe(1);
+    expect(stats.bots.byStage.reduce((a, b) => a + b, 0)).toBe(3);
+    // The realm bars are the column sums of the same histogram.
+    expect(stats.bots.byRealm[0]).toBe(2);
+    expect(stats.bots.byRealm[1]).toBe(1);
+    expect(stats.bots.atPerfection).toBe(2);
+  });
+
+  it('reports what the last bot tick did, and nothing before the first one', async () => {
+    await h.app.inject({
+      method: 'POST',
+      url: '/api/admin/bots/generate',
+      headers: adminAuth(token),
+      payload: { count: 6, minStageIndex: 0, maxStageIndex: 3 },
+    });
+
+    const read = async (): Promise<AdminStats> =>
+      expectOk<AdminStats>(
+        (
+          await h.app.inject({
+            method: 'GET',
+            url: '/api/admin/stats',
+            headers: adminAuth(token),
+          })
+        ).json(),
+      );
+
+    expect((await read()).server.lastTick).toBeUndefined();
+
+    h.clock.advance(60_000);
+    const ticked = h.ctx.bots.tick();
+
+    const after = await read();
+    expect(after.server.lastBotTickAt).toBe(ticked.at);
+    expect(after.server.lastTick).toEqual(ticked);
+    // The tick tops the population up to `botCount` first, so it counts the
+    // six that were generated plus whatever it created to reach the target.
+    expect(after.server.lastTick!.bots).toBe(6 + ticked.created);
+    expect(after.server.lastTick!.durationMs).toBeGreaterThanOrEqual(0);
+  });
+
   it('reports the dashboard totals', async () => {
     await makePlayer(h);
     await h.app.inject({
@@ -290,6 +442,8 @@ describe('admin', () => {
     expect(stats.bots.total).toBe(8);
     expect(stats.bots.byRealm).toHaveLength(9);
     expect(stats.bots.byRealm.reduce((a, b) => a + b, 0)).toBe(8);
+    expect(stats.bots.byStage).toHaveLength(36);
+    expect(stats.bots.byStage.reduce((a, b) => a + b, 0)).toBe(8);
     expect(Object.values(stats.bots.byArchetype).reduce((a, b) => a + b, 0)).toBe(8);
     expect(stats.server.serverTime).toBe(h.clock.now());
     expect(stats.server.lastBotTickAt).toBeNull();

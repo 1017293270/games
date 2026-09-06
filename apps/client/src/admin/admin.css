@@ -304,6 +304,34 @@
   }
 }
 
+/* What the last tick actually did — the reading a load test is run for. */
+.adm-tick {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr));
+  gap: var(--sp-2) var(--sp-3);
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: var(--hair) solid var(--ink-hair);
+}
+
+.adm-tick > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.adm-tick dt {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.16em;
+  color: var(--ink-soft);
+}
+
+.adm-tick dd {
+  margin: 0;
+  font-family: var(--font-num);
+  font-size: var(--fs-sm);
+}
+
 /* ---------------------------------------------------------------- stats */
 
 /* Eight tiles, so the columns are fixed rather than auto-fit: an auto-fit
@@ -376,8 +404,81 @@
 }
 
 .adm-realm__fill {
+  display: flex;
+  /* First child is 前期, and 前期 belongs at the bottom of the column. */
+  flex-direction: column-reverse;
   width: 100%;
+  /* No background of its own: the four segments below tile the whole height,
+   * and the lighter two are washes that have to composite against the paper
+   * to read as lighter. Painting 青黛 here swallowed 前期 and 中期 whole. */
+}
+
+/*
+ * The four 小境界 inside one 大境界, as a wash of 青黛 that deepens with the
+ * stage — except 圆满, which is 金: those cultivators are not progressing, they
+ * are queued at the ceiling waiting for a breakthrough, and the operator needs
+ * to see that band grow. 朱砂 stays out of it; it means only "unsaved".
+ */
+.adm-realm__seg {
+  display: block;
+  flex-basis: 0;
+  min-height: 0;
+  width: 100%;
+}
+
+.adm-realm__seg--0 {
+  background: rgba(59, 95, 107, 0.34);
+}
+
+.adm-realm__seg--1 {
+  background: rgba(59, 95, 107, 0.62);
+}
+
+.adm-realm__seg--2 {
   background: var(--indigo);
+}
+
+.adm-realm__seg--3 {
+  background: var(--gold);
+}
+
+.adm-realm__perfection {
+  font-family: var(--font-num);
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.adm-realms__perfection {
+  font-family: var(--font-num);
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+.adm-realms__perfection strong {
+  color: var(--ink);
+  font-weight: 400;
+}
+
+.adm-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-4);
+  margin-top: var(--sp-3);
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+.adm-legend__item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.adm-legend__swatch {
+  width: 0.75rem;
+  height: 0.75rem;
+  border: var(--hair) solid var(--ink-hair);
 }
 
 .adm-realm__name {
@@ -420,6 +521,20 @@
 .adm-bar__value {
   font-family: var(--font-num);
   text-align: right;
+  color: var(--ink-soft);
+}
+
+/* ------------------------------------------------- per-cohort weights */
+
+.adm-weights {
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: var(--hair) solid var(--ink-hair);
+}
+
+.adm-weights__lede {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--fs-xs);
   color: var(--ink-soft);
 }
 
@@ -1258,6 +1373,11 @@
     writing-mode: vertical-rl;
     text-orientation: upright;
     letter-spacing: -0.1em;
+  }
+
+  /* Nine columns of "圆满 12%" do not fit; the section header keeps the total. */
+  .adm-realm__perfection {
+    display: none;
   }
 
   .adm-stat__value {

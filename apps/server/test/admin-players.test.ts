@@ -419,8 +419,9 @@ describe('admin / invites', () => {
     expect(invites[0]!.code).toBe('friends');
     expect(invites[0]!.createdBy).toBe('env:INVITE_CODE');
     expect(invites[0]!.usedAt).toBeNull();
-    // `maxUses`/`uses` are storage-only; the wire shape stops at `Invite`.
-    expect(invites[0]).not.toHaveProperty('maxUses');
+    // The bootstrap code is the unlimited kind, and says so on the wire.
+    expect(invites[0]!.maxUses).toBe(-1);
+    expect(invites[0]!.uses).toBe(0);
   });
 
   it('mints codes stamped with the operator and registers one', async () => {
@@ -443,6 +444,9 @@ describe('admin / invites', () => {
       expect(invite.code).toMatch(/^[23456789BCDFGHJKLMNPQRSTVWXYZ]{6}$/);
       expect(invite.note).toBe('首测名额');
       expect(invite.expiresAt).toBeNull();
+      // Unasked, a minted code is single use.
+      expect(invite.maxUses).toBe(1);
+      expect(invite.uses).toBe(0);
     }
 
     const code = minted[0]!.code;
@@ -456,6 +460,7 @@ describe('admin / invites', () => {
     const after = (await list()).find((i) => i.code === code)!;
     expect(after.usedAt).toBe(h.clock.now());
     expect(after.usedBy).not.toBeNull();
+    expect(after.uses).toBe(1);
 
     // Single use: the second registration is turned away.
     const reused = await h.app.inject({
@@ -464,6 +469,87 @@ describe('admin / invites', () => {
       payload: { username: 'gatecrasher', password: 'passw0rd', inviteCode: code },
     });
     expect(expectFail(reused.json()).code).toBe('INVITE_INVALID');
+  });
+
+  it('mints a code good for a set number of registrations and counts them down', async () => {
+    const created = expectOk<{ invites: Invite[] }>(
+      (
+        await h.app.inject({
+          method: 'POST',
+          url: '/api/admin/invites',
+          headers: adminAuth(token),
+          payload: { count: 1, note: '三次码', expiresAt: null, maxUses: 3 },
+        })
+      ).json(),
+    ).invites;
+
+    const minted = created.find((i) => i.note === '三次码')!;
+    expect(minted.maxUses).toBe(3);
+    expect(minted.uses).toBe(0);
+
+    for (const username of ['first', 'second']) {
+      const registered = await h.app.inject({
+        method: 'POST',
+        url: '/api/auth/register',
+        payload: { username, password: 'passw0rd', inviteCode: minted.code },
+      });
+      expect(registered.statusCode).toBe(200);
+    }
+
+    // This is what 名录 prints as 「已用 / 可用」.
+    const midway = (await list()).find((i) => i.code === minted.code)!;
+    expect(midway.uses).toBe(2);
+    expect(midway.maxUses).toBe(3);
+
+    const third = await h.app.inject({
+      method: 'POST',
+      url: '/api/auth/register',
+      payload: { username: 'third', password: 'passw0rd', inviteCode: minted.code },
+    });
+    expect(third.statusCode).toBe(200);
+
+    const spent = (await list()).find((i) => i.code === minted.code)!;
+    expect(spent.uses).toBe(3);
+
+    const fourth = await h.app.inject({
+      method: 'POST',
+      url: '/api/auth/register',
+      payload: { username: 'fourth', password: 'passw0rd', inviteCode: minted.code },
+    });
+    expect(expectFail(fourth.json()).code).toBe('INVITE_INVALID');
+  });
+
+  it('mints an unlimited code when asked for -1, and refuses a zero', async () => {
+    const created = expectOk<{ invites: Invite[] }>(
+      (
+        await h.app.inject({
+          method: 'POST',
+          url: '/api/admin/invites',
+          headers: adminAuth(token),
+          payload: { count: 1, note: '常驻', expiresAt: null, maxUses: -1 },
+        })
+      ).json(),
+    ).invites;
+    const minted = created.find((i) => i.note === '常驻')!;
+    expect(minted.maxUses).toBe(-1);
+
+    for (const username of ['limitless1', 'limitless2', 'limitless3']) {
+      const registered = await h.app.inject({
+        method: 'POST',
+        url: '/api/auth/register',
+        payload: { username, password: 'passw0rd', inviteCode: minted.code },
+      });
+      expect(registered.statusCode).toBe(200);
+    }
+    expect((await list()).find((i) => i.code === minted.code)!.uses).toBe(3);
+
+    const zero = await h.app.inject({
+      method: 'POST',
+      url: '/api/admin/invites',
+      headers: adminAuth(token),
+      payload: { count: 1, note: '零次', expiresAt: null, maxUses: 0 },
+    });
+    expect(expectFail(zero.json()).code).toBe('VALIDATION_ERROR');
   });
 
   it('honours an expiry stamp', async () => {

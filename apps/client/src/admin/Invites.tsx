@@ -2,18 +2,32 @@ import { useState } from 'react';
 import type { Invite } from '@xianxia/shared';
 import { errorMessage } from '../api/http';
 import { adminApi } from './api';
-import { NumField, Notice, Section, stamp, TableScroll, TextField, useAsync, useTicker } from './ui';
+import {
+  NumField,
+  Notice,
+  Section,
+  stamp,
+  TableScroll,
+  TextField,
+  Toggle,
+  useAsync,
+  useTicker,
+} from './ui';
 
 /**
  * 邀请码.
  *
- * Codes minted here are single use. The one written by the `INVITE_CODE`
- * environment variable is unlimited and is marked as such — the wire shape
- * (`Invite`) carries no remaining-use count, so the panel reads redemption
- * from `usedAt` and never claims a number it cannot know.
+ * A code carries how many registrations it may serve (`maxUses`, -1 for
+ * unlimited) and how many it has served (`uses`), so 名录 answers "how many
+ * left" outright rather than inferring it from the last redemption. The code
+ * written by the `INVITE_CODE` environment variable is one of the unlimited
+ * kind; it is marked by its issuer, not by a special case in the counting.
  */
 
 const ENV_ISSUER = 'env:INVITE_CODE';
+
+/** `maxUses` value meaning "never runs out". */
+const UNLIMITED = -1;
 
 /** Days a "expires in N days" mint offers. */
 const EXPIRY_CHOICES = [
@@ -28,6 +42,8 @@ export function Invites() {
   const [count, setCount] = useState(5);
   const [note, setNote] = useState('');
   const [expiryDays, setExpiryDays] = useState(0);
+  const [maxUses, setMaxUses] = useState(1);
+  const [unlimited, setUnlimited] = useState(false);
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
@@ -38,13 +54,17 @@ export function Invites() {
     setBusy(true);
     setFailure(null);
     try {
+      const uses = unlimited ? UNLIMITED : maxUses;
       const result = await adminApi.createInvites({
         count,
         note,
+        maxUses: uses,
         expiresAt: expiryDays === 0 ? null : Date.now() + expiryDays * 86_400_000,
       });
       invites.set(result);
-      setFlash(`已生成 ${count} 个邀请码，每个可用一次。`);
+      setFlash(
+        `已生成 ${count} 个邀请码，每个${uses === UNLIMITED ? '不限次数' : `可用 ${uses} 次`}。`,
+      );
       setNote('');
     } catch (cause) {
       setFailure(errorMessage(cause));
@@ -78,9 +98,26 @@ export function Invites() {
 
   return (
     <>
-      <Section title="发放" lede="每个码只能用一次。未开启「需要邀请码」时，注册不查码。">
+      <Section title="发放" lede="一次刻一批，每个码的可用次数单独设。未开启「需要邀请码」时，注册不查码。">
         <div className="adm-grid">
           <NumField label="数量" value={count} onChange={setCount} min={1} max={100} step={1} unit="个" />
+          <NumField
+            label="可用次数"
+            value={unlimited ? 1 : maxUses}
+            onChange={setMaxUses}
+            min={1}
+            max={1000}
+            step={1}
+            unit="次"
+            disabled={unlimited}
+            hint="每个码能注册几个账号。用满即失效。"
+          />
+          <Toggle
+            label="不限次"
+            value={unlimited}
+            onChange={setUnlimited}
+            hint="常驻码，永远用不完；和 INVITE_CODE 写入的那个同一种。"
+          />
           <TextField
             label="备注"
             value={note}
@@ -137,6 +174,7 @@ export function Invites() {
               <tr>
                 <th scope="col">码</th>
                 <th scope="col">状态</th>
+                <th scope="col">已用 / 可用</th>
                 <th scope="col">备注</th>
                 <th scope="col">发放人</th>
                 <th scope="col">发放于</th>
@@ -163,6 +201,9 @@ export function Invites() {
                     </button>
                   </th>
                   <td>{statusOf(invite, now)}</td>
+                  <td className="numeral">
+                    {invite.uses} / {invite.maxUses === UNLIMITED ? '∞' : invite.maxUses}
+                  </td>
                   <td>{invite.note || <span className="adm-cell--soft">—</span>}</td>
                   <td className="adm-cell--soft">
                     {invite.createdBy === ENV_ISSUER ? '环境变量' : invite.createdBy}
@@ -185,7 +226,7 @@ export function Invites() {
               ))}
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="adm-empty">
+                  <td colSpan={8} className="adm-empty">
                     还没有邀请码。
                   </td>
                 </tr>
@@ -198,20 +239,43 @@ export function Invites() {
   );
 }
 
+/**
+ * The code's standing, in the order registration checks it: expiry first, then
+ * the use count. The last redemption's timestamp rides along on any code that
+ * has been used at least once, because on a multi-use code it is the only sign
+ * of whether the batch is still being handed out.
+ */
 function statusOf(invite: Invite, now: number) {
   if (invite.expiresAt !== null && invite.expiresAt <= now) {
     return <span className="adm-tag adm-tag--warn">已过期</span>;
   }
-  if (invite.createdBy === ENV_ISSUER) {
+
+  const unlimited = invite.maxUses === UNLIMITED;
+  const left = unlimited ? Infinity : Math.max(0, invite.maxUses - invite.uses);
+  const last =
+    invite.usedAt === null ? null : (
+      <span className="adm-cell--soft numeral">最近 {stamp(invite.usedAt)}</span>
+    );
+
+  if (left === 0) {
     return (
       <span className="adm-tags">
-        <span className="adm-tag adm-tag--live">常驻·不限次</span>
-        {invite.usedAt !== null ? (
-          <span className="adm-cell--soft numeral">最近 {stamp(invite.usedAt)}</span>
-        ) : null}
+        <span className="adm-tag">已用尽</span>
+        {last}
       </span>
     );
   }
-  if (invite.usedAt !== null) return <span className="adm-tag">已使用</span>;
-  return <span className="adm-tag adm-tag--live">可用</span>;
+
+  return (
+    <span className="adm-tags">
+      <span className="adm-tag adm-tag--live">
+        {unlimited
+          ? invite.createdBy === ENV_ISSUER
+            ? '常驻·不限次'
+            : '不限次'
+          : `可用 ${left} 次`}
+      </span>
+      {last}
+    </span>
+  );
 }

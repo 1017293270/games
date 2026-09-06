@@ -42,6 +42,29 @@ export type BotArchetype = z.infer<typeof BotArchetypeSchema>;
 /** Rate multiplier applied while a bot is outside its active hours. */
 export const BOT_OFFPEAK_RATE = 0.25;
 
+/**
+ * What one round of the bot loop did.
+ *
+ * The engine builds this object per tick and keeps the last one; the admin
+ * dashboard reads it through `AdminStats.server.lastTick`, which is how an
+ * operator sees not just *when* the world last breathed but what that breath
+ * cost and produced.
+ */
+export const BotTickStatsSchema = z.object({
+  /** Epoch ms the tick simulated. */
+  at: z.number().int(),
+  /** Bots present at the start of the tick, after topping the population up. */
+  bots: z.number().int(),
+  created: z.number().int(),
+  breakthroughs: z.number().int(),
+  tribulations: z.number().int(),
+  battles: z.number().int(),
+  chats: z.number().int(),
+  /** Wall-clock cost of the round. */
+  durationMs: z.number().int(),
+});
+export type BotTickStats = z.infer<typeof BotTickStatsSchema>;
+
 /** What a bot decided to do on one tick. */
 export const BOT_ACTIONS = [
   'cultivate',

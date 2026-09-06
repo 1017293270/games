@@ -53,6 +53,9 @@ export const adminHandlers: HandlerRegistry = {
       maxStageIndex: c.input.maxStageIndex,
     };
     if (c.input.archetypeId !== undefined) input.archetypeId = c.input.archetypeId;
+    if (c.input.archetypeWeights !== undefined) {
+      input.archetypeWeights = c.input.archetypeWeights;
+    }
     if (c.input.seed !== undefined) input.seed = c.input.seed;
     return createBots(c.ctx, input, c.now);
   }),

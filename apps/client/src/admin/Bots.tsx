@@ -4,6 +4,7 @@ import {
   MAX_STAGE_INDEX,
   spiritRootName,
   stageName,
+  type BotArchetype,
   type BotParams,
   type BotSummary,
 } from '@xianxia/shared';
@@ -82,7 +83,7 @@ export function Bots() {
   return (
     <>
       <Generate
-        options={(archetypes.data?.archetypes ?? []).map((a) => ({ value: a.id, label: a.name }))}
+        archetypes={archetypes.data?.archetypes ?? []}
         onDone={(created) => {
           setFlash(`已生成 ${created} 名机器人修士。`);
           setPage(1);
@@ -510,30 +511,48 @@ function BotEditor({
 
 /* ----------------------------------------------------------------- 批量生成 */
 
+/**
+ * A cohort's archetype mix.
+ *
+ * Three modes, in the order an operator reaches for them: draw by the world's
+ * own population weights, lock the whole batch to one archetype, or hand-write
+ * the weights for this batch only. The custom weights start as a copy of the
+ * global ones, so the form always opens on a mix that is already correct and
+ * the operator edits away from it.
+ */
+const WEIGHTS_MODE = '@weights';
+
 function Generate({
-  options,
+  archetypes,
   onDone,
 }: {
-  options: { value: string; label: string }[];
+  archetypes: BotArchetype[];
   onDone: (created: number) => void;
 }) {
   const [count, setCount] = useState(20);
   const [archetypeId, setArchetypeId] = useState('');
+  const [weights, setWeights] = useState<Record<string, number>>({});
   const [minStageIndex, setMin] = useState(0);
   const [maxStageIndex, setMax] = useState(11);
   const [seed, setSeed] = useState('');
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
 
+  const byWeights = archetypeId === WEIGHTS_MODE;
+  // An archetype the operator has not touched keeps its global weight.
+  const weightOf = (a: BotArchetype): number => weights[a.id] ?? a.weight;
+  const total = archetypes.reduce((sum, a) => sum + weightOf(a), 0);
+
   const run = async (): Promise<void> => {
     setBusy(true);
     setFailure(null);
     try {
+      const mix = Object.fromEntries(archetypes.map((a) => [a.id, weightOf(a)]));
       const result = await adminApi.generateBots({
         count,
         minStageIndex,
         maxStageIndex: Math.max(minStageIndex, maxStageIndex),
-        ...(archetypeId ? { archetypeId } : {}),
+        ...(byWeights ? { archetypeWeights: mix } : archetypeId ? { archetypeId } : {}),
         ...(seed.trim() !== '' && Number.isFinite(Number(seed)) ? { seed: Number(seed) } : {}),
       });
       onDone(result.created);
@@ -563,8 +582,12 @@ function Generate({
           label="原型"
           value={archetypeId}
           onChange={setArchetypeId}
-          options={[{ value: '', label: '按权重抽签' }, ...options]}
-          hint="指定原型则整批同型。"
+          options={[
+            { value: '', label: '按全局权重抽签' },
+            ...archetypes.map((a) => ({ value: a.id, label: a.name })),
+            { value: WEIGHTS_MODE, label: '本批自定权重……' },
+          ]}
+          hint="指定原型则整批同型；自定权重只影响这一批。"
         />
         <NumField
           label="境界下限"
@@ -592,6 +615,34 @@ function Generate({
           hint="填入整数可重现同一批道号与灵根。"
         />
       </div>
+
+      {byWeights ? (
+        <div className="adm-weights">
+          <p className="adm-weights__lede">
+            相对权重，不必凑成 100。填 0 即这一批不出这种人。
+          </p>
+          <div className="adm-grid">
+            {archetypes.map((a) => (
+              <NumField
+                key={a.id}
+                label={a.name}
+                value={weightOf(a)}
+                onChange={(value) => setWeights((w) => ({ ...w, [a.id]: value }))}
+                min={0}
+                max={100}
+                step={5}
+                dirty={weightOf(a) !== a.weight}
+                hint={
+                  total > 0
+                    ? `约 ${Math.round((weightOf(a) / total) * 100)}% · 全局 ${a.weight}`
+                    : `全局 ${a.weight}`
+                }
+              />
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       {failure ? <Notice tone="warn">{failure}</Notice> : null}
       <div className="adm-editor__foot">
         <span className="adm-editor__id">
@@ -601,7 +652,7 @@ function Generate({
           type="button"
           className="adm-btn adm-btn--seal"
           onClick={() => void run()}
-          disabled={busy}
+          disabled={busy || (byWeights && total <= 0)}
         >
           {busy ? '开炉中……' : `生成 ${count} 人`}
         </button>

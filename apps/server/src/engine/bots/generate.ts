@@ -40,6 +40,12 @@ export interface GenerateOptions {
   count: number;
   /** Force one archetype instead of drawing by population weight. */
   archetypeId?: string;
+  /**
+   * Draw weights for this cohort only, keyed by archetype id; an archetype the
+   * map does not list cannot be drawn. Takes precedence over `archetypeId`.
+   * Omit to use each archetype's own `weight`.
+   */
+  archetypeWeights?: Record<string, number>;
   minStageIndex?: number;
   maxStageIndex?: number;
   /** Fixes the name/root/avatar/stage rolls so a cohort can be reproduced. */
@@ -68,6 +74,27 @@ function pickArchetype(rng: Rng, archetypes: readonly BotArchetype[]): BotArchet
   );
 }
 
+/**
+ * The archetypes a per-cohort weight map allows, paired with their weights.
+ *
+ * An id the table does not know, and a weight of zero, both drop out — so the
+ * caller's map fully replaces the population weights for this cohort.
+ */
+function weightedSubset(
+  archetypes: readonly BotArchetype[],
+  weights: Record<string, number>,
+): { archetypes: BotArchetype[]; weights: number[] } {
+  const picked: BotArchetype[] = [];
+  const scale: number[] = [];
+  for (const archetype of archetypes) {
+    const weight = weights[archetype.id];
+    if (weight === undefined || !(weight > 0)) continue;
+    picked.push(archetype);
+    scale.push(weight);
+  }
+  return { archetypes: picked, weights: scale };
+}
+
 /** Builds `count` bots and writes them. Returns what was created. */
 export function generateBots(
   ctx: AppContext,
@@ -78,10 +105,17 @@ export function generateBots(
   if (count === 0) return [];
 
   const archetypes = ctx.archetypes.all();
-  const forced = options.archetypeId
-    ? (archetypes.find((a) => a.id === options.archetypeId) ?? null)
+  // A weight map replaces both the population weights and a forced archetype.
+  const cohort = options.archetypeWeights
+    ? weightedSubset(archetypes, options.archetypeWeights)
     : null;
-  if (options.archetypeId && !forced) return [];
+  if (cohort && cohort.archetypes.length === 0) return [];
+
+  const forced =
+    cohort === null && options.archetypeId
+      ? (archetypes.find((a) => a.id === options.archetypeId) ?? null)
+      : null;
+  if (cohort === null && options.archetypeId && !forced) return [];
 
   const min = clamp(options.minStageIndex ?? 0, 0, MAX_STAGE_INDEX);
   const max = clamp(options.maxStageIndex ?? 11, min, MAX_STAGE_INDEX);
@@ -111,7 +145,10 @@ export function generateBots(
     if (name === undefined) break;
     used.add(name);
 
-    const archetype = forced ?? pickArchetype(rng, archetypes);
+    const archetype =
+      cohort === null
+        ? (forced ?? pickArchetype(rng, archetypes))
+        : rng.weighted(cohort.archetypes, cohort.weights);
     const gender = rng.chance(0.5) ? 'male' : 'female';
     const avatarPool = botAvatarPool(archetype, gender);
     const avatarArt = rng.pick(avatarPool) as CharacterState['avatarArt'];

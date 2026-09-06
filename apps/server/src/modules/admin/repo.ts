@@ -2,15 +2,16 @@ import {
   getStage,
   isPerfection,
   MAX_STAGE_INDEX,
+  REALM_COUNT,
+  realmOf,
+  STAGE_COUNT,
   stageName,
   type BotSummary,
   type CharacterState,
-  type Invite,
   type PlayerSummary,
 } from '@xianxia/shared';
 import type { AppContext } from '../../context.js';
 import type { CharacterSort } from '../../db/repo/characters.js';
-import type { InviteRow } from '../../db/repo/invites.js';
 import type { UserRow } from '../../db/repo/users.js';
 
 /** The admin panel's read side. */
@@ -202,22 +203,44 @@ export function addExp(
   }
 }
 
-/* ----------------------------------------------------------------- 邀请码 */
+/* --------------------------------------------------------------- 境界分布 */
+
+export interface BotStageStats {
+  /** Population per stage, index = `stageIndex`, length 36. */
+  byStage: number[];
+  /** Column sums of `byStage`, index = major realm, length 9. */
+  byRealm: number[];
+  /** Bots parked at a 圆满 stage, waiting on a breakthrough. */
+  atPerfection: number;
+}
 
 /**
- * Trims a stored invite to the wire shape.
+ * The bot population's shape, down to the 小境界.
  *
- * `InviteSchema` carries no `maxUses`/`uses`, so the panel reads redemption
- * from `usedAt`; the unlimited bootstrap code is recognised by its `createdBy`.
+ * One `GROUP BY` over the denormalised `stage_index` column feeds all three
+ * readings, so the realm bars and the sub-stage segments drawn inside them can
+ * never disagree about the same population.
  */
-export function toInviteView(row: InviteRow): Invite {
-  return {
-    code: row.code,
-    createdAt: row.createdAt,
-    createdBy: row.createdBy,
-    usedBy: row.usedBy,
-    usedAt: row.usedAt,
-    expiresAt: row.expiresAt,
-    note: row.note,
-  };
+export function botStageStats(ctx: AppContext): BotStageStats {
+  const byStage = new Array<number>(STAGE_COUNT).fill(0);
+  const rows = ctx.db
+    .prepare(
+      'SELECT stage_index AS s, COUNT(*) AS c FROM characters WHERE is_bot = 1 GROUP BY s',
+    )
+    .all() as unknown as { s: number; c: number }[];
+
+  for (const row of rows) {
+    const stage = Number(row.s);
+    if (stage >= 0 && stage < STAGE_COUNT) byStage[stage] = Number(row.c);
+  }
+
+  const byRealm = new Array<number>(REALM_COUNT).fill(0);
+  let atPerfection = 0;
+  for (let stage = 0; stage < STAGE_COUNT; stage += 1) {
+    const count = byStage[stage] ?? 0;
+    byRealm[realmOf(stage)] = (byRealm[realmOf(stage)] ?? 0) + count;
+    if (isPerfection(stage)) atPerfection += count;
+  }
+
+  return { byStage, byRealm, atPerfection };
 }

@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react';
-import { REALM_NAMES, type AdminStats, type BotArchetype, type WorldSettings } from '@xianxia/shared';
+import {
+  REALM_NAMES,
+  SUB_STAGE_NAMES,
+  SUB_STAGES_PER_REALM,
+  type AdminStats,
+  type BotArchetype,
+  type WorldSettings,
+} from '@xianxia/shared';
 import { errorMessage } from '../api/http';
 import { adminApi } from './api';
 import { duration, Notice, Section, stamp, Stat, useTicker } from './ui';
@@ -67,8 +74,10 @@ export function Overview() {
 
   const realmTotal = stats.bots.byRealm.reduce((a, b) => a + b, 0);
   const realmPeak = Math.max(1, ...stats.bots.byRealm);
+  const perfectionShare = realmTotal === 0 ? 0 : stats.bots.atPerfection / realmTotal;
   const archetypeName = (id: string): string =>
     archetypes.find((a) => a.id === id)?.name ?? (id === '' ? '无原型' : id);
+  const lastTick = stats.server.lastTick;
 
   return (
     <>
@@ -94,6 +103,39 @@ export function Overview() {
             )}
           </p>
         </div>
+
+        {lastTick ? (
+          <dl className="adm-tick">
+            <div>
+              <dt>耗时</dt>
+              <dd className="numeral">{lastTick.durationMs} ms</dd>
+            </div>
+            <div>
+              <dt>活跃人数</dt>
+              <dd className="numeral">{lastTick.bots}</dd>
+            </div>
+            <div>
+              <dt>新建</dt>
+              <dd className="numeral">{lastTick.created}</dd>
+            </div>
+            <div>
+              <dt>突破</dt>
+              <dd className="numeral">{lastTick.breakthroughs}</dd>
+            </div>
+            <div>
+              <dt>渡劫</dt>
+              <dd className="numeral">{lastTick.tribulations}</dd>
+            </div>
+            <div>
+              <dt>论道</dt>
+              <dd className="numeral">{lastTick.battles}</dd>
+            </div>
+            <div>
+              <dt>闲谈</dt>
+              <dd className="numeral">{lastTick.chats}</dd>
+            </div>
+          </dl>
+        ) : null}
       </Section>
 
       <Section title="世相" lede="今日截至此刻的全服数字。">
@@ -109,21 +151,62 @@ export function Overview() {
         </div>
       </Section>
 
-      <Section title="境界分布" lede={`${realmTotal} 名机器人修士按大境界分布，低境拥挤、高境稀疏才是活着的世界。`}>
+      <Section
+        title="境界分布"
+        lede={
+          `${realmTotal} 名机器人修士按大境界分布，低境拥挤、高境稀疏才是活着的世界。` +
+          `每根柱子自下而上分 ${SUB_STAGE_NAMES.join(' / ')} 四段。`
+        }
+        actions={
+          <span className="adm-realms__perfection numeral">
+            卡在圆满 <strong>{stats.bots.atPerfection}</strong> 人 ·{' '}
+            {Math.round(perfectionShare * 100)}%
+          </span>
+        }
+      >
         <div className="adm-realms">
-          {stats.bots.byRealm.map((count, index) => (
-            <div className="adm-realm" key={REALM_NAMES[index]}>
-              <span className="adm-realm__count numeral">{count}</span>
-              <span className="adm-realm__column" aria-hidden="true">
+          {stats.bots.byRealm.map((count, index) => {
+            const subs = subStagesOf(stats.bots.byStage, index);
+            const perfection = subs[SUB_STAGES_PER_REALM - 1] ?? 0;
+            return (
+              <div className="adm-realm" key={REALM_NAMES[index]}>
+                <span className="adm-realm__count numeral">{count}</span>
                 <span
-                  className="adm-realm__fill"
-                  style={{ height: `${(count / realmPeak) * 100}%` }}
-                />
-              </span>
-              <span className="adm-realm__name">{REALM_NAMES[index]}</span>
-            </div>
-          ))}
+                  className="adm-realm__column"
+                  title={subs
+                    .map((n, sub) => `${SUB_STAGE_NAMES[sub]} ${n}`)
+                    .join(' · ')}
+                >
+                  <span
+                    className="adm-realm__fill"
+                    style={{ height: `${(count / realmPeak) * 100}%` }}
+                    aria-hidden="true"
+                  >
+                    {subs.map((n, sub) => (
+                      <span
+                        key={SUB_STAGE_NAMES[sub]}
+                        className={`adm-realm__seg adm-realm__seg--${sub}`}
+                        style={{ flexGrow: n }}
+                      />
+                    ))}
+                  </span>
+                </span>
+                <span className="adm-realm__perfection numeral">
+                  {count === 0 ? '—' : `圆满 ${Math.round((perfection / count) * 100)}%`}
+                </span>
+                <span className="adm-realm__name">{REALM_NAMES[index]}</span>
+              </div>
+            );
+          })}
         </div>
+        <ul className="adm-legend">
+          {SUB_STAGE_NAMES.map((name, sub) => (
+            <li className="adm-legend__item" key={name}>
+              <span className={`adm-legend__swatch adm-realm__seg--${sub}`} aria-hidden="true" />
+              {name}
+            </li>
+          ))}
+        </ul>
       </Section>
 
       <Section title="原型分布" lede="批量生成按原型权重抽签，改权重只影响此后新生成的机器人。">
@@ -178,5 +261,14 @@ export function Overview() {
         {error ? <Notice tone="warn">{error}</Notice> : null}
       </Section>
     </>
+  );
+}
+
+/** The four 小境界 counts inside one 大境界, 前期 first. */
+function subStagesOf(byStage: readonly number[], realm: number): number[] {
+  const start = realm * SUB_STAGES_PER_REALM;
+  return Array.from(
+    { length: SUB_STAGES_PER_REALM },
+    (_, sub) => byStage[start + sub] ?? 0,
   );
 }

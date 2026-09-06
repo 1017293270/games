@@ -57,7 +57,13 @@ function install(): void {
     } else if (path === '/api/admin/stats') {
       payload = ok({
         players: { total: 1, online: 0, banned: 0, newToday: 1 },
-        bots: { total: 3, byArchetype: { 'bot-sanxiu': 3 }, byRealm: [3, 0, 0, 0, 0, 0, 0, 0, 0] },
+        bots: {
+          total: 3,
+          byArchetype: { 'bot-sanxiu': 3 },
+          byRealm: [3, 0, 0, 0, 0, 0, 0, 0, 0],
+          byStage: [2, 0, 0, 1, ...new Array<number>(32).fill(0)],
+          atPerfection: 1,
+        },
         activity: {
           battlesToday: 0,
           dungeonRunsToday: 0,
@@ -70,6 +76,16 @@ function install(): void {
           uptimeSec: 60,
           serverTime: Date.now(),
           lastBotTickAt: Date.now() - 2000,
+          lastTick: {
+            at: Date.now() - 2000,
+            bots: 3,
+            created: 0,
+            breakthroughs: 1,
+            tribulations: 0,
+            battles: 2,
+            chats: 1,
+            durationMs: 7,
+          },
           version: '0.1.0',
         },
       });

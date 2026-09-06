@@ -27,11 +27,11 @@ import { newInviteCode } from '../../db/repo/invites.js';
 import { resolveEquipment, settle, withFreshPower } from '../../game/character.js';
 import {
   addExp,
+  botStageStats,
   clampExpToStage,
   playerPage,
   playerSummaryOf,
   toBotSummary,
-  toInviteView,
   type PlayerPageQuery,
 } from './repo.js';
 
@@ -84,6 +84,7 @@ export function createBots(
   input: {
     count: number;
     archetypeId?: string;
+    archetypeWeights?: Record<string, number>;
     minStageIndex: number;
     maxStageIndex: number;
     seed?: number;
@@ -94,12 +95,27 @@ export function createBots(
     throw new ApiError('BOT_NOT_FOUND', `没有这个机器人原型：${input.archetypeId}`);
   }
 
+  // A weight map is checked here rather than in the generator, so a typo in one
+  // id is reported instead of quietly shrinking the cohort's draw pool.
+  if (input.archetypeWeights) {
+    const entries = Object.entries(input.archetypeWeights);
+    for (const [id] of entries) {
+      if (!ctx.archetypes.byId(id)) {
+        throw new ApiError('BOT_NOT_FOUND', `没有这个机器人原型：${id}`);
+      }
+    }
+    if (!entries.some(([, weight]) => weight > 0)) {
+      throw new ApiError('INVALID_SETTINGS', '原型权重全为 0，抽不出人');
+    }
+  }
+
   const options: Parameters<typeof generateBots>[1] = {
     count: input.count,
     minStageIndex: input.minStageIndex,
     maxStageIndex: input.maxStageIndex,
   };
   if (input.archetypeId) options.archetypeId = input.archetypeId;
+  if (input.archetypeWeights) options.archetypeWeights = input.archetypeWeights;
   if (input.seed !== undefined) options.seed = input.seed;
 
   const created = transact(ctx.db, () => generateBots(ctx, options, now));
@@ -212,6 +228,8 @@ export function updateArchetype(
 /** The dashboard. */
 export function stats(ctx: AppContext, now: number): AdminStats {
   const startOfDay = Date.parse(`${dayKey(now)}T00:00:00.000Z`);
+  const stages = botStageStats(ctx);
+  const lastTick = ctx.bots.lastTick;
 
   return {
     players: {
@@ -223,7 +241,9 @@ export function stats(ctx: AppContext, now: number): AdminStats {
     bots: {
       total: ctx.characters.countBots(),
       byArchetype: ctx.characters.botsByArchetype(),
-      byRealm: ctx.characters.botsByRealm(),
+      byRealm: stages.byRealm,
+      byStage: stages.byStage,
+      atPerfection: stages.atPerfection,
     },
     activity: {
       battlesToday: ctx.counters.get('battles', now),
@@ -237,6 +257,7 @@ export function stats(ctx: AppContext, now: number): AdminStats {
       uptimeSec: Math.max(0, Math.round((now - ctx.startedAt) / 1000)),
       serverTime: now,
       lastBotTickAt: ctx.bots.lastTickAt,
+      ...(lastTick === null ? {} : { lastTick }),
       version: ctx.version,
     },
   };
@@ -375,13 +396,18 @@ export function setBanned(
 /* ----------------------------------------------------------------- 邀请码 */
 
 export function listInvites(ctx: AppContext): Invite[] {
-  return ctx.invites.list().map(toInviteView);
+  return ctx.invites.list();
 }
 
-/** Mints `count` single-use codes, stamped with the operator who asked. */
+/**
+ * Mints `count` codes, stamped with the operator who asked.
+ *
+ * `maxUses` is how many registrations each one may serve; -1 mints an unlimited
+ * code, the same kind `INVITE_CODE` writes at boot.
+ */
 export function createInvites(
   ctx: AppContext,
-  input: { count: number; note: string; expiresAt: number | null },
+  input: { count: number; note: string; expiresAt: number | null; maxUses: number },
   createdBy: string,
   now: number,
 ): Invite[] {
@@ -397,7 +423,7 @@ export function createInvites(
         createdBy,
         note: input.note,
         expiresAt: input.expiresAt,
-        maxUses: 1,
+        maxUses: input.maxUses,
       });
     }
   });

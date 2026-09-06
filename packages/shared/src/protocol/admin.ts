@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { WorldSettingsPatchSchema, WorldSettingsSchema } from '../domain/world.js';
-import { BotArchetypeSchema, BotParamsSchema } from '../domain/bot.js';
+import { BotArchetypeSchema, BotParamsSchema, BotTickStatsSchema } from '../domain/bot.js';
 import { CharacterStateSchema, GenderSchema } from '../domain/character.js';
 import { SpiritRootSchema } from '../domain/stats.js';
 import { MAX_STAGE_INDEX } from '../cultivation/realms.js';
@@ -50,6 +50,13 @@ export const BotGenerateRequestSchema = z.object({
   count: z.number().int().min(1).max(1000),
   /** Omit to draw archetypes by their population weights. */
   archetypeId: z.string().min(1).optional(),
+  /**
+   * Per-archetype draw weights for this cohort only, keyed by archetype id.
+   * An archetype the map does not list has weight 0, so `{散修: 60, 魔修: 40}`
+   * produces a cohort of only those two. Wins over `archetypeId` when both are
+   * sent; omit it to draw by the archetypes' own population weights.
+   */
+  archetypeWeights: z.record(z.string().min(1), z.number().min(0)).optional(),
   /** Stage range the generated cohort starts in. */
   minStageIndex: z.number().int().min(0).max(MAX_STAGE_INDEX).default(0),
   maxStageIndex: z.number().int().min(0).max(MAX_STAGE_INDEX).default(11),
@@ -139,20 +146,35 @@ export const InviteSchema = z.object({
   code: z.string(),
   createdAt: z.number().int(),
   createdBy: z.string(),
+  /** Most recent redeemer, not the only one: a multi-use code overwrites it. */
   usedBy: z.string().nullable(),
   usedAt: z.number().int().nullable(),
   /** null = never expires. */
   expiresAt: z.number().int().nullable(),
   note: z.string().max(100),
+  /** Redemptions allowed. -1 is unlimited, which is what `INVITE_CODE` mints. */
+  maxUses: z.number().int(),
+  /** Redemptions spent. Registration stops accepting the code at `maxUses`. */
+  uses: z.number().int(),
 });
 export type Invite = z.infer<typeof InviteSchema>;
 
 export const InviteListResponseSchema = z.object({ invites: z.array(InviteSchema) });
 
+/** Uses a minted code may be spent on. -1 is unlimited. */
+export const INVITE_MAX_USES_LIMIT = 1000;
+
 export const InviteCreateRequestSchema = z.object({
   count: z.number().int().min(1).max(100).default(1),
   note: z.string().max(100).default(''),
   expiresAt: z.number().int().nullable().default(null),
+  maxUses: z
+    .number()
+    .int()
+    .min(-1)
+    .max(INVITE_MAX_USES_LIMIT)
+    .refine((n) => n !== 0, { message: '可用次数不能为 0；-1 表示不限次' })
+    .default(1),
 });
 
 export const InviteDeleteRequestSchema = z.object({ code: z.string().min(1) });
@@ -169,8 +191,16 @@ export const AdminStatsSchema = z.object({
   bots: z.object({
     total: z.number().int(),
     byArchetype: z.record(z.string(), z.number().int()),
-    /** Population per major realm, index 0-8. */
+    /** Population per major realm, index 0-8. Column sums of `byStage`. */
     byRealm: z.array(z.number().int()),
+    /** Population per stage, index = `stageIndex`, 0-35. */
+    byStage: z.array(z.number().int()),
+    /**
+     * Bots sitting at a 圆满 stage, where 修为 stops accruing until a
+     * breakthrough lands. A number that only climbs means the breakthrough odds
+     * or the 悟性 of the population are too low for the world to move.
+     */
+    atPerfection: z.number().int(),
   }),
   activity: z.object({
     battlesToday: z.number().int(),
@@ -185,6 +215,8 @@ export const AdminStatsSchema = z.object({
     serverTime: z.number().int(),
     /** Last bot tick, so the operator can see the loop is alive. */
     lastBotTickAt: z.number().int().nullable(),
+    /** What that tick did. Absent until the loop has completed a round. */
+    lastTick: BotTickStatsSchema.optional(),
     version: z.string(),
   }),
 });
@@ -234,7 +266,7 @@ export const adminEndpoints = {
     request: BotGenerateRequestSchema,
     response: BotGenerateResponseSchema,
     errors: ['ADMIN_UNAUTHORIZED', 'BOT_NOT_FOUND'],
-    summary: '批量生成机器人（可指定原型、境界区间与随机种子）',
+    summary: '批量生成机器人（可指定原型或原型权重、境界区间与随机种子）',
   }),
   updateBot: endpoint({
     method: 'PUT',
@@ -324,7 +356,7 @@ export const adminEndpoints = {
     request: InviteCreateRequestSchema,
     response: InviteListResponseSchema,
     errors: ['ADMIN_UNAUTHORIZED'],
-    summary: '生成邀请码',
+    summary: '生成邀请码（可设可用次数，-1 为不限次）',
   }),
   deleteInvite: endpoint({
     method: 'DELETE',
