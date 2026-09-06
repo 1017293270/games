@@ -11,6 +11,9 @@ import {
   requiresTribulation,
   stageName,
   tribulationAvatar,
+  zoneFor,
+  ZONE_BOT_MIN_STAY_MS,
+  type BotAction,
   type BotParams,
   type CharacterState,
   type Stats,
@@ -110,6 +113,8 @@ export class BotEngine {
   private running = false;
   private readonly clock: () => number;
   private readonly lastChatAt = new Map<string, number>();
+  /** When each bot walked onto its 战斗大地图, for the `ZONE_BOT_MIN_STAY_MS` floor. */
+  private readonly zoneEnteredAt = new Map<string, number>();
   private stopSettingsWatch: (() => void) | null = null;
 
   /** Epoch ms of the last completed tick; surfaced by `admin/stats`. */
@@ -303,7 +308,12 @@ export class BotEngine {
       // through also re-equips it, and the cached 战力 is stamped from the
       // same pieces the next fight will use.
       const geared = withBotGear(state);
-      dirty.set(geared.id, withFreshPower(geared, botEquipment(geared)));
+      const equipped = withFreshPower(geared, botEquipment(geared));
+      dirty.set(equipped.id, equipped);
+
+      // Walking onto (or off) a 战斗大地图 is decided from the equipped state,
+      // so the field gets the bot with the 战力 it will actually fight at.
+      this.stepZone(equipped, action, scheduleMultiplier, rng, world, now);
     }
 
     // ---- fights, resolved after the settle pass so both sides are current
@@ -356,6 +366,65 @@ export class BotEngine {
     this.lastTickAt = now;
     this.lastTick = stats;
     return stats;
+  }
+
+  /**
+   * Sends a bot out to a 战斗大地图, or calls it home.
+   *
+   * This is what keeps the maps populated around the clock: a bot that decided
+   * to 历练 walks onto the field its 境界 belongs on and stays there for at
+   * least `ZONE_BOT_MIN_STAY_MS`, so the roster a player sees does not churn
+   * every tick. Asleep bots always come home, which is what makes a map quiet
+   * at 04:00 and crowded in the evening.
+   *
+   * `ZoneService` owns the field itself — the bot's own row is settled and
+   * saved by the tick around this call either way, so a full map never blocks
+   * cultivation.
+   */
+  private stepZone(
+    bot: CharacterState,
+    action: BotAction,
+    scheduleMultiplier: number,
+    rng: ReturnType<typeof createRng>,
+    world: WorldSettings,
+    now: number,
+  ): void {
+    // The same gate the chatter uses: below this a bot is off-hours.
+    const awake = scheduleMultiplier > 0.25;
+    const current = this.ctx.zones.zoneOf(bot.id);
+
+    if (current === null) {
+      if (!awake) return;
+      // 历练 goes to the field. So does a fight-picking bot once 大地图 PvP is
+      // on, because that is where the fights are.
+      const goes = action === 'explore' || (world.mapPvp && action === 'arena');
+      if (!goes) return;
+      const zone = zoneFor(bot.stageIndex, rng);
+      if (this.ctx.zones.enterBot(bot, zone.id, now)) this.zoneEnteredAt.set(bot.id, now);
+      return;
+    }
+
+    // A field restored from storage has no arrival time in this process; taking
+    // the first tick that sees it as the start keeps a restart from emptying
+    // every map at once.
+    const since = this.zoneEnteredAt.get(bot.id) ?? now;
+    this.zoneEnteredAt.set(bot.id, since);
+
+    if (!awake) {
+      this.leaveZone(bot.id, now);
+      return;
+    }
+
+    // Awake and minded to sit and cultivate: half of them wander home, but only
+    // after they have put their time in.
+    if (action === 'cultivate' && now - since >= ZONE_BOT_MIN_STAY_MS && rng.chance(0.5)) {
+      this.leaveZone(bot.id, now);
+    }
+  }
+
+  private leaveZone(botId: string, now: number): void {
+    this.ctx.zones.retreatBot(botId, now);
+    this.zoneEnteredAt.delete(botId);
   }
 
   /** Rolls one bot's breakthrough, fighting the 天劫 when the stage demands it. */

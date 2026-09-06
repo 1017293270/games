@@ -11,6 +11,7 @@ import {
 import type { FastifyInstance } from 'fastify';
 import type { AppContext } from './context.js';
 import type { GameServer } from './realtime.js';
+import { registerZoneSocketHandlers } from './engine/zone/socket.js';
 import { CHAT_MIN_INTERVAL_MS, recordMessage } from './modules/social/service.js';
 
 /**
@@ -67,6 +68,7 @@ export function attachSocketIo(app: FastifyInstance, ctx: AppContext): GameServe
     socket.data.characterId = character.id;
     socket.data.isAdmin = user.isAdmin;
     socket.data.partyId = null;
+    socket.data.zoneId = null;
     next();
   });
 
@@ -104,6 +106,10 @@ export function attachSocketIo(app: FastifyInstance, ctx: AppContext): GameServe
     socket.on('presence:ping', () => {
       ctx.characters.touchSeen(characterId, ctx.now());
     });
+
+    // 战斗大地图: the client asks for its field back with `zone:enter`, so a
+    // reconnect joins no zone room here.
+    registerZoneSocketHandlers(io, socket, ctx);
 
     socket.on('chat:send', (payload: unknown) => {
       const parsed = CLIENT_EVENT_SCHEMAS['chat:send'].safeParse(payload);

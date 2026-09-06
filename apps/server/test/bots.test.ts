@@ -1,10 +1,63 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { BREAKTHROUGH_BASE_CHANCE, breakthroughChance, getStage, realmOf } from '@xianxia/shared';
+import {
+  BREAKTHROUGH_BASE_CHANCE,
+  breakthroughChance,
+  getStage,
+  realmOf,
+  zoneFor,
+  ZONE_BOT_MIN_STAY_MS,
+} from '@xianxia/shared';
 import type { CharacterState } from '@xianxia/shared';
 import { eloDelta, insightWorld } from '../src/engine/bots/engine.js';
 import { generateBots } from '../src/engine/bots/generate.js';
 import { BOT_CHAT_TEMPLATES, renderBotLine } from '../src/engine/bots/chatter.js';
+import type { ZoneEnterResult, ZoneService, ZoneStats } from '../src/engine/zone/api.js';
 import { createHarness, makePlayer, type Harness } from './helpers.js';
+
+/**
+ * Records where the engine sent each bot. The field itself is not simulated —
+ * what is under test is the tick's decision to walk on or off one.
+ */
+class FakeZoneService implements ZoneService {
+  readonly botEnters: { id: string; zoneId: string; stageIndex: number; at: number }[] = [];
+  readonly botRetreats: { id: string; at: number }[] = [];
+  readonly standing = new Map<string, string>();
+
+  enter(): ZoneEnterResult {
+    return { ok: false, code: 'NOT_FOUND', message: '战斗大地图尚未开放' };
+  }
+
+  resume(): ZoneEnterResult | null {
+    return null;
+  }
+
+  retreat(): boolean {
+    return false;
+  }
+
+  enterBot(state: CharacterState, zoneId: string, now: number): boolean {
+    this.botEnters.push({ id: state.id, zoneId, stageIndex: state.stageIndex, at: now });
+    this.standing.set(state.id, zoneId);
+    return true;
+  }
+
+  retreatBot(characterId: string, now: number): boolean {
+    this.botRetreats.push({ id: characterId, at: now });
+    return this.standing.delete(characterId);
+  }
+
+  zoneOf(characterId: string): string | null {
+    return this.standing.get(characterId) ?? null;
+  }
+
+  step(): void {}
+  flush(): void {}
+  start(): void {}
+  stop(): void {}
+  stats(): ZoneStats[] {
+    return [];
+  }
+}
 
 describe('bot engine', () => {
   let h: Harness;
@@ -269,6 +322,77 @@ describe('bot engine', () => {
     h.clock.advance(20 * 60_000);
     h.ctx.bots.tick(h.clock.now());
     expect(h.ctx.characters.byId(bot!.id)!.hpPercent).toBe(1);
+  });
+
+  /** A world of 散修 (`explorePref: 'explore'`), which is what fills the maps. */
+  const seedWanderers = (zones: FakeZoneService, count = 20): CharacterState[] => {
+    h.ctx.zones = zones;
+    h.ctx.settings.patch({ botCount: 0 });
+    return generateBots(
+      h.ctx,
+      { count, archetypeId: 'bot-sanxiu', minStageIndex: 0, maxStageIndex: 1, seed: 17 },
+      h.clock.now(),
+    );
+  };
+
+  it('sends 散修 out to the 战斗大地图 their 境界 belongs on', () => {
+    const zones = new FakeZoneService();
+    seedWanderers(zones);
+    // Noon UTC is inside 散修's 06:00-22:00 window.
+    expect(new Date(h.clock.now()).getUTCHours()).toBe(12);
+
+    for (let i = 0; i < 4; i += 1) {
+      h.clock.advance(60_000);
+      h.ctx.bots.tick(h.clock.now());
+    }
+
+    expect(zones.botEnters.length).toBeGreaterThan(0);
+    for (const entry of zones.botEnters) {
+      expect(entry.zoneId).toBe(zoneFor(entry.stageIndex).id);
+      expect(entry.zoneId).toBe('map-qingyun-mountain');
+    }
+    // Nobody standing on a field is sent to one again.
+    const ids = zones.botEnters.map((e) => e.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('calls every bot home once its active window closes', () => {
+    const zones = new FakeZoneService();
+    const wanderers = seedWanderers(zones, 6);
+    for (const bot of wanderers) zones.standing.set(bot.id, 'map-qingyun-mountain');
+
+    // 03:00 UTC is outside 散修's window, so the map empties whatever they roll.
+    h.clock.set(Date.UTC(2026, 0, 2, 3, 0, 0));
+    h.ctx.bots.tick(h.clock.now());
+
+    expect(zones.botRetreats.map((r) => r.id).sort()).toEqual(wanderers.map((b) => b.id).sort());
+    expect(zones.standing.size).toBe(0);
+    expect(zones.botEnters).toHaveLength(0);
+  });
+
+  it('leaves a bot on the field until it has put its ten minutes in', () => {
+    const zones = new FakeZoneService();
+    seedWanderers(zones);
+
+    h.clock.advance(60_000);
+    h.ctx.bots.tick(h.clock.now());
+    expect(zones.botEnters.length).toBeGreaterThan(0);
+
+    // Three more minutes, well inside ZONE_BOT_MIN_STAY_MS: nobody goes home.
+    for (let i = 0; i < 3; i += 1) {
+      h.clock.advance(60_000);
+      h.ctx.bots.tick(h.clock.now());
+    }
+    expect(zones.botRetreats).toHaveLength(0);
+
+    // Past the floor, the ones that settle down to cultivate start drifting off.
+    let rounds = 0;
+    while (zones.botRetreats.length === 0 && rounds < 4) {
+      h.clock.advance(ZONE_BOT_MIN_STAY_MS);
+      h.ctx.bots.tick(h.clock.now());
+      rounds += 1;
+    }
+    expect(zones.botRetreats.length).toBeGreaterThan(0);
   });
 
   it('runs a 200-bot round in well under 200ms', () => {
