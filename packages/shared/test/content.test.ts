@@ -4,6 +4,7 @@ import { EQUIPMENT_ITEMS, ITEMS, ITEM_BY_ID, MATERIAL_ITEMS, PILL_ITEMS } from '
 import { SKILLS, SKILL_BY_ID, skillTree, starterSkillIds } from '../src/content/skills.js';
 import { TECHNIQUES } from '../src/content/techniques.js';
 import { BOSSES, MONSTERS, tribulationAvatar } from '../src/content/monsters.js';
+import type { Monster } from '../src/domain/monster.js';
 import { ENCOUNTERS, EXPLORE_MAPS } from '../src/content/maps.js';
 import { DUNGEONS } from '../src/content/dungeons.js';
 import { NPCS } from '../src/content/npcs.js';
@@ -137,9 +138,16 @@ describe('monsters and dungeons', () => {
   });
 
   it('makes BOSS stat blocks far beefier than a same-stage 妖兽', () => {
+    const normals = MONSTERS.filter((m) => !m.isBoss);
     for (const boss of BOSSES) {
-      const peer = MONSTERS.find((m) => !m.isBoss && Math.abs(m.stageIndex - boss.stageIndex) <= 2);
-      if (peer) expect(boss.stats.hp).toBeGreaterThan(peer.stats.hp * 2);
+      // The nearest 妖兽 by 境界, whatever the gap: the entrance bands sit at
+      // their field's 解锁阶, so the top BOSS has no neighbour within two.
+      const peer = [...normals].sort(
+        (a, b) =>
+          Math.abs(a.stageIndex - boss.stageIndex) - Math.abs(b.stageIndex - boss.stageIndex),
+      )[0];
+      expect(peer).toBeDefined();
+      expect(boss.stats.hp).toBeGreaterThan((peer as Monster).stats.hp * 2);
     }
   });
 

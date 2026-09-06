@@ -18,6 +18,8 @@
  * ------------------
  *   1. respawns (dead 妖兽 and fallen cultivators) and the BOSS's appearance
  *   2. target selection — recomputed when a target is gone, or every 8 ticks
+ *      unless the cultivator is already on a 妖兽 within sight (see
+ *      `stickyTarget`)
  *   3. movement, at `ZONE_MOVE_UNITS_PER_SEC`
  *   4. actions — one action is one "round": +15 灵力, the 4-slot rotation,
  *      `rollDamage`, then this actor's own cooldowns and modifiers tick down
@@ -67,8 +69,40 @@ import {
 export const ZONE_MAX_CATCHUP_STEPS = 8;
 /** Ticks between two forced re-evaluations of a still-valid target. */
 export const ZONE_RETARGET_TICKS = 8;
-/** A 妖兽 locked by this many cultivators is deprioritised, so packs spread out. */
-export const ZONE_CROWD_LOCKS = 3;
+/**
+ * A 妖兽 locked by this many cultivators is deprioritised, so packs spread out.
+ *
+ * Two, not three: a cultivator walking toward an untouched 妖兽 has not
+ * claimed it yet (see `claimedByOther`), so at three the pair that converged on
+ * the same wolf simply raced, and the loser walked on to the next one and lost
+ * that race too. Measured on a 36-bot 青云山, dropping it to two took a fresh
+ * 练气 player from 2–6 kills a minute to a steady 4–6 and cut its `moving`
+ * frames from a third of the round to a quarter.
+ */
+export const ZONE_CROWD_LOCKS = 2;
+/**
+ * Distance penalty on a 妖兽 another cultivator has already claimed.
+ *
+ * Claiming is "locked on and bloodied": that cultivator's `targetI` is this
+ * 妖兽 and its `lastHitBy` points back. At twice the sight radius, an unclaimed
+ * 妖兽 anywhere in sight beats a claimed one underfoot, and a claimed one is
+ * picked only when the field really has nothing else — which is what makes the
+ * map read as 各打各的 rather than forty cultivators queuing behind one wolf.
+ */
+export const ZONE_CLAIMED_PENALTY = ZONE_SEEK_RADIUS * 2;
+/**
+ * Cells within which a living BOSS outranks every 妖兽 on the field.
+ *
+ * The BOSS is one 妖兽 among dozens and almost never the nearest, so it simply
+ * stood in its clearing: two 150-second observations at `bossIntervalMinutes`
+ * 1 saw nobody walk up to 青云虎王 at all. Anyone already in the northern half
+ * drops what it is doing; further out it is merely attractive, at
+ * `ZONE_BOSS_PULL`. The entrance crowd is 70 cells away and carries on farming,
+ * which is what keeps the low band from emptying every time a BOSS appears.
+ */
+export const ZONE_BOSS_CALL = 30;
+/** Weight on the distance to a BOSS standing beyond `ZONE_BOSS_CALL`. */
+export const ZONE_BOSS_PULL = 0.35;
 
 export const ZONE_ENTITY_STATES = [
   'idle',
@@ -675,14 +709,42 @@ function countLocks(sim: ZoneSim): number[] {
   return locks;
 }
 
-/** Nearest living 妖兽, with crowded ones pushed down the list. */
+/**
+ * True when another living cultivator has this 妖兽 to itself.
+ *
+ * Kills are credited to the last blow, so a 妖兽 someone else has bloodied and
+ * is still locked onto is somebody's kill in progress. A BOSS is never claimed:
+ * it is meant to be mobbed, and its spoils are split across the top five.
+ */
+function claimedByOther(sim: ZoneSim, actor: ZoneEntity, beast: ZoneEntity): boolean {
+  if (beast.kind === 'boss') return false;
+  const owner = beast.lastHitBy;
+  if (owner < 0 || owner === actor.i) return false;
+  const holder = livingAt(sim, owner);
+  return holder !== null && !isBeast(holder.kind) && holder.targetI === beast.i;
+}
+
+/** How far away a 妖兽 counts as being, once the BOSS's pull is priced in. */
+function seekReach(sim: ZoneSim, actor: ZoneEntity, beast: ZoneEntity): number {
+  const d = distance(actor, beast);
+  if (beast.i !== sim.bossI) return d;
+  return d <= ZONE_BOSS_CALL ? 0 : d * ZONE_BOSS_PULL;
+}
+
+/**
+ * Nearest living 妖兽 — crowded ones pushed down the list, ones another
+ * cultivator has already claimed pushed far down it, and the BOSS pulled in.
+ */
 function pickBeast(sim: ZoneSim, actor: ZoneEntity, locks: number[]): number {
   let best = -1;
   let bestScore = Number.POSITIVE_INFINITY;
   for (const other of sim.entities) {
     if (!other || other.state === 'dead' || !isBeast(other.kind)) continue;
     const crowded = (locks[other.i] ?? 0) >= ZONE_CROWD_LOCKS;
-    const score = distance(actor, other) + (crowded ? ZONE_SEEK_RADIUS * 0.5 : 0);
+    const score =
+      seekReach(sim, actor, other) +
+      (crowded ? ZONE_SEEK_RADIUS * 0.5 : 0) +
+      (claimedByOther(sim, actor, other) ? ZONE_CLAIMED_PENALTY : 0);
     if (score < bestScore) {
       bestScore = score;
       best = other.i;
@@ -778,6 +840,34 @@ function respawnPhase(sim: ZoneSim, out: ZoneStepOutput): void {
   }
 }
 
+/**
+ * True when a cultivator should keep the 妖兽 it is already fighting through a
+ * forced re-target.
+ *
+ * Without this every cultivator on the field re-picked by distance every two
+ * seconds, so a 妖兽 that died — or merely someone else standing a step closer
+ * to another one — sent whole packs walking. Measured on a 200-bot world, a
+ * fresh 练气 player spent 60–95% of its frames in `moving` and landed three
+ * kills a minute, because it kept being pulled off a wolf it had half killed.
+ *
+ * Two things still break the hold: a rival's blow, which must be answered, and
+ * a living BOSS whose weighted distance already beats the current target's —
+ * exactly the comparison `pickBeast` is about to make.
+ */
+function stickyTarget(sim: ZoneSim, e: ZoneEntity, target: ZoneEntity): boolean {
+  if (isBeast(e.kind) || !isBeast(target.kind)) return false;
+  if (distance(e, target) > ZONE_SEEK_RADIUS) return false;
+  if (sim.rules.mapPvp) {
+    const aggressor = livingAt(sim, e.lastHitBy);
+    if (aggressor && !isBeast(aggressor.kind)) return false;
+  }
+  if (sim.bossI !== null && target.i !== sim.bossI) {
+    const boss = livingAt(sim, sim.bossI);
+    if (boss && seekReach(sim, e, boss) < distance(e, target)) return false;
+  }
+  return true;
+}
+
 function targetPhase(sim: ZoneSim): void {
   const forced = sim.tick % ZONE_RETARGET_TICKS === 0;
   let locks: number[] | null = null;
@@ -789,10 +879,20 @@ function targetPhase(sim: ZoneSim): void {
       (isBeast(e.kind) && !isBeast(target.kind) && distanceTo(e, e.home) > ZONE_LEASH) ||
       (!isBeast(e.kind) && !isBeast(target.kind) && !sim.rules.mapPvp);
     if (!stale && !forced) continue;
+    if (!stale && target !== null && stickyTarget(sim, e, target)) continue;
     locks ??= countLocks(sim);
     const before = e.targetI;
     chooseTarget(sim, e, locks);
-    if (e.targetI !== before) markDirty(e);
+    if (e.targetI !== before) {
+      // Keep the tally honest as the pass proceeds, so two cultivators choosing
+      // in the same phase see each other's pick rather than the same empty map.
+      if (before >= 0 && before < locks.length)
+        locks[before] = Math.max(0, (locks[before] ?? 0) - 1);
+      if (e.targetI >= 0 && e.targetI < locks.length) {
+        locks[e.targetI] = (locks[e.targetI] ?? 0) + 1;
+      }
+      markDirty(e);
+    }
   }
 }
 
@@ -812,8 +912,16 @@ function movePhase(sim: ZoneSim, dtMs: number): void {
         moveToward(sim, e, e.home, step);
         if (distanceTo(e, e.home) <= 0.5) {
           e.state = 'idle';
-          e.hp = e.maxHp;
-          e.damageTaken.clear();
+          // A 妖兽 that shook off its pursuers is whole again — but a BOSS
+          // keeps its wounds and its damage ledger. It is fought by a thin
+          // stream of cultivators walking up from the south, so a full heal on
+          // every trip home made it unkillable: one offline run took 430 秒 and
+          // three resets. The ledger has to survive too, or the top-5 loot
+          // shares are wiped along with the 气血.
+          if (e.kind !== 'boss') {
+            e.hp = e.maxHp;
+            e.damageTaken.clear();
+          }
         }
         markDirty(e);
         continue;

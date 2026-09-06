@@ -7,6 +7,7 @@ import {
   ZONE_BOT_CAPACITY_MARGIN,
   ZONE_BY_ID,
   ZONE_PVP_PROTECT_MS,
+  ZONE_SEEK_RADIUS,
   zoneBotLimit,
   zoneFor,
   zoneKillDemand,
@@ -26,11 +27,15 @@ import {
   zoneBotCount,
   zoneMonsterCount,
   zonePlayerCount,
+  ZONE_BOSS_CALL,
+  ZONE_RETARGET_TICKS,
   type AddCultivatorInput,
   type ZoneEntity,
   type ZoneRules,
   type ZoneSim,
 } from '../src/zone/sim.js';
+import { starterSkillIds } from '../src/content/skills.js';
+import { MONSTER_BY_ID } from '../src/content/monsters.js';
 
 const RULES: ZoneRules = {
   tickMs: DEFAULT_WORLD_SETTINGS.zoneTickMs,
@@ -313,6 +318,265 @@ describe('BOSS', () => {
     for (const e of sim.entities) {
       if (e && e.i !== late.i) expect(e.targetI).not.toBe(bossSlot);
     }
+  });
+});
+
+describe('目标选择', () => {
+  /** One 妖兽 at `at`, the rest of the field cleared, and it will not die. */
+  function loneBeast(sim: ZoneSim, at: { x: number; y: number }): ZoneEntity {
+    const beast = monstersOf(sim)[0] as ZoneEntity;
+    beast.x = at.x;
+    beast.y = at.y;
+    beast.maxHp = 1_000_000;
+    beast.hp = beast.maxHp;
+    return beast;
+  }
+
+  /** A field with two indestructible 妖兽 and nothing else alive. */
+  function pair(seed: number, ruleOverrides: Partial<ZoneRules> = {}) {
+    const sim = createZoneSim(testZone(), rules(ruleOverrides), seed, T0);
+    const beasts = monstersOf(sim);
+    for (const extra of beasts.slice(2)) removeEntity(sim, extra.i);
+    const a = loneBeast(sim, { x: 20, y: 20 });
+    const b = beasts[1] as ZoneEntity;
+    b.maxHp = 1_000_000;
+    b.hp = b.maxHp;
+    return { sim, a, b };
+  }
+
+  it('keeps the 妖兽 it is already fighting when the forced re-target comes round', () => {
+    const { sim, a, b } = pair(101);
+    const hero = addCultivator(sim, cultivator('hero', 20));
+    hero.x = 20;
+    hero.y = 20 + 1.5; // inside melee reach of a, so nobody walks anywhere
+    hero.targetI = a.i;
+    b.x = 20;
+    b.y = 20 + 2.9; // strictly nearer than a, and in sight
+
+    run(sim, ZONE_RETARGET_TICKS * 3);
+    expect(hero.targetI).toBe(a.i);
+    expect(a.hp).toBeLessThan(a.maxHp);
+    expect(b.hp).toBe(b.maxHp);
+
+    // The hold is what keeps it, not the absence of a re-target: put the same
+    // 妖兽 out of sight and the next forced pass hands over the nearer one.
+    a.x = 38;
+    a.y = 38;
+    // Its post moves with it and it forgets the fight, so it stays put while
+    // the hero walks: only one of the two is closing the gap.
+    a.home = { x: 38, y: 38 };
+    a.targetI = -1;
+    a.lastHitBy = -1;
+    expect(Math.hypot(a.x - hero.x, a.y - hero.y)).toBeGreaterThan(ZONE_SEEK_RADIUS);
+    run(sim, ZONE_RETARGET_TICKS);
+    expect(hero.targetI).toBe(b.i);
+  });
+
+  it('drops the hold to answer a rival, and picks the 妖兽 back up afterwards', () => {
+    const { sim, a } = pair(103, { mapPvp: true });
+    const hero = addCultivator(sim, cultivator('hero', 20));
+    hero.x = 20;
+    hero.y = 21.5;
+    hero.targetI = a.i;
+    const rival = addCultivator(sim, cultivator('rival', 20));
+    rival.x = 24;
+    rival.y = 21.5;
+    rival.protectedUntil = 0;
+    hero.protectedUntil = 0;
+
+    // One tick short of the forced pass, so the 妖兽 fighting back cannot
+    // overwrite `lastHitBy` between the blow and the decision.
+    run(sim, ZONE_RETARGET_TICKS - 1);
+    expect(hero.targetI).toBe(a.i);
+    hero.lastHitBy = rival.i;
+    run(sim, 1);
+    expect(hero.targetI).toBe(rival.i);
+
+    // The blow forgotten, the 妖兽 is the natural pick again.
+    hero.lastHitBy = -1;
+    removeEntity(sim, rival.i);
+    run(sim, ZONE_RETARGET_TICKS);
+    expect(hero.targetI).toBe(a.i);
+  });
+
+  it('walks past a 妖兽 another cultivator has claimed to reach a free one', () => {
+    const { sim, a, b } = pair(105);
+    b.x = 20;
+    b.y = 32; // twelve cells north of a
+
+    const owner = addCultivator(sim, cultivator('owner', 20));
+    owner.x = 20;
+    owner.y = 20.5;
+    owner.targetI = a.i;
+    a.lastHitBy = owner.i; // locked on and bloodied: a is the owner's kill
+
+    const late = addCultivator(sim, cultivator('late', 20));
+    late.x = 20;
+    late.y = 21; // one cell from a, twelve from b
+
+    run(sim, 1);
+    expect(late.targetI).toBe(b.i);
+    expect(owner.targetI).toBe(a.i);
+
+    // With the claim released, the nearer 妖兽 is the obvious pick once more.
+    const fresh = addCultivator(sim, cultivator('fresh', 20));
+    fresh.x = 20;
+    fresh.y = 21;
+    a.lastHitBy = -1;
+    owner.targetI = -1;
+    removeEntity(sim, owner.i);
+    run(sim, 1);
+    expect(fresh.targetI).toBe(a.i);
+  });
+
+  it('never treats the BOSS as claimed, however many are already on it', () => {
+    const sim = createZoneSim(testZone(), rules({ bossIntervalMinutes: 1 }), 107, T0);
+    for (const m of monstersOf(sim)) removeEntity(sim, m.i);
+    stepZone(sim, T0 + 61_000);
+    const boss = entity(sim, sim.bossI as number);
+    boss.maxHp = 1_000_000;
+    boss.hp = boss.maxHp;
+
+    const first = addCultivator(sim, cultivator('first', 20));
+    first.x = boss.x;
+    first.y = boss.y + 1;
+    first.targetI = boss.i;
+    boss.lastHitBy = first.i;
+
+    const second = addCultivator(sim, cultivator('second', 20));
+    second.x = boss.x;
+    second.y = boss.y + 1.2;
+    run(sim, 1);
+    expect(second.targetI).toBe(boss.i);
+  });
+});
+
+describe('BOSS 号召', () => {
+  it('pulls a cultivator off its 妖兽 once the BOSS is inside the call radius', () => {
+    const sim = createZoneSim(testZone(), rules({ bossIntervalMinutes: 1 }), 111, T0);
+    const wolf = monstersOf(sim)[0] as ZoneEntity;
+    for (const extra of monstersOf(sim).slice(1)) removeEntity(sim, extra.i);
+    wolf.x = 20;
+    wolf.y = 20;
+    wolf.maxHp = 1_000_000;
+    wolf.hp = wolf.maxHp;
+
+    const hero = addCultivator(sim, cultivator('hero', 20));
+    hero.x = 20;
+    hero.y = 21.5;
+    hero.targetI = wolf.i;
+    run(sim, ZONE_RETARGET_TICKS);
+    expect(hero.targetI).toBe(wolf.i);
+
+    stepZone(sim, T0 + 61_000);
+    const bossI = sim.bossI as number;
+    expect(bossI).toBeGreaterThanOrEqual(0);
+    const boss = entity(sim, bossI);
+    // The clearing is well inside the call radius on a 40x40 test field.
+    expect(Math.hypot(boss.x - hero.x, boss.y - hero.y)).toBeLessThan(ZONE_BOSS_CALL);
+    run(sim, ZONE_RETARGET_TICKS);
+    expect(hero.targetI).toBe(bossI);
+  });
+
+  it('leaves the entrance crowd of a real field farming', () => {
+    const zone = ZONE_BY_ID.get('map-qingyun-mountain') as Zone;
+    const sim = createZoneSim(zone, rules({ bossIntervalMinutes: 1 }), 113, T0);
+    const hero = addCultivator(sim, cultivator('hero', 6));
+    stepZone(sim, T0 + 61_000);
+    const bossI = sim.bossI as number;
+    expect(bossI).toBeGreaterThanOrEqual(0);
+
+    run(sim, ZONE_RETARGET_TICKS * 4);
+    const boss = entity(sim, bossI);
+    // Seventy cells of mountain lie between the gate and the clearing.
+    expect(Math.hypot(boss.x - hero.x, boss.y - hero.y)).toBeGreaterThan(ZONE_BOSS_CALL);
+    expect(hero.targetI).not.toBe(bossI);
+    const target = entity(sim, hero.targetI);
+    expect(target.monsterId).toBe('monster-qingyun-wolf');
+  });
+
+  it('keeps its wounds and its damage ledger when it walks home', () => {
+    const sim = createZoneSim(testZone(), rules({ bossIntervalMinutes: 1 }), 115, T0);
+    for (const m of monstersOf(sim)) removeEntity(sim, m.i);
+    stepZone(sim, T0 + 61_000);
+    const boss = entity(sim, sim.bossI as number);
+    boss.hp = Math.round(boss.maxHp / 2);
+    boss.damageTaken.set(7, 400);
+    // Dragged past the leash (10 cells), it turns for home like any other 妖兽.
+    boss.y = Math.min(sim.zone.height, boss.home.y + 15);
+
+    run(sim, 200);
+    expect(boss.state).toBe('idle');
+    expect(Math.hypot(boss.x - boss.home.x, boss.y - boss.home.y)).toBeLessThanOrEqual(0.5);
+    expect(boss.hp).toBe(Math.round(boss.maxHp / 2));
+    expect(boss.damageTaken.get(7)).toBe(400);
+  });
+});
+
+describe('入口带难度', () => {
+  /** A character straight out of 创建角色: base attributes, four tier-1 神通. */
+  function newcomer(id: string): AddCultivatorInput {
+    return cultivator(id, 0, { skills: starterSkillIds('metal') });
+  }
+
+  /** One newcomer against one 青云狼, alone. Returns 出手 count and 气血 left. */
+  function soloWolf(seed: number): { killed: boolean; actions: number; hpPercent: number } {
+    const sim = createZoneSim(testZone(), rules({ bossIntervalMinutes: 999 }), seed, T0);
+    const wolf = monstersOf(sim)[0] as ZoneEntity;
+    for (const extra of monstersOf(sim).slice(1)) removeEntity(sim, extra.i);
+    const hero = addCultivator(sim, newcomer('hero'));
+    hero.x = wolf.x + 1;
+    hero.y = wolf.y;
+
+    let actions = 0;
+    let last = hero.nextActionAt;
+    for (let n = 0; n < 600 && wolf.state !== 'dead' && hero.state !== 'dead'; n += 1) {
+      stepZone(sim, sim.now + sim.rules.tickMs);
+      if (hero.nextActionAt !== last) {
+        actions += 1;
+        last = hero.nextActionAt;
+      }
+    }
+    return {
+      killed: wolf.state === 'dead',
+      actions,
+      hpPercent: Math.round((hero.hp / hero.maxHp) * 100),
+    };
+  }
+
+  it('puts the entrance band of every field at its own 解锁阶', () => {
+    for (const zone of ZONES) {
+      const unlock = EXPLORE_MAP_BY_ID.get(zone.id)?.unlockStage ?? 0;
+      // The two biggest spawn points are the pair flanking the entrance.
+      const entrance = [...zone.spawns].sort((a, b) => b.count - a.count).slice(0, 2);
+      for (const spawn of entrance) {
+        const monster = MONSTER_BY_ID.get(spawn.monsterId);
+        expect(monster?.stageIndex).toBe(unlock);
+      }
+      // Everything further north is the +2 tier.
+      const inner = zone.spawns.filter((s) => !entrance.includes(s));
+      for (const spawn of inner) {
+        expect(MONSTER_BY_ID.get(spawn.monsterId)?.stageIndex).toBe(unlock + 2);
+      }
+    }
+  });
+
+  it('lets a 练气·前期 newcomer take an entrance 青云狼 and walk away with it', () => {
+    const runs = Array.from({ length: 60 }, (_, n) => soloWolf(n + 1));
+    // It never loses: at 练气·中期 the wolf used to win one duel in eight.
+    expect(runs.every((r) => r.killed)).toBe(true);
+
+    const actions = runs.map((r) => r.actions).sort((a, b) => a - b);
+    const hp = runs.map((r) => r.hpPercent).sort((a, b) => a - b);
+    const median = (xs: number[]): number => xs[Math.floor(xs.length / 2)] as number;
+    expect(median(actions)).toBeLessThanOrEqual(10);
+    expect(median(hp)).toBeGreaterThanOrEqual(50);
+    // The tail matters more than the median for a first impression, so most of
+    // the field has to clear both bars, not merely the typical run. Measured
+    // over 400 seeds: 100% wins, 85% inside both, 出手 median 8 and p90 9,
+    // 气血 median 64% and p10 51%.
+    const clean = runs.filter((r) => r.actions <= 10 && r.hpPercent >= 50).length;
+    expect(clean).toBeGreaterThanOrEqual(Math.ceil(runs.length * 0.7));
   });
 });
 

@@ -8,6 +8,13 @@
  * Rewards are expressed in idle-time terms: a normal 妖兽 is worth 90 seconds
  * of baseline cultivation at its own stage, a BOSS 20 minutes. That keeps
  * active play roughly 3x an idle hour without ever eclipsing it.
+ *
+ * The reference stage is where the 妖兽 stands on its 战斗大地图: the pair that
+ * flanks a field's entrance sits at that field's `unlockStage`, so whoever the
+ * gate lets in can fight what is waiting on the other side of it, and the pair
+ * further north sits at `unlockStage + 2`. BOSS blocks are unmoved. Everything
+ * else — 秘境 waves, 循迹 battles, 击杀 objectives — reads the same table, so
+ * the low tiers of those got easier along with the entrance bands.
  */
 
 import { indexById, round } from '../core/util.js';
@@ -90,7 +97,7 @@ const SPECS: MonsterSpec[] = [
     name: '青云狼',
     description: '青云山常见的群居妖狼，皮毛青灰，双目有灵光流转。',
     art: 'monster/qingyun-wolf',
-    stageIndex: 1,
+    stageIndex: 0,
     profile: 'swift',
     skills: ['skill-metal-1'],
     loot: [
@@ -103,7 +110,7 @@ const SPECS: MonsterSpec[] = [
     name: '灵猿',
     description: '手持桃木杖的山中灵猿，力大而通些许法术。',
     art: 'monster/spirit-ape',
-    stageIndex: 3,
+    stageIndex: 2,
     profile: 'brute',
     skills: ['skill-earth-1', 'skill-metal-1'],
     loot: [
@@ -118,7 +125,7 @@ const SPECS: MonsterSpec[] = [
     name: '水匪修士',
     description: '盘踞洛水的散修水匪，蒙面持刀，专劫过路商船。',
     art: 'monster/river-bandit',
-    stageIndex: 5,
+    stageIndex: 4,
     profile: 'normal',
     skills: ['skill-metal-1', 'skill-water-1'],
     loot: [
@@ -146,7 +153,7 @@ const SPECS: MonsterSpec[] = [
     name: '幽冥灯鬼',
     description: '提一盏青灯飘游谷中，灯焰所照处生人气血尽衰。',
     art: 'monster/ghost-lantern',
-    stageIndex: 9,
+    stageIndex: 8,
     profile: 'caster',
     skills: ['skill-fire-1', 'skill-wood-2'],
     loot: [
@@ -159,7 +166,7 @@ const SPECS: MonsterSpec[] = [
     name: '白骨将',
     description: '着残甲的白骨将军，生前不知是何方名将，死后仍守幽冥。',
     art: 'monster/bone-general',
-    stageIndex: 11,
+    stageIndex: 10,
     profile: 'brute',
     skills: ['skill-metal-1', 'skill-earth-1', 'skill-metal-2'],
     loot: [
@@ -174,7 +181,7 @@ const SPECS: MonsterSpec[] = [
     name: '冰麒麟',
     description: '昆仑雪线之上的瑞兽遗种，冰晶鳞甲坚不可摧。',
     art: 'monster/ice-qilin',
-    stageIndex: 13,
+    stageIndex: 12,
     profile: 'brute',
     skills: ['skill-water-2', 'skill-earth-1', 'skill-water-3'],
     loot: [
@@ -187,7 +194,7 @@ const SPECS: MonsterSpec[] = [
     name: '金乌',
     description: '三足金乌，振翅则烈焰焚天，昆仑墟金光多由其而来。',
     art: 'monster/golden-crow',
-    stageIndex: 15,
+    stageIndex: 14,
     profile: 'caster',
     skills: ['skill-fire-1', 'skill-fire-2', 'skill-fire-3'],
     loot: [
