@@ -537,6 +537,19 @@ docker compose up -d
 
 ---
 
+**构建停在 `load metadata for docker.io/library/node:24-alpine`，最后报 `DeadlineExceeded`？**
+是拉取基础镜像的元数据超时，不是代码问题。先单独把基础镜像拉下来，再重新构建：
+
+```bash
+docker pull node:24-alpine
+```
+
+```bash
+docker compose up -d --build
+```
+
+---
+
 ## 没有域名怎么办
 
 **能玩，但装不了桌面图标**（PWA 要 HTTPS，这是浏览器的硬规矩）。
