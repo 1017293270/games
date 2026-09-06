@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router';
 import { CloudRule } from '../../design';
 import { useArenaStore } from '../../store/arena';
 import { usePartyStore } from '../../store/party';
-import { ArenaChallengedNotice } from '../arena/ArenaChallengedNotice';
 import { ArenaPanel } from '../arena/ArenaPanel';
 import { DungeonLobby } from '../dungeon/DungeonLobby';
 import { DungeonRunReplay } from '../dungeon/DungeonRunReplay';
@@ -78,6 +77,7 @@ export function RealmPage() {
         <DungeonRunReplay
           dungeonId={incomingRun.dungeonId}
           battles={incomingRun.replay}
+          waves={incomingRun.waves}
           cleared={incomingRun.cleared}
           reward={{
             exp: incomingRun.reward.exp,
@@ -88,9 +88,6 @@ export function RealmPage() {
           onClose={clearIncomingRun}
         />
       )}
-
-      {/* A report, not a decision: a top bar that waits for the screen to clear. */}
-      <ArenaChallengedNotice />
     </div>
   );
 }

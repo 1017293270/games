@@ -12,7 +12,9 @@ import './social.css';
 type Tab = 'chat' | 'ranks' | 'party' | 'friends';
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'chat', label: '世界' },
+  // 世界 and 队伍 both live under this tab, so it is named for the act, not one
+  // of the two channels.
+  { id: 'chat', label: '传音' },
   { id: 'ranks', label: '榜单' },
   { id: 'party', label: '组队' },
   { id: 'friends', label: '道友' },

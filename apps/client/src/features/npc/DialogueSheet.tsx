@@ -23,8 +23,9 @@ export interface DialogueSheetProps {
  *
  * Which branches exist, whether they are takeable and what taking one does are
  * all the server's answer — this only draws `choices` and posts the id back.
- * A branch whose `next` is null ends the conversation, which the client can see
- * on the node it is already holding.
+ * `ended` is the server's word that the talk is over; the sheet stays up on it
+ * with the NPC's parting line and a single 告辞, rather than vanishing before
+ * that line can be read.
  */
 export function DialogueSheet({
   npcId,
@@ -77,19 +78,18 @@ export function DialogueSheet({
 
   const choose = async (choiceId: string) => {
     if (!dialogue) return;
-    // The full node is in hand, so the ending branch is known before the round
-    // trip: the effects still have to run, but the sheet closes after they do.
-    const ends = dialogue.node.choices.find((c) => c.id === choiceId)?.next === null;
     setBusy(true);
     try {
       const next = await api.npcTalk({ npcId, nodeId: dialogue.node.id, choiceId });
       apply(next);
+      // A branch that opens a shop hands the screen over to it.
       if (next.openShopId) {
         onOpenShop(next.openShopId);
         onClose();
         return;
       }
-      if (ends) onClose();
+      // Anything else that ends the talk leaves the sheet up on `ended`, so the
+      // parting line can actually be read before 告辞 closes it.
     } catch (error) {
       toast(errorMessage(error), 'warn');
     } finally {
@@ -130,21 +130,32 @@ export function DialogueSheet({
             </div>
           )}
 
+          {/*
+            Once the conversation is over, the NPC's parting line stands alone:
+            re-offering the branches the player just declined would read as the
+            talk never having ended.
+          */}
           <div className="dialogue__choices">
-            {dialogue.choices.map((choice) => (
-              <button
-                key={choice.id}
-                type="button"
-                className="town-choice"
-                disabled={busy || !choice.available}
-                onClick={() => void choose(choice.id)}
-              >
-                {choice.text}
-                {choice.blockedReason && (
-                  <span className="town-choice__gate">{choice.blockedReason}</span>
-                )}
+            {dialogue.ended ? (
+              <button type="button" className="town-choice town-choice--part" onClick={onClose}>
+                告辞
               </button>
-            ))}
+            ) : (
+              dialogue.choices.map((choice) => (
+                <button
+                  key={choice.id}
+                  type="button"
+                  className="town-choice"
+                  disabled={busy || !choice.available}
+                  onClick={() => void choose(choice.id)}
+                >
+                  {choice.text}
+                  {choice.blockedReason && (
+                    <span className="town-choice__gate">{choice.blockedReason}</span>
+                  )}
+                </button>
+              ))
+            )}
           </div>
         </div>
       )}

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ART_IDS } from '../core/art.js';
 import { DungeonSchema, EncounterSchema, ExploreMapSchema } from '../domain/map.js';
 import { MonsterSchema } from '../domain/monster.js';
 import { CharacterViewSchema } from '../domain/character.js';
@@ -96,11 +97,36 @@ export const DungeonStartRequestSchema = z.object({
 });
 export type DungeonStartRequest = z.infer<typeof DungeonStartRequestSchema>;
 
+/**
+ * One 妖兽 as it stood in a wave.
+ *
+ * `id` is the combatant id the battle log uses, which for a duplicated 妖兽
+ * carries a suffix — so this is the only thing that maps a `finalHp` key back
+ * to a name and a portrait.
+ */
+export const DungeonWaveEnemySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  /** null when the 妖兽 carries no portrait; the client draws a placeholder. */
+  art: z.enum(ART_IDS).nullable(),
+  maxHp: z.number().min(1),
+});
+export type DungeonWaveEnemy = z.infer<typeof DungeonWaveEnemySchema>;
+
+/** One wave of a 秘境 run, positionally aligned with the run's battles. */
+export const DungeonWaveSchema = z.object({
+  name: z.string(),
+  enemies: z.array(DungeonWaveEnemySchema),
+});
+export type DungeonWave = z.infer<typeof DungeonWaveSchema>;
+
 export const DungeonStartResponseSchema = z.object({
   dungeonId: z.string(),
   cleared: z.boolean(),
   /** One `BattleResult` per wave, boss last. */
   battles: z.array(BattleResultSchema),
+  /** What stood in each wave, same length and order as `battles`. */
+  waves: z.array(DungeonWaveSchema),
   reward: RewardBundleSchema,
   view: CharacterViewSchema,
   /** Character ids that took part; party runs share the loot. */

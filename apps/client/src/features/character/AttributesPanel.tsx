@@ -38,6 +38,11 @@ export function AttributesPanel({ view }: { view: CharacterView }) {
             <span className="identity__power-v numeral">
               {character.powerScore.toLocaleString('zh-CN')}
             </span>
+            {/* 声望 only ever comes from 围攻, so a fresh cultivator has none. */}
+            <span className="identity__fame" title="围攻斩敌所得">
+              <span className="identity__fame-k">声望</span>
+              <span className="numeral">{character.prestige.toLocaleString('zh-CN')}</span>
+            </span>
           </div>
         </div>
       </Panel>

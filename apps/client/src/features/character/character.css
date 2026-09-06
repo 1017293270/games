@@ -89,6 +89,20 @@
   color: var(--cinnabar);
 }
 
+/* 声望 rides under 战力 as the quieter of the two standings. */
+.identity__fame {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+  margin-top: var(--sp-1);
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+.identity__fame-k {
+  letter-spacing: 0.24em;
+}
+
 /* ------------------------------------------------------------------ 属性 */
 
 .stats-grid {

@@ -122,6 +122,7 @@ export function createCharacter(
     arenaRating: 1000,
     arenaWins: 0,
     arenaLosses: 0,
+    prestige: 0,
     powerScore: 0,
   };
 

@@ -18,6 +18,7 @@ import {
   dayKey,
   DEFAULT_WORLD_SETTINGS,
   ENCOUNTER_BY_ID,
+  EQUIP_SLOTS,
   EXPLORE_MAP_BY_ID,
   EXPLORE_MAPS,
   generateBotNames,
@@ -49,6 +50,7 @@ import {
   type InventoryItem,
   type LootEntry,
   type Monster,
+  type ProfileEquipment,
   type PublicProfile,
   type Rng,
   type ServerToClientEvents,
@@ -351,6 +353,18 @@ export function equipmentOf(char: CharacterState, inv: readonly InventoryItem[])
   return out;
 }
 
+/** Equipped pieces in slot order, with what a dossier slot needs to draw one. */
+function profileEquipment(equipment: readonly EquipmentItem[]): ProfileEquipment[] {
+  const bySlot = new Map(equipment.map((piece) => [piece.slot, piece]));
+  const out: ProfileEquipment[] = [];
+  for (const slot of EQUIP_SLOTS) {
+    const piece = bySlot.get(slot);
+    if (!piece) continue;
+    out.push({ slot, itemId: piece.id, name: piece.name, grade: piece.grade, art: piece.art });
+  }
+  return out;
+}
+
 export function statsFor(char: CharacterState, inv: readonly InventoryItem[] = []) {
   const technique = getTechnique(char.techniqueId);
   const stats = computeStats({
@@ -387,6 +401,7 @@ export function buildView(w: MockWorld, char: CharacterState): CharacterView {
 export function toProfile(w: MockWorld, char: CharacterState): PublicProfile {
   const inv = w.inventories.get(char.id) ?? [];
   const { stats, technique, power } = statsFor(char, inv);
+  const worn = equipmentOf(char, inv);
   return {
     id: char.id,
     name: char.name,
@@ -400,7 +415,8 @@ export function toProfile(w: MockWorld, char: CharacterState): PublicProfile {
     stats,
     techniqueName: technique?.name ?? null,
     skillIds: char.skillSlots.filter((s): s is string => Boolean(s)),
-    equipmentItemIds: equipmentOf(char, inv).map((e) => e.id),
+    equipmentItemIds: worn.map((e) => e.id),
+    equipment: profileEquipment(worn),
     arenaRating: char.arenaRating,
     arenaWins: char.arenaWins,
     arenaLosses: char.arenaLosses,

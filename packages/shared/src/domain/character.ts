@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import { ART_AVATARS } from '../core/art.js';
+import { ART_AVATARS, ART_IDS } from '../core/art.js';
 import { MAX_STAGE_INDEX } from '../cultivation/realms.js';
 import { SpiritRootSchema, StatsSchema } from './stats.js';
-import { InventoryItemSchema } from './item.js';
+import { EquipSlotSchema, InventoryItemSchema, ItemGradeSchema } from './item.js';
 import { BotParamsSchema } from './bot.js';
 import { QuestProgressSchema } from './quest.js';
 import { SKILL_SLOT_COUNT } from './skill.js';
@@ -99,10 +99,23 @@ export const CharacterStateSchema = z.object({
   arenaWins: z.number().int().min(0).default(0),
   arenaLosses: z.number().int().min(0).default(0),
 
+  /** 声望, earned by bringing down 围攻 targets. */
+  prestige: z.number().int().min(0).default(0),
+
   /** Cached 战力, recomputed whenever stats change. */
   powerScore: z.number().int().min(0).default(0),
 });
 export type CharacterState = z.infer<typeof CharacterStateSchema>;
+
+/** One equipped piece as a stranger sees it, ready to draw as a slot. */
+export const ProfileEquipmentSchema = z.object({
+  slot: EquipSlotSchema,
+  itemId: z.string().min(1),
+  name: z.string().min(1),
+  grade: ItemGradeSchema,
+  art: z.enum(ART_IDS),
+});
+export type ProfileEquipment = z.infer<typeof ProfileEquipmentSchema>;
 
 /** What any player may see about another cultivator. */
 export const PublicProfileSchema = z.object({
@@ -119,6 +132,8 @@ export const PublicProfileSchema = z.object({
   techniqueName: z.string().nullable(),
   skillIds: z.array(z.string()),
   equipmentItemIds: z.array(z.string()),
+  /** The same pieces with everything a slot needs to render, in slot order. */
+  equipment: z.array(ProfileEquipmentSchema),
   arenaRating: z.number().int().min(0),
   arenaWins: z.number().int().min(0),
   arenaLosses: z.number().int().min(0),

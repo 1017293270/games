@@ -25,6 +25,7 @@ import {
   type BattleResult,
   type CharacterState,
   type Combatant,
+  type DungeonWave,
   type Endpoint,
   type Friend,
   type Party,
@@ -277,19 +278,27 @@ function duel(
   });
 }
 
+/** 第一阵 … 第 N 阵, with the last wave named for what guards it. */
+function waveName(index: number, total: number): string {
+  const ORDINALS = ['一', '二', '三', '四', '五', '六', '七', '八'];
+  if (index === total - 1) return '镇守';
+  return `第 ${ORDINALS[index] ?? index + 1} 阵`;
+}
+
 /**
  * Runs a 秘境 wave by wave, carrying 气血 forward. Duplicate 妖兽 inside one
- * wave get a `#slot` suffix so each keeps its own bar in `finalHp`; the client
- * resolves the name by stripping it, then by the wave roster's order.
+ * wave get a `#slot` suffix so each keeps its own bar in `finalHp`; the wave
+ * roster returned alongside the battles is what maps those ids back to a name
+ * and a portrait.
  */
 function runDungeon(
   w: MockWorld,
   roster: CharacterState[],
   dungeonId: string,
   seedBase: number,
-): { battles: BattleResult[]; cleared: boolean } {
+): { battles: BattleResult[]; waves: DungeonWave[]; cleared: boolean } {
   const dungeon = DUNGEON_BY_ID.get(dungeonId);
-  if (!dungeon) return { battles: [], cleared: false };
+  if (!dungeon) return { battles: [], waves: [], cleared: false };
 
   const hp = new Map<string, number>();
   for (const member of roster) {
@@ -297,11 +306,12 @@ function runDungeon(
     hp.set(member.id, Math.max(1, stats.hp * Math.max(0.25, member.hpPercent)));
   }
 
-  const waves: string[][] = [...dungeon.waves.map((ids) => [...ids]), [dungeon.bossId]];
+  const rosters: string[][] = [...dungeon.waves.map((ids) => [...ids]), [dungeon.bossId]];
   const battles: BattleResult[] = [];
+  const waves: DungeonWave[] = [];
   let cleared = true;
 
-  waves.forEach((ids, waveIndex) => {
+  rosters.forEach((ids, waveIndex) => {
     if (!cleared) return;
     const teamA: Combatant[] = roster
       .filter((member) => (hp.get(member.id) ?? 0) > 0)
@@ -325,6 +335,15 @@ function runDungeon(
       maxRounds: w.settings.maxBattleRounds,
     });
     battles.push(battle);
+    waves.push({
+      name: waveName(waveIndex, rosters.length),
+      enemies: teamB.map((enemy) => ({
+        id: enemy.id,
+        name: enemy.name,
+        art: enemy.art ?? null,
+        maxHp: battle.maxHp[enemy.id] ?? Math.max(1, Math.round(enemy.stats.hp)),
+      })),
+    });
     for (const member of roster) {
       const left = battle.finalHp[member.id];
       if (left !== undefined) hp.set(member.id, left);
@@ -332,7 +351,7 @@ function runDungeon(
     if (battle.winner !== 'A') cleared = false;
   });
 
-  return { battles, cleared };
+  return { battles, waves, cleared };
 }
 
 // ---------------------------------------------------------------- 事件推送
@@ -384,6 +403,7 @@ export function startMultiplayerFeed(): () => void {
       attackerId: rival.id,
       attackerName: rival.name,
       attackerStageName: stageName(rival.stageIndex),
+      attackerAvatarArt: rival.avatarArt,
       defenderLost,
       ratingDelta: defenderLost ? -12 : 9,
       battle,
@@ -557,7 +577,7 @@ export function registerMultiplayerHandlers(kit: MockKit): void {
     }
 
     const seedBase = combineSeeds('dungeon', char.id, ctx.now);
-    const { battles, cleared } = runDungeon(ctx.w, team, dungeon.id, seedBase);
+    const { battles, waves, cleared } = runDungeon(ctx.w, team, dungeon.id, seedBase);
     const rng = createRng(combineSeeds(seedBase, 'loot'));
 
     // A party splits the take, but not evenly enough to punish bringing help.
@@ -593,6 +613,7 @@ export function registerMultiplayerHandlers(kit: MockKit): void {
         dungeonName: dungeon.name,
         cleared,
         replay: battles,
+        waves,
         reward: {
           exp: bundle.exp,
           spiritStones: bundle.spiritStones,
@@ -618,6 +639,7 @@ export function registerMultiplayerHandlers(kit: MockKit): void {
       dungeonId: dungeon.id,
       cleared,
       battles,
+      waves,
       reward: bundle,
       view: buildView(ctx.w, saved),
       participantIds: team.map((m) => m.id),

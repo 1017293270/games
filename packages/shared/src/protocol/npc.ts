@@ -40,6 +40,16 @@ export const DialogueViewSchema = z.object({
   openShopId: z.string().nullable(),
   /** Anything the node's effects granted. */
   reward: RewardBundleSchema.nullable(),
+  /**
+   * True when the conversation is over: the branch just taken was authored to
+   * close it (`next: null` — 弟子告退 and the like), or the node offers no
+   * takeable branch at all. The client shows a 告辞 and drops the choices
+   * rather than re-offering branches the player just declined.
+   *
+   * A closing branch answers with the node it was taken from, choices intact,
+   * so this cannot be derived from `choices` on the client.
+   */
+  ended: z.boolean(),
   view: CharacterViewSchema,
 });
 export type DialogueView = z.infer<typeof DialogueViewSchema>;

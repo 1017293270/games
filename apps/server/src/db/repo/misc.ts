@@ -122,21 +122,35 @@ export class ChatRepo {
       );
   }
 
-  /** Newest-first slice of a channel, optionally older than `before`. */
-  history(channel: string, limit: number, before?: number): ChatMessage[] {
+  /**
+   * Oldest-first slice of a channel, optionally older than `before`.
+   *
+   * `partyId` narrows 队伍频道 to one party — without it a member would read
+   * every other party's talk, which is why the caller has to establish
+   * membership before asking.
+   */
+  history(
+    channel: string,
+    limit: number,
+    before?: number,
+    partyId?: string,
+  ): ChatMessage[] {
+    const scope = partyId === undefined ? '' : ' AND party_id = ?';
+    const scopeArgs = partyId === undefined ? [] : [partyId];
     const rows = (
       before === undefined
         ? this.db
             .prepare(
-              'SELECT * FROM chat_messages WHERE channel = ? ORDER BY sent_at DESC, rowid DESC LIMIT ?',
-            )
-            .all(channel, limit)
-        : this.db
-            .prepare(
-              'SELECT * FROM chat_messages WHERE channel = ? AND sent_at < ?' +
+              `SELECT * FROM chat_messages WHERE channel = ?${scope}` +
                 ' ORDER BY sent_at DESC, rowid DESC LIMIT ?',
             )
-            .all(channel, before, limit)
+            .all(channel, ...scopeArgs, limit)
+        : this.db
+            .prepare(
+              `SELECT * FROM chat_messages WHERE channel = ?${scope} AND sent_at < ?` +
+                ' ORDER BY sent_at DESC, rowid DESC LIMIT ?',
+            )
+            .all(channel, ...scopeArgs, before, limit)
     ) as {
       id: string;
       channel: string;
@@ -160,14 +174,20 @@ export class ChatRepo {
       .reverse();
   }
 
-  /** Keeps the newest `limit` messages per channel. */
-  trim(channel: string, limit: number): void {
+  /**
+   * Keeps the newest `limit` messages per channel — and, for 队伍频道, per
+   * party, so one talkative party cannot evict another's scrollback.
+   */
+  trim(channel: string, limit: number, partyId?: string): void {
+    const scope = partyId === undefined ? '' : ' AND party_id = ?';
+    const scopeArgs = partyId === undefined ? [] : [partyId];
     this.db
       .prepare(
-        'DELETE FROM chat_messages WHERE channel = ? AND id NOT IN' +
-          ' (SELECT id FROM chat_messages WHERE channel = ? ORDER BY sent_at DESC, rowid DESC LIMIT ?)',
+        `DELETE FROM chat_messages WHERE channel = ?${scope} AND id NOT IN` +
+          ` (SELECT id FROM chat_messages WHERE channel = ?${scope}` +
+          ' ORDER BY sent_at DESC, rowid DESC LIMIT ?)',
       )
-      .run(channel, channel, Math.max(0, limit));
+      .run(channel, ...scopeArgs, channel, ...scopeArgs, Math.max(0, limit));
   }
 
   countSince(since: number): number {

@@ -207,17 +207,26 @@ function toView(
   openShopId: string | null,
   world: WorldSettings,
   now: number,
+  /** True when the branch just taken was authored to close the conversation. */
+  closed = false,
 ): DialogueView {
   const npc = NPC_BY_ID.get(npcId)!;
+  const choices = resolveChoices(ctx, state, node);
   return {
     npcId: npc.id,
     npcName: npc.name,
     npcArt: node.art ?? npc.art,
     dialogueId: tree.id,
     node,
-    choices: resolveChoices(ctx, state, node),
+    choices,
     openShopId,
     reward: isEmptyReward(reward) ? null : reward,
+    // Two ways a conversation is over: the player took a branch whose `next` is
+    // null — 弟子告退 and the like — or the node they are on has no takeable
+    // branch left. The first is the common one, and it cannot be read off the
+    // node alone, because a closing branch answers with the node it was taken
+    // from, choices and all.
+    ended: closed || !choices.some((choice) => choice.available),
     view: buildView(state, world, now, ctx.inventory),
   };
 }
@@ -291,5 +300,16 @@ export function talk(
   }
 
   const saved = persist(ctx, next);
-  return toView(ctx, saved, input.npcId, tree, node, reward, openShopId, world, now);
+  return toView(
+    ctx,
+    saved,
+    input.npcId,
+    tree,
+    node,
+    reward,
+    openShopId,
+    world,
+    now,
+    choice.next === null,
+  );
 }

@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
-import { DUNGEON_BY_ID, MONSTER_BY_ID, type BattleResult } from '@xianxia/shared';
+import { DUNGEON_BY_ID, type BattleResult, type DungeonWave } from '@xianxia/shared';
 import { useCharacterStore } from '../../store/character';
 import { usePartyStore } from '../../store/party';
 import { dungeonWaveFighters, memberFighter, selfFighter } from '../combat/rosters';
-import { WaveReplay, waveLabel } from '../combat/WaveReplay';
+import { WaveReplay } from '../combat/WaveReplay';
 
 export interface DungeonSpoils {
   exp: number;
@@ -15,6 +15,8 @@ export interface DungeonRunReplayProps {
   dungeonId: string;
   /** One `BattleResult` per wave, boss last. */
   battles: BattleResult[];
+  /** What stood in each wave, positionally aligned with `battles`. */
+  waves: DungeonWave[];
   cleared: boolean;
   reward: DungeonSpoils;
   /** Who went in; anyone here is drawn on the left. */
@@ -29,6 +31,7 @@ export interface DungeonRunReplayProps {
 export function DungeonRunReplay({
   dungeonId,
   battles,
+  waves,
   cleared,
   reward,
   participantIds,
@@ -48,22 +51,23 @@ export function DungeonRunReplay({
     return [me, ...mates];
   }, [view, party, participantIds, battles]);
 
-  const waves = useMemo(
-    () => (dungeon ? dungeonWaveFighters(dungeon, battles, teamA.map((f) => f.id)) : []),
-    [dungeon, battles, teamA],
-  );
+  const teamB = useMemo(() => dungeonWaveFighters(waves), [waves]);
 
   if (!dungeon || !view || battles.length === 0) return null;
 
-  const bossName = MONSTER_BY_ID.get(dungeon.bossId)?.name;
+  // The last wave's roster names the 妖王, which is what the interstitial has
+  // room to announce.
+  const bossName = waves.at(-1)?.enemies[0]?.name;
 
   return (
     <WaveReplay
       battles={battles}
       teamA={teamA}
-      waves={waves}
-      labels={battles.map((_, i) => waveLabel(i, battles.length))}
-      gateLabels={battles.map((_, i) => waveLabel(i, battles.length, bossName))}
+      waves={teamB}
+      labels={waves.map((wave) => wave.name)}
+      gateLabels={waves.map((wave, i) =>
+        i === waves.length - 1 && bossName ? `${wave.name} · ${bossName}` : wave.name,
+      )}
       title={dungeon.name}
       onClose={onClose}
       spoils={

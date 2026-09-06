@@ -273,6 +273,23 @@ describe('failure envelopes', () => {
     token = previous;
   });
 
+  it('draws a 名帖 with the equipped pieces spelled out', async () => {
+    const me = await api.getCharacter();
+    const profile = await api.publicProfile(me.character.id);
+    expectShape(API.character.publicProfile, profile);
+
+    // The demo cultivator wears three of the four slots.
+    expect(profile.equipment.map((e) => e.slot)).toEqual(['treasure', 'robe', 'accessory']);
+    for (const piece of profile.equipment) {
+      expect(piece.name.length).toBeGreaterThan(0);
+      expect(piece.art.length).toBeGreaterThan(0);
+    }
+    // The flat id list and the detailed one describe the same pieces.
+    expect(profile.equipment.map((e) => e.itemId).sort()).toEqual(
+      [...profile.equipmentItemIds].sort(),
+    );
+  });
+
   it('reports a missing cultivator and a missing item', async () => {
     await expect(api.publicProfile('char-nobody')).rejects.toMatchObject({
       code: 'CHARACTER_NOT_FOUND',

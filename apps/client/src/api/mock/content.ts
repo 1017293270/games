@@ -512,6 +512,8 @@ export function registerContentHandlers(kit: ContentKit): void {
     node: DialogueNode,
     reward: RewardBundle,
     openShopId: string | null,
+    /** True when the branch just taken was authored to close the conversation. */
+    closed = false,
   ) => {
     const npc = NPC_BY_ID.get(npcId)!;
     const choices = node.choices.flatMap((choice) => {
@@ -529,6 +531,11 @@ export function registerContentHandlers(kit: ContentKit): void {
       choices,
       openShopId,
       reward: empty ? null : reward,
+      // Over either because the player took a branch whose `next` is null, or
+      // because nothing on this node is takeable. A closing branch answers with
+      // the node it came from, choices intact, so the first cannot be read off
+      // `choices`.
+      ended: closed || !choices.some((choice) => choice.available),
       view: buildView(ctx.w, char),
     };
   };
@@ -610,7 +617,7 @@ export function registerContentHandlers(kit: ContentKit): void {
     }
 
     const saved = store(ctx, char2);
-    return dialogueView(ctx, saved, npcId, tree.id, node, reward, openShopId);
+    return dialogueView(ctx, saved, npcId, tree.id, node, reward, openShopId, choice.next === null);
   });
 
   // -------------------------------------------------------------- 任务

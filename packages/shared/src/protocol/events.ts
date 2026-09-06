@@ -14,8 +14,10 @@
  */
 
 import { z } from 'zod';
+import { ART_AVATARS } from '../core/art.js';
 import { CharacterStateSchema } from '../domain/character.js';
 import { BattleResultSchema } from '../combat/types.js';
+import { DungeonWaveSchema } from './explore.js';
 import { ChatChannelSchema, ChatMessageSchema, PartySchema } from './social.js';
 
 export const HandshakeAuthSchema = z.object({ token: z.string().min(1) });
@@ -75,6 +77,8 @@ export const DungeonResultEventSchema = z.object({
   cleared: z.boolean(),
   /** Wave-by-wave replays, boss last. */
   replay: z.array(BattleResultSchema),
+  /** What stood in each wave, same length and order as `replay`. */
+  waves: z.array(DungeonWaveSchema),
   reward: z.object({
     exp: z.number().int().min(0),
     spiritStones: z.number().int().min(0),
@@ -88,6 +92,7 @@ export const ArenaChallengedEventSchema = z.object({
   attackerId: z.string(),
   attackerName: z.string(),
   attackerStageName: z.string(),
+  attackerAvatarArt: z.enum(ART_AVATARS),
   /** True when the defender lost. */
   defenderLost: z.boolean(),
   ratingDelta: z.number().int(),

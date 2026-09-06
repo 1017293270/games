@@ -7,7 +7,7 @@ import { useCharacterStore } from '../../store/character';
 import { usePartyStore } from '../../store/party';
 import { useUiStore } from '../../store/ui';
 import { BattleReplay } from '../combat/BattleReplay';
-import { memberFighter, profileFighter, selfFighter } from '../combat/rosters';
+import { maxHpOf, memberFighter, profileFighter, selfFighter } from '../combat/rosters';
 import '../social/social.css';
 import './raid.css';
 
@@ -164,10 +164,8 @@ export function RaidBoard() {
               .map((m) => memberFighter(m, [raid.battle])),
           ]}
           teamB={[
-            profileFighter(
-              raid.target,
-              Math.max(1, raid.battle.finalHp[raid.target.id] ?? raid.target.stats.hp),
-            ),
+            // The 血池 is what the target actually fought at, not its stat block.
+            profileFighter(raid.target, maxHpOf([raid.battle], raid.target.id, raid.target.stats.hp)),
           ]}
           spoils={
             <div className="spoils">

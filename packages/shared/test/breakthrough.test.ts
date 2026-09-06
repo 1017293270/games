@@ -47,6 +47,7 @@ function makeChar(stageIndex: number, exp = expRequired(stageIndex)): CharacterS
     arenaRating: 1000,
     arenaWins: 0,
     arenaLosses: 0,
+    prestige: 0,
     powerScore: 0,
   };
 }

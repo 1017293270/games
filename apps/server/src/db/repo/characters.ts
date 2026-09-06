@@ -99,13 +99,13 @@ export class CharacterRepo {
       'INSERT INTO characters (id, user_id, name, is_bot, archetype_id, bot_params_json, gender,' +
         ' avatar_art, stage_index, exp, power, arena_score, spirit_stones, prestige, raid_hp,' +
         ' protected_until, last_settled_at, last_seen_at, created_at, state_json)' +
-        ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?)',
+        ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
     );
     this.updateStmt = db.prepare(
       'UPDATE characters SET name = ?, archetype_id = ?, bot_params_json = ?, gender = ?,' +
         ' avatar_art = ?, stage_index = ?, exp = ?, power = ?, arena_score = ?, spirit_stones = ?,' +
-        ' raid_hp = ?, protected_until = ?, last_settled_at = ?, last_seen_at = ?, state_json = ?' +
-        ' WHERE id = ?',
+        ' prestige = ?, raid_hp = ?, protected_until = ?, last_settled_at = ?, last_seen_at = ?,' +
+        ' state_json = ? WHERE id = ?',
     );
   }
 
@@ -124,6 +124,7 @@ export class CharacterRepo {
       state.powerScore,
       state.arenaRating,
       state.spiritStones,
+      state.prestige,
       state.hpPercent,
       state.protectedUntil,
       state.lastSettledAt,
@@ -146,6 +147,7 @@ export class CharacterRepo {
       state.powerScore,
       state.arenaRating,
       state.spiritStones,
+      state.prestige,
       state.hpPercent,
       state.protectedUntil,
       state.lastSettledAt,

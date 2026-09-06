@@ -207,6 +207,14 @@
   color: var(--cinnabar);
 }
 
+/* The way out of a conversation that has run out of things to say. */
+.town-choice--part {
+  text-align: center;
+  border-style: dashed;
+  background: transparent;
+  color: var(--ink-soft);
+}
+
 /* ---------------------------------------------------------------- 页面骨架 */
 
 .town-page {

@@ -130,6 +130,12 @@ export const BattleResultSchema = z.object({
   log: z.array(BattleEventSchema),
   /** Final 气血 of every combatant, keyed by id. */
   finalHp: z.record(z.string(), z.number()),
+  /**
+   * 气血 ceiling of every combatant, keyed by id. A replay needs a denominator
+   * for its bars and the log alone cannot supply one, so the engine writes the
+   * runtime maximum out beside the final value.
+   */
+  maxHp: z.record(z.string(), z.number()),
   /** Total damage each combatant dealt. */
   damageDealt: z.record(z.string(), z.number()),
   /** Echoed so a replay can be re-derived from the result alone. */

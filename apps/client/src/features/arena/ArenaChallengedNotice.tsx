@@ -1,10 +1,11 @@
 import { useState } from 'react';
+import { ArtImage } from '../../art/ArtImage';
 import { Button, ChevronRight, Overlay } from '../../design';
 import { useArenaStore } from '../../store/arena';
 import { useCharacterStore } from '../../store/character';
 import { useUiStore } from '../../store/ui';
 import { BattleReplay } from '../combat/BattleReplay';
-import { selfFighter } from '../combat/rosters';
+import { maxHpOf, selfFighter } from '../combat/rosters';
 import './arena.css';
 
 /**
@@ -12,8 +13,9 @@ import './arena.css';
  *
  * A PvP defence resolves server-side while the defender is away, so this is a
  * report and never a question — it rides in on a bar across the top of the leaf
- * instead of a scrim, leaving the page beneath it live. While anything else is
- * open (a 秘境 replay, a sheet, a toast) the bar waits its turn, and reports
+ * instead of a scrim, leaving the page beneath it live. Mounted in `AppShell`,
+ * so a challenge lands wherever the player happens to be. While anything else
+ * is open (a 秘境 replay, a sheet, a toast) the bar waits its turn, and reports
  * that arrive meanwhile pile into one line with a count.
  */
 export function ArenaChallengedNotice() {
@@ -34,9 +36,9 @@ export function ArenaChallengedNotice() {
     const attacker = {
       id: latest.attackerId,
       name: latest.attackerName,
-      art: null,
+      art: latest.attackerAvatarArt,
       motif: 'portrait' as const,
-      maxHp: Math.max(1, latest.battle.finalHp[latest.attackerId] ?? view.stats.hp),
+      maxHp: maxHpOf([latest.battle], latest.attackerId, view.stats.hp),
     };
     return (
       <BattleReplay
@@ -63,6 +65,14 @@ export function ArenaChallengedNotice() {
     <Overlay blocking={false}>
       <aside className="hail" role="status" aria-live="polite">
         <div className="hail__head">
+          <button
+            type="button"
+            className="hail__art"
+            aria-label={`查看 ${latest.attackerName}`}
+            onClick={() => openProfile(latest.attackerId)}
+          >
+            <ArtImage id={latest.attackerAvatarArt} label="" motif="portrait" small />
+          </button>
           <span className={`hail__mark hail__mark--${lost ? 'lose' : 'win'}`} aria-hidden="true">
             {lost ? '负' : '胜'}
           </span>

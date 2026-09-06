@@ -702,7 +702,13 @@ on(API.explore.dungeons, (ctx) => {
 on(API.social.chatHistory, (ctx, input) => {
   const limit = Math.max(1, Number(input.limit ?? 50));
   const channel = String(input.channel ?? 'world');
-  const messages = ctx.w.chat.filter((m) => m.channel === channel || m.channel === 'system');
+  // 队伍频道 carries no 谕 broadcasts — those are world news. The mock world
+  // holds a single party, so scoping to `partyId` is what the server does
+  // rather than something the transcript here needs to be filtered on.
+  const messages =
+    channel === 'party'
+      ? ctx.w.chat.filter((m) => m.channel === 'party')
+      : ctx.w.chat.filter((m) => m.channel === channel || m.channel === 'system');
   return { messages: messages.slice(-limit) };
 });
 

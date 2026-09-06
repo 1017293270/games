@@ -482,6 +482,7 @@ export class BotEngine {
         attackerId: attacker.id,
         attackerName: attacker.name,
         attackerStageName: stageName(attacker.stageIndex),
+        attackerAvatarArt: attacker.avatarArt,
         defenderLost: attackerWon,
         ratingDelta: -delta,
         battle,

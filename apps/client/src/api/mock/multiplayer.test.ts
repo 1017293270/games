@@ -123,6 +123,20 @@ describe('秘境副本', () => {
       expect(run.reward.exp).toBeGreaterThan(0);
     }
 
+    // The wave roster is what the replay draws its cast from, so it has to line
+    // up with the battles one for one, and every id in it has to be a fighter
+    // the engine actually rated.
+    expect(run.waves).toHaveLength(run.battles.length);
+    run.waves.forEach((wave, i) => {
+      expect(wave.name.length).toBeGreaterThan(0);
+      expect(wave.enemies.length).toBeGreaterThan(0);
+      for (const enemy of wave.enemies) {
+        expect(run.battles[i]?.maxHp[enemy.id]).toBeGreaterThan(0);
+        expect(enemy.maxHp).toBeGreaterThan(0);
+      }
+    });
+    if (run.cleared) expect(run.waves.at(-1)?.name).toBe('镇守');
+
     const after = await api.dungeons();
     expect(after.dungeons.find((d) => d.id === 'dungeon-qingyun')?.runsToday).toBe(runsBefore + 1);
   });

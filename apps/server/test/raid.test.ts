@@ -12,7 +12,12 @@ import type {
 import { attachSocketIo } from '../src/socket.js';
 import { partyHandlers } from '../src/modules/party/routes.js';
 import { raidHandlers } from '../src/modules/raid/routes.js';
-import { bountyFor, RAID_STAGE_FLOOR } from '../src/modules/raid/service.js';
+import {
+  bountyFor,
+  prestigeFor,
+  PRESTIGE_PER_STAGE,
+  RAID_STAGE_FLOOR,
+} from '../src/modules/raid/service.js';
 import { prestigeOf } from '../src/modules/raid/repo.js';
 import { generateBots } from '../src/engine/bots/generate.js';
 import {
@@ -232,8 +237,13 @@ describe('raid', () => {
     };
     expect(after.alice - before.alice).toBe(each);
     expect(after.bob - before.bob).toBe(each);
-    expect(prestigeOf(h.ctx, alice.characterId)).toBe(1);
-    expect(prestigeOf(h.ctx, bob.characterId)).toBe(1);
+    // 声望 scales with the target and is a full share each, not a split.
+    const prestige = prestigeFor(h.ctx.characters.byId(botId)!.stageIndex);
+    expect(prestige).toBe((RAID_STAGE_FLOOR + 1) * PRESTIGE_PER_STAGE);
+    expect(prestigeOf(h.ctx, alice.characterId)).toBe(prestige);
+    expect(prestigeOf(h.ctx, bob.characterId)).toBe(prestige);
+    // The column and the record of truth agree, so a later save cannot undo it.
+    expect(h.ctx.characters.byId(alice.characterId)!.prestige).toBe(prestige);
 
     const shieldUntil = h.clock.now() + h.ctx.settings.get().raidRecoverMinutes * 60_000;
     expect(h.ctx.characters.byId(botId)!.protectedUntil).toBe(shieldUntil);

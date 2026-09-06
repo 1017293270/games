@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { isArtId, type Friend } from '@xianxia/shared';
+import type { Friend } from '@xianxia/shared';
 import { ArtImage } from '../../art/ArtImage';
 import { Button } from '../../design';
 import { useFriendsStore } from '../../store/friends';
@@ -76,11 +76,7 @@ export function FriendsPanel() {
                   aria-label={`查看 ${friend.name}`}
                   onClick={() => openProfile(friend.characterId)}
                 >
-                  <ArtImage
-                    id={isArtId(friend.avatarArt) ? friend.avatarArt : null}
-                    label=""
-                    motif="portrait"
-                  />
+                  <ArtImage id={friend.avatarArt} label="" motif="portrait" />
                 </button>
 
                 <div className="friend-row__body">

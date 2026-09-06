@@ -51,6 +51,38 @@ describe('determinism', () => {
     expect(simulateBattle(duel(777)).seed).toBe(777);
   });
 
+  it('reports a 气血 ceiling for every combatant a replay has to draw', () => {
+    const r = simulateBattle(duel(31));
+    expect(Object.keys(r.maxHp).sort()).toEqual(Object.keys(r.finalHp).sort());
+    expect(r.maxHp['a1']).toBe(Math.round(baseStatsForStage(6).hp));
+    for (const [id, max] of Object.entries(r.maxHp)) {
+      expect(max).toBeGreaterThan(0);
+      expect(r.finalHp[id]).toBeLessThanOrEqual(max);
+    }
+  });
+
+  it('raises the ceiling to an hp override, so a 血池 bar is not off its scale', () => {
+    const r = simulateBattle({
+      seed: 7,
+      teamA: [fighter('a', 10, ['skill-fire-1'])],
+      teamB: [{ ...fighter('pool', 10), hp: 999_999 }],
+      maxRounds: 3,
+    });
+    expect(r.maxHp['pool']).toBe(999_999);
+    expect(r.maxHp['a']).toBe(Math.round(baseStatsForStage(10).hp));
+  });
+
+  it('keeps the ceiling at full 气血 for a combatant that starts wounded', () => {
+    const full = Math.round(baseStatsForStage(10).hp);
+    const r = simulateBattle({
+      seed: 2,
+      teamA: [fighter('a', 10)],
+      teamB: [{ ...fighter('hurt', 10), hp: Math.round(full * 0.1) }],
+      maxRounds: 1,
+    });
+    expect(r.maxHp['hurt']).toBe(full);
+  });
+
   it('is unaffected by negative or huge seeds', () => {
     for (const seed of [-1, -999999, 2 ** 31 - 1, -(2 ** 31)]) {
       const a = simulateBattle(duel(seed));

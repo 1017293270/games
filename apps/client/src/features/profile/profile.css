@@ -1,3 +1,65 @@
+/* 名帖: the four equip slots, then what you may do to another cultivator. */
+
+/*
+ * Four slots, always all four. An empty one is information — half the reason to
+ * open someone's 名帖 is to see what they are *not* carrying.
+ */
+.gear-slots {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+}
+
+.gear-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--sp-2) 2px;
+  border: var(--hair) solid var(--ink-hair);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  text-align: center;
+}
+
+.gear-slot--bare {
+  border-style: dashed;
+  background: transparent;
+}
+
+.gear-slot__art {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  overflow: hidden;
+}
+
+.gear-slot__empty {
+  font-family: var(--font-display);
+  font-size: var(--fs-body);
+  color: var(--ink-hair-strong);
+}
+
+.gear-slot__where {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  letter-spacing: 0.08em;
+}
+
+.gear-slot__name {
+  font-size: var(--fs-xs);
+  line-height: 1.35;
+  word-break: break-all;
+}
+
+.gear-slot--bare .gear-slot__name {
+  color: var(--ink-hair-strong);
+}
+
 /* 名帖 actions: what you may do to another cultivator. */
 
 .dossier-acts {

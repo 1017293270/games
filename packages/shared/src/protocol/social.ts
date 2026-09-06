@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ART_AVATARS } from '../core/art.js';
 import { PublicProfileSchema } from '../domain/character.js';
 import { BattleResultSchema } from '../combat/types.js';
 import { RewardBundleSchema } from './explore.js';
@@ -9,7 +10,7 @@ import { API_PREFIX, EmptySchema, endpoint, paginated, PaginationQuerySchema } f
 export const PartyMemberSchema = z.object({
   characterId: z.string(),
   name: z.string(),
-  avatarArt: z.string(),
+  avatarArt: z.enum(ART_AVATARS),
   stageIndex: z.number().int(),
   stageName: z.string(),
   powerScore: z.number().int(),
@@ -44,7 +45,7 @@ export type FriendState = z.infer<typeof FriendStateSchema>;
 export const FriendSchema = z.object({
   characterId: z.string(),
   name: z.string(),
-  avatarArt: z.string(),
+  avatarArt: z.enum(ART_AVATARS),
   stageIndex: z.number().int(),
   stageName: z.string(),
   powerScore: z.number().int(),
@@ -82,6 +83,11 @@ export const ChatHistoryQuerySchema = z.object({
   limit: z.number().int().min(1).max(200).default(50),
   /** Return only messages older than this epoch ms. */
   before: z.number().int().optional(),
+  /**
+   * Required for `channel: 'party'` — one party's scrollback is not another's.
+   * The server answers only for a party the caller is currently in.
+   */
+  partyId: z.string().min(1).optional(),
 });
 
 export const ChatHistoryResponseSchema = z.object({ messages: z.array(ChatMessageSchema) });

@@ -143,6 +143,7 @@ export function DungeonLobby({ onWantParty }: { onWantParty: () => void }) {
         <DungeonRunReplay
           dungeonId={run.dungeonId}
           battles={run.battles}
+          waves={run.waves}
           cleared={run.cleared}
           reward={run.reward}
           participantIds={run.participantIds}

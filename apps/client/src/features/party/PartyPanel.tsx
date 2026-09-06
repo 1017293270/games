@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { isArtId } from '@xianxia/shared';
 import { ArtImage } from '../../art/ArtImage';
 import { Button, Field, Panel, ProgressBar } from '../../design';
 import { useCharacterStore } from '../../store/character';
@@ -101,11 +100,7 @@ export function PartyPanel() {
                 aria-label={`查看 ${member.name}`}
                 onClick={() => openProfile(member.characterId)}
               >
-                <ArtImage
-                  id={isArtId(member.avatarArt) ? member.avatarArt : null}
-                  label=""
-                  motif="portrait"
-                />
+                <ArtImage id={member.avatarArt} label="" motif="portrait" />
               </button>
               <div className="roster__body">
                 <span className="roster__name">

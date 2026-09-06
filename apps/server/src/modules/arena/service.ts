@@ -180,6 +180,7 @@ export function challenge(
       attackerId: attacker.id,
       attackerName: attacker.name,
       attackerStageName: stageName(attacker.stageIndex),
+      attackerAvatarArt: attacker.avatarArt,
       defenderLost: won,
       ratingDelta: -delta,
       battle,

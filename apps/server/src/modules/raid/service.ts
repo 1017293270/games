@@ -15,7 +15,7 @@ import { battleSeed, characterCombatant, hpShareAfter, runBattle } from '../../g
 import { applyReward, nameReward, scaleReward } from '../../game/rewards.js';
 import { botRaidHpPercent, loadOtherHealed } from '../../game/hp.js';
 import { activeMemberIds } from '../party/service.js';
-import { grantPrestige, raidTargetIds } from './repo.js';
+import { raidTargetIds } from './repo.js';
 
 /**
  * 围攻 — players ganging up on a 机器人修士.
@@ -25,10 +25,18 @@ import { grantPrestige, raidTargetIds } from './repo.js';
  * afternoon. Every wave is one `runBattle` against the bot at its *remaining*
  * 气血; whatever is left becomes the pool the next wave meets.
  *
- * Bringing one down pays a 灵石 bounty split among the raiders, one point of
+ * Bringing one down pays a 灵石 bounty split among the raiders, a full share of
  * 声望 each, and puts the bot behind a `raidRecoverMinutes` shield it comes back
  * from whole.
  */
+
+/** 声望 per raider for a kill: 10 a stage, so a 元婴 target is worth more. */
+export const PRESTIGE_PER_STAGE = 10;
+
+/** What bringing down a target at `stageIndex` is worth to each raider. */
+export function prestigeFor(stageIndex: number): number {
+  return (stageIndex + 1) * PRESTIGE_PER_STAGE;
+}
 
 /** 金丹·前期. Below this a bot is not worth ganging up on. */
 export const RAID_STAGE_FLOOR = 8;
@@ -142,18 +150,23 @@ export function attack(
 
   let callerReward = raidReward(caller, stonesEach, defeated, world);
   const participantIds = raiders.map((r) => r.state.id);
+  // Everyone who was there gets a full share, not a slice: 声望 is credit for
+  // having shown up, so a big party is not a reason to bring fewer people.
+  const prestigeEach = defeated ? prestigeFor(bot.stageIndex) : 0;
 
   for (const raider of raiders) {
     const reward = raidReward(raider.state, stonesEach, defeated, world);
     let next = applyReward(raider.state, reward, ctx.inventory);
-    next = { ...next, hpPercent: hpShareAfter(battle, raider.state.id, raider.stats.hp) };
+    next = {
+      ...next,
+      hpPercent: hpShareAfter(battle, raider.state.id, raider.stats.hp),
+      prestige: next.prestige + prestigeEach,
+    };
     const saved = withFreshPower(next, resolveEquipment(next, ctx.inventory));
     ctx.characters.save(saved);
     ctx.realtime.characterUpdate(saved);
     if (saved.id === caller.id) callerReward = reward;
   }
-
-  if (defeated) grantPrestige(ctx, participantIds);
 
   // The guard above already established the old shield had lapsed, so an attack
   // that does not bring the target down leaves it unshielded and wounded.

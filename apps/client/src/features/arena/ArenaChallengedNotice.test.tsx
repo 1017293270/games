@@ -43,6 +43,7 @@ function hail(name: string, defenderLost: boolean): ArenaChallengedEvent {
     attackerId,
     attackerName: name,
     attackerStageName: '筑基三层',
+    attackerAvatarArt: 'avatar/m03',
     defenderLost,
     ratingDelta: defenderLost ? -12 : 9,
     battle,

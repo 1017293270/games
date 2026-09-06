@@ -308,6 +308,15 @@ describe('domain payloads round-trip', () => {
       techniqueName: '青云诀',
       skillIds: ['skill-fire-1'],
       equipmentItemIds: ['treasure-sword'],
+      equipment: [
+        {
+          slot: 'treasure',
+          itemId: 'treasure-sword',
+          name: '青锋剑',
+          grade: 'mortal',
+          art: 'item/treasure-sword',
+        },
+      ],
       arenaRating: 1180,
       arenaWins: 12,
       arenaLosses: 4,

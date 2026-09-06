@@ -1,10 +1,8 @@
-import { randomUUID } from 'node:crypto';
 import { Server } from 'socket.io';
 import {
   CLIENT_EVENT_SCHEMAS,
   HandshakeAuthSchema,
   ROOMS,
-  stageName,
   type ClientToServerEvents,
   type InterServerEvents,
   type ServerToClientEvents,
@@ -120,21 +118,26 @@ export function attachSocketIo(app: FastifyInstance, ctx: AppContext): GameServe
       lastChatAt.set(characterId, at);
 
       if (parsed.data.channel === 'party') {
-        // 队伍频道 is delivered live and not written down: `chat_messages` has
-        // no per-party read path, so persisting these lines would put one
-        // party's talk in every other party's scrollback.
+        // 队伍频道 lines are stamped with the party they were said in, which is
+        // what lets `social.chatHistory` hand one party its own scrollback back
+        // after a refresh without leaking it to any other.
         const current = ctx.parties.byMember(characterId);
         if (!current) return;
         socket.data.partyId = current.id;
-        ctx.realtime.toParty(current.id, 'chat:message', {
-          id: randomUUID(),
-          channel: 'party',
-          senderId: speaker.id,
-          senderName: speaker.name,
-          senderStageName: stageName(speaker.stageIndex),
-          text: parsed.data.text,
-          sentAt: at,
-        });
+        const line = recordMessage(
+          ctx,
+          {
+            channel: 'party',
+            senderId: speaker.id,
+            senderName: speaker.name,
+            stageIndex: speaker.stageIndex,
+            text: parsed.data.text,
+          },
+          ctx.settings.get(),
+          at,
+          current.id,
+        );
+        ctx.realtime.toParty(current.id, 'chat:message', line);
         return;
       }
 

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Navigate, Outlet } from 'react-router';
 import type { SettleResponse } from '@xianxia/shared';
 import { SETTLE_INTERVAL_MS } from '../config';
+import { ArenaChallengedNotice } from '../features/arena/ArenaChallengedNotice';
 import { OfflineReturnModal } from '../features/cultivation/OfflineReturnModal';
 import { useCharacterStore } from '../store/character';
 import { useSessionStore } from '../store/session';
@@ -80,6 +81,11 @@ export function AppShell() {
       <main className="scene">{view ? <Outlet /> : <div className="empty">推演中……</div>}</main>
       <TabBar />
       <OfflineReturnModal summary={summary} onClose={() => setSummary(null)} />
+      {/*
+        A 论道 defence can land while the player is anywhere — 修炼, 洞天, 同道 —
+        so the report bar hangs off the shell rather than off one page.
+      */}
+      <ArenaChallengedNotice />
     </div>
   );
 }

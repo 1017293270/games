@@ -9,6 +9,7 @@ import type {
 } from '@xianxia/shared';
 import { attachSocketIo } from '../src/socket.js';
 import { partyHandlers } from '../src/modules/party/routes.js';
+import { socialHandlers } from '../src/modules/social/routes.js';
 import { PARTY_CODE_ALPHABET, PARTY_CODE_LENGTH } from '../src/modules/party/store.js';
 import {
   auth,
@@ -71,7 +72,7 @@ describe('party', () => {
   const open: ClientSocket[] = [];
 
   beforeEach(async () => {
-    h = createHarness({ handlers: partyHandlers });
+    h = createHarness({ handlers: { ...partyHandlers, ...socialHandlers } });
     await h.app.listen({ port: 0, host: '127.0.0.1' });
     await h.app.ready();
     attachSocketIo(h.app, h.ctx);
@@ -273,9 +274,58 @@ describe('party', () => {
 
     await new Promise((resolve) => setTimeout(resolve, 150));
     expect(leaked).toBe(false);
-    // Party talk is live-only; it must not land in the world scrollback.
-    expect(h.ctx.chat.history('party', 50)).toHaveLength(0);
+    // Party talk is written down against its own party, never the world.
+    expect(h.ctx.chat.history('party', 50, undefined, party.id)).toHaveLength(1);
     expect(h.ctx.chat.history('world', 50)).toHaveLength(0);
+  });
+
+  it('hands 队伍频道 scrollback back to members and to nobody else', async () => {
+    const alice = await makePlayer(h, { name: '林素' });
+    const bob = await makePlayer(h, { name: '陈墨' });
+    const outsider = await makePlayer(h, { name: '路人' });
+
+    const aliceSocket = await openSocket(alice.token);
+    const bobSocket = await openSocket(bob.token);
+
+    const party = await create(alice);
+    await post(bob.token, '/api/party/join', { code: party.code });
+
+    const heardFirst = once<ChatMessage>(bobSocket, 'chat:message');
+    aliceSocket.emit('chat:send', { channel: 'party', text: '进秘境了' });
+    await heardFirst;
+
+    // The throttle is one line a second per speaker.
+    h.clock.advance(2000);
+    const heardSecond = once<ChatMessage>(aliceSocket, 'chat:message');
+    bobSocket.emit('chat:send', { channel: 'party', text: '这就来' });
+    await heardSecond;
+
+    // A refresh: the transcript comes back over REST, in the order it was said.
+    const history = expectOk<{ messages: ChatMessage[] }>(
+      (await get(bob.token, '/api/chat/history?channel=party&limit=50')).json(),
+    );
+    expect(history.messages.map((m) => m.text)).toEqual(['进秘境了', '这就来']);
+    expect(history.messages.every((m) => m.channel === 'party')).toBe(true);
+
+    // Another party's talk is not in it, and neither is the world channel's.
+    const outsiderParty = await create(outsider);
+    expect(outsiderParty.id).not.toBe(party.id);
+    const theirs = expectOk<{ messages: ChatMessage[] }>(
+      (await get(outsider.token, '/api/chat/history?channel=party&limit=50')).json(),
+    );
+    expect(theirs.messages).toHaveLength(0);
+
+    // And someone with no party at all is told so rather than shown anything.
+    const loner = await makePlayer(h, { name: '独行' });
+    const refused = await get(loner.token, '/api/chat/history?channel=party&limit=50');
+    expect(expectFail(refused.json()).code).toBe('NOT_IN_PARTY');
+
+    // Naming a party you are not in is refused too.
+    const wrong = await get(
+      bob.token,
+      `/api/chat/history?channel=party&limit=50&partyId=${outsiderParty.id}`,
+    );
+    expect(expectFail(wrong.json()).code).toBe('FORBIDDEN');
   });
 
   it('puts a reconnecting member straight back in the party room', async () => {

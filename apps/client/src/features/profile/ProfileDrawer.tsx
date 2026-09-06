@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import {
-  ITEM_BY_ID,
+  EQUIP_SLOT_NAMES,
+  EQUIP_SLOTS,
+  ITEM_GRADE_NAMES,
   RATE_STAT_KEYS,
   SKILL_BY_ID,
   spiritRootName,
@@ -118,11 +120,39 @@ export function ProfileDrawer() {
                   {SKILL_BY_ID.get(id)?.name ?? id}
                 </span>
               ))}
-              {profile.equipmentItemIds.map((id) => (
-                <span className="tag" key={id}>
-                  {ITEM_BY_ID.get(id)?.name ?? id}
-                </span>
-              ))}
+            </div>
+
+            {/* The four slots, drawn as slots: an empty one says as much. */}
+            <div className="gear-slots">
+              {EQUIP_SLOTS.map((slot) => {
+                const piece = profile.equipment.find((e) => e.slot === slot);
+                return (
+                  <div
+                    className={`gear-slot ${piece ? '' : 'gear-slot--bare'}`}
+                    key={slot}
+                    title={piece ? `${EQUIP_SLOT_NAMES[slot]} · ${piece.name}` : EQUIP_SLOT_NAMES[slot]}
+                  >
+                    <div className="gear-slot__art">
+                      {piece ? (
+                        <ArtImage id={piece.art} label="" motif="token" />
+                      ) : (
+                        <span className="gear-slot__empty" aria-hidden="true">
+                          空
+                        </span>
+                      )}
+                    </div>
+                    <span className="gear-slot__where">{EQUIP_SLOT_NAMES[slot]}</span>
+                    <span className="gear-slot__name">
+                      {piece?.name ?? '未着'}
+                      {piece && (
+                        <span className={`grade-mark grade-mark--${piece.grade}`}>
+                          {ITEM_GRADE_NAMES[piece.grade]}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
 
             <div className="stats-grid">

@@ -15,6 +15,31 @@
   min-height: 0;
 }
 
+/*
+ * 世界 / 队伍, one level below the page's own segmented tabs — so it is drawn
+ * as an underline rather than a second row of filled pills.
+ */
+.chat__channels {
+  display: flex;
+  gap: var(--sp-4);
+  padding: 0 var(--sp-4) var(--sp-2);
+}
+
+.chat__channel {
+  padding: 0 0 var(--sp-1);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font-size: var(--fs-sm);
+  letter-spacing: 0.14em;
+  color: var(--ink-soft);
+}
+
+.chat__channel--on {
+  border-bottom-color: var(--cinnabar);
+  color: var(--ink);
+}
+
 .chat__log {
   flex: 1;
   min-height: 12rem;

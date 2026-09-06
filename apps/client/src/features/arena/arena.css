@@ -236,6 +236,18 @@
   gap: var(--sp-3);
 }
 
+/* Who came calling, at the same size the 同行 roster draws a face. */
+.hail__art {
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: var(--hair) solid var(--ink-hair);
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--paper-sunk);
+}
+
 /* The same struck 胜 / 负 the record book and the replay verdict use. */
 .hail__mark {
   flex: none;

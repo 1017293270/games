@@ -10,7 +10,9 @@ import {
   stageName,
   type BattleResult,
   type CharacterState,
+  type Combatant,
   type DungeonStartResponse,
+  type DungeonWave,
   type RewardBundle,
   type Stats,
   type WorldSettings,
@@ -61,6 +63,33 @@ export function listDungeons(state: CharacterState, world: WorldSettings): Dunge
         boss,
       };
     }),
+  };
+}
+
+/** 第一阵 … 第 N 阵, with the last wave named for what guards it. */
+function waveName(index: number, total: number): string {
+  const ORDINALS = ['一', '二', '三', '四', '五', '六', '七', '八'];
+  if (index === total - 1) return '镇守';
+  return `第 ${ORDINALS[index] ?? index + 1} 阵`;
+}
+
+/**
+ * What stood in one wave, as the replay needs it.
+ *
+ * A duplicated 妖兽 is suffixed to keep the two apart in the battle log, so the
+ * combatant id — not the 妖兽 id — is what a `finalHp` key can be matched on;
+ * carrying the roster next to the replay is what saves the client from
+ * reverse-engineering the cast from the keys it happens to see.
+ */
+function toWave(index: number, total: number, enemies: readonly Combatant[], battle: BattleResult): DungeonWave {
+  return {
+    name: waveName(index, total),
+    enemies: enemies.map((enemy) => ({
+      id: enemy.id,
+      name: enemy.name,
+      art: enemy.art ?? null,
+      maxHp: battle.maxHp[enemy.id] ?? Math.max(1, Math.round(enemy.stats.hp)),
+    })),
   };
 }
 
@@ -153,12 +182,13 @@ export function startDungeon(
 
   // ---- waves, BOSS last; 气血 carries forward through `hpShareAfter`
   const hpShares = new Map(participants.map((p) => [p.state.id, p.state.hpPercent]));
-  const waves: string[][] = [...dungeon.waves.map((w) => [...w]), [dungeon.bossId]];
+  const rosters: string[][] = [...dungeon.waves.map((w) => [...w]), [dungeon.bossId]];
   const battles: BattleResult[] = [];
+  const waves: DungeonWave[] = [];
   let cleared = true;
 
-  for (let index = 0; index < waves.length; index += 1) {
-    const enemies = monsterTeam(waves[index] ?? []);
+  for (let index = 0; index < rosters.length; index += 1) {
+    const enemies = monsterTeam(rosters[index] ?? []);
     if (enemies.length === 0) continue;
 
     const teamA = participants.map((p) =>
@@ -171,6 +201,7 @@ export function startDungeon(
       world,
     );
     battles.push(battle);
+    waves.push(toWave(index, rosters.length, enemies, battle));
 
     for (const p of participants) {
       hpShares.set(p.state.id, hpShareAfter(battle, p.state.id, p.stats.hp));
@@ -218,6 +249,7 @@ export function startDungeon(
     dungeonName: dungeon.name,
     cleared,
     replay: battles,
+    waves,
     reward: {
       exp: reward.exp,
       spiritStones: reward.spiritStones,
@@ -236,6 +268,7 @@ export function startDungeon(
     dungeonId: dungeon.id,
     cleared,
     battles,
+    waves,
     reward,
     view: buildView(callerState, world, now, ctx.inventory),
     participantIds,

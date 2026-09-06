@@ -2,6 +2,7 @@ import {
   activePillBonus,
   computeStats,
   cultivationRatePerSec,
+  EQUIP_SLOTS,
   expRequired,
   getStage,
   getTechnique,
@@ -15,6 +16,7 @@ import {
   type CharacterState,
   type CharacterView,
   type EquipmentItem,
+  type ProfileEquipment,
   type PublicProfile,
   type SettleResult,
   type Stats,
@@ -157,6 +159,24 @@ export function buildView(
   };
 }
 
+/** Equipped pieces in slot order, with what a dossier slot needs to draw one. */
+function profileEquipment(equipment: readonly EquipmentItem[]): ProfileEquipment[] {
+  const bySlot = new Map(equipment.map((piece) => [piece.slot, piece]));
+  const out: ProfileEquipment[] = [];
+  for (const slot of EQUIP_SLOTS) {
+    const piece = bySlot.get(slot);
+    if (!piece) continue;
+    out.push({
+      slot,
+      itemId: piece.id,
+      name: piece.name,
+      grade: piece.grade,
+      art: piece.art,
+    });
+  }
+  return out;
+}
+
 /** What any player may see about another cultivator. */
 export function buildPublicProfile(
   state: CharacterState,
@@ -178,6 +198,7 @@ export function buildPublicProfile(
     techniqueName: getTechnique(state.techniqueId)?.name ?? null,
     skillIds: state.skillSlots.filter((s): s is string => s !== null),
     equipmentItemIds: equipment.map((e) => e.id),
+    equipment: profileEquipment(equipment),
     arenaRating: state.arenaRating,
     arenaWins: state.arenaWins,
     arenaLosses: state.arenaLosses,

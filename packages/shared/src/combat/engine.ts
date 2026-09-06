@@ -408,7 +408,11 @@ export function simulateBattle(input: BattleInput, options: SimulateBattleOption
   log.push({ type: 'battle_end', round: Math.max(1, round), winner, reason });
 
   const finalHp: Record<string, number> = {};
-  for (const u of units) finalHp[u.id] = u.hp;
+  const maxHp: Record<string, number> = {};
+  for (const u of units) {
+    finalHp[u.id] = u.hp;
+    maxHp[u.id] = u.maxHp;
+  }
 
-  return { winner, rounds: round, log, finalHp, damageDealt, seed: input.seed, reason };
+  return { winner, rounds: round, log, finalHp, maxHp, damageDealt, seed: input.seed, reason };
 }

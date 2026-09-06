@@ -167,6 +167,7 @@ export function generateBots(
       arenaRating: 1000 + rng.int(-120, 220),
       arenaWins: 0,
       arenaLosses: 0,
+      prestige: 0,
       powerScore: 0,
     };
 

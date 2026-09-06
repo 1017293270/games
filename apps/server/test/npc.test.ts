@@ -161,6 +161,24 @@ describe('npc', () => {
     expect(view.node.id).toBe('root');
   });
 
+  it('calls the conversation over when a closing branch is taken', async () => {
+    // 弟子告退 answers with the node it was taken from, choices and all, so
+    // `ended` is the only thing that says the talk is finished.
+    const opened = expectOk<DialogueView>((await open('npc-zhangmen')).json());
+    expect(opened.ended).toBe(false);
+
+    const parted = expectOk<DialogueView>((await say('npc-zhangmen', 'root', 'leave')).json());
+    expect(parted.node.id).toBe('root');
+    expect(parted.choices.some((c) => c.available)).toBe(true);
+    expect(parted.ended).toBe(true);
+  });
+
+  it('leaves the conversation open on a branch that goes somewhere', async () => {
+    const view = expectOk<DialogueView>((await say('npc-zhangmen', 'root', 'quest')).json());
+    expect(view.node.id).not.toBe('root');
+    expect(view.ended).toBe(false);
+  });
+
   it('rejects a choice that does not belong to the node', async () => {
     const response = await say('npc-zhangmen', 'root', 'no-such-choice');
     expect(response.statusCode).toBe(400);

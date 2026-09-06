@@ -1,44 +1,33 @@
 /**
  * Turning a server payload into the cast a `BattleReplay` needs.
  *
- * `BattleResult` identifies combatants by id only — no names, art or max 气血 —
- * so every screen that plays one has to rebuild the roster from what it already
- * knows: its own `CharacterView`, a `PublicProfile`, or the shared 秘境 content.
- * Doing it once here keeps 秘境 / 论道 / 围攻 telling the same story.
+ * `BattleResult` identifies combatants by id and carries their 气血 ceiling in
+ * `maxHp`, but no names or art — so every screen that plays one pairs the
+ * result with whatever describes the cast: its own `CharacterView`, a
+ * `PublicProfile`, or the 秘境 wave roster the server sent alongside the
+ * replay. Doing it once here keeps 秘境 / 论道 / 围攻 telling the same story.
  */
 
 import {
   computeStats,
-  isArtId,
-  MONSTER_BY_ID,
-  type ArtId,
   type BattleResult,
   type CharacterView,
-  type Dungeon,
+  type DungeonWave,
   type PartyMember,
   type PublicProfile,
 } from '@xianxia/shared';
 import type { ReplayFighter } from './BattleReplay';
 
-const ORDINALS = ['', '二', '三', '四', '五', '六'];
-
 /**
- * Highest 气血 the log ever showed for `id`, floored at an estimate. A replay
- * bar needs a maximum and the contract carries none, so the observed peak is
- * the closest honest answer.
+ * The 气血 ceiling the engine used for `id`, from the first wave that names it.
+ * `fallback` covers a fighter who never appears in the replay at all.
  */
-export function observedMaxHp(battles: readonly BattleResult[], id: string, floor: number): number {
-  let best = floor;
+export function maxHpOf(battles: readonly BattleResult[], id: string, fallback: number): number {
   for (const battle of battles) {
-    for (const event of battle.log) {
-      if ((event.type === 'damage' || event.type === 'heal') && event.targetId === id) {
-        best = Math.max(best, event.targetHp);
-      }
-    }
-    const final = battle.finalHp[id];
-    if (final !== undefined) best = Math.max(best, final);
+    const max = battle.maxHp[id];
+    if (max !== undefined) return Math.max(1, max);
   }
-  return Math.max(1, best);
+  return Math.max(1, fallback);
 }
 
 /** The player themselves, with the exact 气血 their own view reports. */
@@ -53,8 +42,8 @@ export function selfFighter(view: CharacterView): ReplayFighter {
 }
 
 /**
- * A party mate. `PartyMember` carries no stats, so their bar is scaled from a
- * bare-stage estimate lifted to whatever the log actually showed.
+ * A party mate. `PartyMember` carries no stats, so their bar comes off the
+ * replay's own ceiling, with a bare-stage estimate for a wave they sat out.
  */
 export function memberFighter(
   member: PartyMember,
@@ -64,9 +53,9 @@ export function memberFighter(
   return {
     id: member.characterId,
     name: member.name,
-    art: isArtId(member.avatarArt) ? member.avatarArt : null,
+    art: member.avatarArt,
     motif: 'portrait',
-    maxHp: observedMaxHp(battles, member.characterId, estimate),
+    maxHp: maxHpOf(battles, member.characterId, estimate),
   };
 }
 
@@ -82,39 +71,24 @@ export function profileFighter(profile: PublicProfile, maxHp = profile.stats.hp)
 }
 
 /**
- * Team B for every wave of a 秘境 run.
- *
- * The server may suffix a duplicated 妖兽 id to keep the two apart in
- * `finalHp` (the mock uses `#slot`), so the id is resolved by lookup, then by
- * the part before the suffix, then by the wave's position in shared content.
+ * Team B for every wave of a 秘境 run, straight from the roster the server sent
+ * with the replay. Duplicates inside one wave are numbered for the reader; the
+ * ids are the server's and match the battle log exactly.
  */
-export function dungeonWaveFighters(
-  dungeon: Dungeon,
-  battles: readonly BattleResult[],
-  ourIds: readonly string[],
-): ReplayFighter[][] {
-  const ours = new Set(ourIds);
-  const waves: string[][] = [...dungeon.waves.map((ids) => [...ids]), [dungeon.bossId]];
-
-  return battles.map((battle, waveIndex) => {
-    const roster = waves[waveIndex] ?? [];
-    const foes = Object.keys(battle.finalHp).filter((id) => !ours.has(id));
+export function dungeonWaveFighters(waves: readonly DungeonWave[]): ReplayFighter[][] {
+  const ORDINALS = ['', '二', '三', '四', '五', '六'];
+  return waves.map((wave) => {
     const seen = new Map<string, number>();
-
-    return foes.map((id, slot) => {
-      const monster =
-        MONSTER_BY_ID.get(id) ??
-        MONSTER_BY_ID.get(id.split('#')[0] ?? '') ??
-        MONSTER_BY_ID.get(roster[slot] ?? '');
-      const count = (seen.get(monster?.id ?? id) ?? 0) + 1;
-      seen.set(monster?.id ?? id, count);
+    return wave.enemies.map((enemy) => {
+      const count = (seen.get(enemy.name) ?? 0) + 1;
+      seen.set(enemy.name, count);
       const suffix = count > 1 ? ` · ${ORDINALS[count - 1] ?? count}` : '';
       return {
-        id,
-        name: `${monster?.name ?? '不知名之物'}${suffix}`,
-        art: (monster?.art ?? null) as ArtId | null,
+        id: enemy.id,
+        name: `${enemy.name}${suffix}`,
+        art: enemy.art,
         motif: 'beast' as const,
-        maxHp: observedMaxHp(battles, id, monster?.stats.hp ?? 1),
+        maxHp: enemy.maxHp,
       };
     });
   });
