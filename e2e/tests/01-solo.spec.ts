@@ -2,15 +2,15 @@ import { expect, test, type Page } from '@playwright/test';
 import {
   createCharacterViaUi,
   dismissOfflineReturn,
-  finishReplay,
   goTab,
   registerViaUi,
   uniqueCharacterName,
   uniqueUsername,
+  zoneKills,
 } from './helpers';
 
 /**
- * 一个人从头玩一遍：注册 → 创角 → 修炼 → 探索打一架 → 去青云镇接任务。
+ * 一个人从头玩一遍：注册 → 创角 → 修炼 → 上战斗大地图打一场 → 去青云镇接任务。
  *
  * 全程走界面，不碰后台。这一条过了，就说明镜像里的前端、REST、SQLite、
  * 静态托管和 SPA 回退都是通的。
@@ -63,26 +63,31 @@ test.describe('独修一程', () => {
     );
   });
 
-  test('探索：讨伐一只妖兽并看完回放', async () => {
+  test('探索：上青云山斩获妖兽，再撤离回山河图', async () => {
     await goTab(page, '探索');
     await expect(page.getByRole('heading', { name: '山河图' })).toBeVisible();
 
-    // 第一张图对练气·前期就是开的；点开它的行动单。
+    // 第一张图对练气·前期就是开的；点它就是进场，没有中间的行动单。
     const firstMap = page.locator('button.map-card:not(.map-card--locked)').first();
     await expect(firstMap).toBeVisible();
+    const mapName = ((await firstMap.locator('.map-card__name').textContent()) ?? '').trim();
+    expect(mapName, '第一张图的名字').not.toBe('');
     await firstMap.click();
 
-    const sheet = page.getByRole('dialog');
-    const strike = sheet.getByRole('button', { name: /讨伐 · / }).first();
-    await expect(strike).toBeVisible();
-    await strike.click();
+    // 进了场，HUD 就压在画面上：顶栏报地图名，底下是战果与三个手动动作。
+    const retreat = page.getByRole('button', { name: '撤离' });
+    await expect(retreat).toBeVisible();
+    await expect(page.locator('.zone-hud__name')).toHaveText(mapName);
+    await expect(page.getByText('本次战果')).toBeVisible();
+    await expect(page.getByRole('button', { name: '采药' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '循迹' })).toBeVisible();
 
-    // 战斗完全在服务端跑，客户端只回放。看到回合数就说明日志是真的。
-    const replay = page.getByRole('dialog', { name: '战斗回放' });
-    await expect(replay).toBeVisible();
-    await expect(replay.getByText(/第 \d+ 回合/)).toBeVisible();
-    await finishReplay(page);
+    // 战斗全在服务端跑，客户端一下都不用点：站着就会有斩获，每五秒随
+    // `zone:loot` 结一次账。图上散修多的时候十几秒就有一只，刚开服的空图上
+    // 得自己走过去单挑，慢得多——所以给到一分半。
+    await expect(zoneKills(page)).toHaveText(/^[1-9]/, { timeout: 90_000 });
 
+    await retreat.click();
     await expect(page.getByRole('heading', { name: '山河图' })).toBeVisible();
   });
 

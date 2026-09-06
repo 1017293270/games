@@ -22,6 +22,36 @@ function once<T>(socket: ClientSocket, event: keyof ServerToClientEvents, ms = 4
   });
 }
 
+/**
+ * Resolves on the first `event` payload that satisfies `match`.
+ *
+ * `once` is not enough for anything broadcast to the whole world room: a
+ * watcher hears its own arrival too, so "the next presence:update" is a race
+ * between that echo and the update the test is actually about.
+ */
+function until<T>(
+  socket: ClientSocket,
+  event: keyof ServerToClientEvents,
+  match: (payload: T) => boolean,
+  ms = 4000,
+): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const listener = ((payload: T) => {
+      if (!match(payload)) return;
+      clearTimeout(timer);
+      socket.off(event as never, listener);
+      resolve(payload);
+    }) as never;
+
+    const timer = setTimeout(() => {
+      socket.off(event as never, listener);
+      reject(new Error(`timed out waiting for ${event}`));
+    }, ms);
+
+    socket.on(event as never, listener);
+  });
+}
+
 function connected(socket: ClientSocket, ms = 4000): Promise<void> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error('timed out connecting')), ms);
@@ -84,19 +114,22 @@ describe('socket.io', () => {
     const watcher = await openSocket(alice.token);
     expect(h.ctx.presence.count).toBe(1);
 
-    const joined = once<PresenceUpdate>(watcher, 'presence:update');
+    // 林素's own arrival is broadcast to the world room she is in, so the very
+    // next presence:update on her socket may well be about herself. Wait for
+    // the one that names 陈墨.
+    const isBob = (update: PresenceUpdate): boolean => update.characterId === bob.characterId;
+
+    const joined = until<PresenceUpdate>(watcher, 'presence:update', isBob);
     const second = await openSocket(bob.token);
     const update = await joined;
 
-    expect(update.characterId).toBe(bob.characterId);
     expect(update.name).toBe('陈墨');
     expect(update.online).toBe(true);
     expect(update.onlineCount).toBe(2);
 
-    const left = once<PresenceUpdate>(watcher, 'presence:update');
+    const left = until<PresenceUpdate>(watcher, 'presence:update', isBob);
     second.disconnect();
     const goodbye = await left;
-    expect(goodbye.characterId).toBe(bob.characterId);
     expect(goodbye.online).toBe(false);
     expect(goodbye.onlineCount).toBe(1);
   });

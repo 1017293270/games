@@ -1,4 +1,4 @@
-import { expect, type APIRequestContext, type Page } from '@playwright/test';
+import { expect, type APIRequestContext, type Locator, type Page } from '@playwright/test';
 
 /**
  * 冒烟测试的共用零件。
@@ -236,6 +236,58 @@ export async function dismissArenaChallenge(page: Page): Promise<void> {
 /** 切主导航的页签。 */
 export async function goTab(page: Page, label: string): Promise<void> {
   await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: label }).click();
+}
+
+// ------------------------------------------------------- 战斗大地图（山河图）
+
+/** 第一张对练气·前期就开着的图。两个测试号都从这里入场。 */
+export const FIRST_ZONE_NAME = '青云山';
+
+/**
+ * 把这个标签页钉在 DOM 兜底名册上，不走 PixiJS 画布。
+ *
+ * `?canvas=off` 由 `store/zone.ts` 在**模块加载时**读一次、存进 sessionStorage
+ * （见那里的 `latchCanvasSwitch`），所以它只能挂在这个标签页**第一次**打开的
+ * 地址上；之后同一个标签页里怎么跳转都还算数。要按道号断言谁在场上就得靠它：
+ * 画布是一张 canvas，里面没有 DOM 可查。
+ */
+export async function latchDomRoster(page: Page): Promise<void> {
+  await page.goto('/?canvas=off');
+}
+
+/** 从山河图点进一张图，等到 HUD 压上来。 */
+export async function enterZone(page: Page, mapName: string): Promise<void> {
+  await goTab(page, '探索');
+  await expect(page.getByRole('heading', { name: '山河图' })).toBeVisible();
+
+  const card = page.locator('button.map-card').filter({ hasText: mapName });
+  await expect(card).toBeVisible();
+  await card.click();
+
+  await expect(page.getByRole('button', { name: '撤离' })).toBeVisible();
+  await expect(page.locator('.zone-hud__name')).toHaveText(mapName);
+}
+
+/** 撤离回山河图；已经在图外了也不算错。 */
+export async function retreatZone(page: Page): Promise<void> {
+  const retreat = page.getByRole('button', { name: '撤离' });
+  if (await retreat.isVisible().catch(() => false)) await retreat.click();
+  await expect(page.getByRole('heading', { name: '山河图' })).toBeVisible();
+}
+
+/**
+ * 「本次战果」里的斩获数。
+ *
+ * 场上的仗是服务端打的，客户端每五秒收一次 `zone:loot`。这一格从 0 变成别的，
+ * 就说明这个号真的在图上打死了东西——不需要点任何按钮。
+ */
+export function zoneKills(page: Page): Locator {
+  return page.locator('.zone-spoils__cell', { hasText: '斩获' }).locator('.zone-spoils__v');
+}
+
+/** DOM 兜底名册里某个道号那一行。 */
+export function zoneRow(page: Page, name: string): Locator {
+  return page.locator('.zone-row').filter({ hasText: name });
 }
 
 /**
