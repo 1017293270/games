@@ -58,6 +58,9 @@ export const API_ERROR_CODES = [
   'INVALID_CHOICE',
   'CHOICE_BLOCKED',
 
+  // ---- 战斗大地图
+  'ZONE_FULL',
+
   // ---- party
   'PARTY_FULL',
   'ALREADY_IN_PARTY',
@@ -144,6 +147,8 @@ export const API_ERROR_STATUS: Record<ApiErrorCode, number> = {
   ENCOUNTER_NOT_ACTIVE: 409,
   INVALID_CHOICE: 400,
   CHOICE_BLOCKED: 403,
+
+  ZONE_FULL: 409,
 
   PARTY_FULL: 409,
   ALREADY_IN_PARTY: 409,

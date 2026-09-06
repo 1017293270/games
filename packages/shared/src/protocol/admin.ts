@@ -219,6 +219,25 @@ export const AdminStatsSchema = z.object({
     lastTick: BotTickStatsSchema.optional(),
     version: z.string(),
   }),
+  /**
+   * One row per running 战斗大地图. Absent while the zone loop is not up, which
+   * is how the panel tells "no zones" from "zones with nobody in them".
+   */
+  zones: z
+    .array(
+      z.object({
+        zoneId: z.string(),
+        players: z.number().int().min(0),
+        bots: z.number().int().min(0),
+        monsters: z.number().int().min(0),
+        bossAlive: z.boolean(),
+        /** Milliseconds the last simulation step cost. */
+        lastStepMs: z.number().min(0),
+        /** Sockets currently subscribed to the zone room. */
+        watchers: z.number().int().min(0),
+      }),
+    )
+    .optional(),
 });
 export type AdminStats = z.infer<typeof AdminStatsSchema>;
 

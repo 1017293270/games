@@ -7,6 +7,7 @@ export * from './script.js';
 export * from './quest.js';
 export * from './npc.js';
 export * from './map.js';
+export * from './zone.js';
 export * from './shop.js';
 export * from './bot.js';
 export * from './world.js';

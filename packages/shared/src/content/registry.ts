@@ -14,8 +14,10 @@ import { ITEMS, ITEM_BY_ID } from './items.js';
 import { SKILLS, SKILL_BY_ID } from './skills.js';
 import { TECHNIQUES, TECHNIQUE_BY_ID } from './techniques.js';
 import { MONSTERS, MONSTER_BY_ID } from './monsters.js';
-import { ENCOUNTERS, ENCOUNTER_BY_ID, EXPLORE_MAPS } from './maps.js';
+import { ENCOUNTERS, ENCOUNTER_BY_ID, EXPLORE_MAPS, EXPLORE_MAP_BY_ID } from './maps.js';
 import { DUNGEONS } from './dungeons.js';
+import { MONSTER_SPRITE, ZONES } from './zones.js';
+import { zoneAreaInBounds, type Zone, type ZoneArea } from '../domain/zone.js';
 import { NPCS, NPC_BY_ID } from './npcs.js';
 import { DIALOGUES, DIALOGUE_BY_ID } from './dialogues.js';
 import { QUESTS, QUEST_BY_ID, STORY_CHAPTERS } from './quests.js';
@@ -39,6 +41,17 @@ function checkItem(issues: ContentIssue[], where: string, itemId: string): void 
 
 function checkSkill(issues: ContentIssue[], where: string, skillId: string): void {
   if (!SKILL_BY_ID.has(skillId)) issues.push({ where, message: `unknown skill "${skillId}"` });
+}
+
+function checkZoneArea(
+  issues: ContentIssue[],
+  where: string,
+  zone: Zone,
+  area: ZoneArea,
+): void {
+  if (!zoneAreaInBounds(area, zone.width, zone.height)) {
+    issues.push({ where, message: `area ${area.x},${area.y} ${area.w}x${area.h} leaves the zone` });
+  }
 }
 
 function checkEffects(issues: ContentIssue[], where: string, effects: readonly Effect[]): void {
@@ -124,6 +137,41 @@ export function validateContent(): ContentIssue[] {
       issues.push({ where, message: `"${d.bossId}" is not flagged isBoss` });
     }
     for (const l of d.reward.loot) checkItem(issues, `${where}.reward`, l.itemId);
+  }
+
+  for (const zone of ZONES) {
+    const where = `zone:${zone.id}`;
+    if (!EXPLORE_MAP_BY_ID.has(zone.id)) {
+      issues.push({ where, message: `no ExploreMap with id "${zone.id}"` });
+    }
+    checkArt(issues, `${where}.floorArt`, zone.floorArt);
+    checkZoneArea(issues, `${where}.boss`, zone, zone.boss.area);
+    for (const [i, spawn] of zone.spawns.entries()) {
+      const at = `${where}.spawns[${i}]`;
+      if (!MONSTER_BY_ID.has(spawn.monsterId)) {
+        issues.push({ where: at, message: `unknown monster "${spawn.monsterId}"` });
+      }
+      checkZoneArea(issues, at, zone, spawn.area);
+    }
+    if (!MONSTER_BY_ID.has(zone.boss.monsterId)) {
+      issues.push({ where, message: `unknown boss "${zone.boss.monsterId}"` });
+    } else if (!MONSTER_BY_ID.get(zone.boss.monsterId)?.isBoss) {
+      issues.push({ where, message: `"${zone.boss.monsterId}" is not flagged isBoss` });
+    }
+  }
+
+  for (const monster of MONSTERS) {
+    const sprite = MONSTER_SPRITE[monster.id];
+    if (sprite === undefined) {
+      issues.push({ where: `sprite:${monster.id}`, message: 'no top-down sprite' });
+    } else {
+      checkArt(issues, `sprite:${monster.id}`, sprite);
+    }
+  }
+  for (const id of Object.keys(MONSTER_SPRITE)) {
+    if (!MONSTER_BY_ID.has(id)) {
+      issues.push({ where: `sprite:${id}`, message: `unknown monster "${id}"` });
+    }
   }
 
   for (const npc of NPCS) {
@@ -255,5 +303,7 @@ export function referencedArtIds(): ArtId[] {
   for (const e of ENCOUNTERS) if (e.art) ids.add(e.art);
   for (const a of BOT_ARCHETYPES) for (const av of a.avatarPool) ids.add(av);
   for (const t of DIALOGUES) for (const n of t.nodes) if (n.art) ids.add(n.art);
+  for (const z of ZONES) ids.add(z.floorArt);
+  for (const sprite of Object.values(MONSTER_SPRITE)) ids.add(sprite);
   return [...ids].filter(isArtId);
 }

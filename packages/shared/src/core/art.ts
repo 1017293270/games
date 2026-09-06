@@ -115,7 +115,38 @@ export const ART_UI = [
   'ui/ink-splash',
 ] as const;
 
-/** Every bitmap ID defined by `docs/ASSETS.md` (82 entries). */
+/**
+ * 战斗大地图俯视底图, one per `ExploreMap`. Drawn as the PixiJS floor layer, so
+ * these are top-down terrain rather than the 9:16 vista `bg/map-*` holds.
+ */
+export const ART_ZONES = [
+  'zone/qingyun-mountain',
+  'zone/luoshui-city',
+  'zone/youming-valley',
+  'zone/kunlun-ruins',
+] as const;
+
+/**
+ * Top-down chibi sprites for the 12 妖兽/BOSS, used by the zone renderer.
+ * The suffix is the monster id with its `monster-`/`boss-` prefix stripped, so
+ * `content/zones.ts` can map one to the other by convention.
+ */
+export const ART_SPRITES = [
+  'sprite/qingyun-wolf',
+  'sprite/spirit-ape',
+  'sprite/luoshui-flood-dragon',
+  'sprite/river-bandit',
+  'sprite/ghost-lantern',
+  'sprite/bone-general',
+  'sprite/ice-qilin',
+  'sprite/golden-crow',
+  'sprite/qingyun-tiger-king',
+  'sprite/luoshui-dragon-lord',
+  'sprite/youming-ghost-emperor',
+  'sprite/kunlun-heaven-beast',
+] as const;
+
+/** Every bitmap ID defined by `docs/ASSETS.md` (98 entries). */
 export const ART_IDS = [
   ...ART_BACKGROUNDS,
   ...ART_NPCS,
@@ -125,6 +156,8 @@ export const ART_IDS = [
   ...ART_BOSSES,
   ...ART_ITEMS,
   ...ART_UI,
+  ...ART_ZONES,
+  ...ART_SPRITES,
 ] as const;
 
 export type ArtId = (typeof ART_IDS)[number];
@@ -136,6 +169,8 @@ export type MonsterArtId = (typeof ART_MONSTERS)[number];
 export type BossArtId = (typeof ART_BOSSES)[number];
 export type ItemArtId = (typeof ART_ITEMS)[number];
 export type UiArtId = (typeof ART_UI)[number];
+export type ZoneArtId = (typeof ART_ZONES)[number];
+export type SpriteArtId = (typeof ART_SPRITES)[number];
 
 const ART_ID_SET: ReadonlySet<string> = new Set<string>(ART_IDS);
 

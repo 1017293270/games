@@ -21,19 +21,15 @@
  */
 
 import { createRng, type Rng } from '../core/rng.js';
-import { clamp } from '../core/util.js';
 import type { Skill } from '../domain/skill.js';
 import type { Stats } from '../domain/stats.js';
 import { SKILL_BY_ID } from '../content/skills.js';
+import { effectiveStat, rollDamage } from './damage.js';
 import {
   BASIC_ATTACK_POWER,
   COMBAT_MANA_MAX,
   COMBAT_MANA_REGEN,
-  CRIT_MULTIPLIER,
-  DAMAGE_VARIANCE,
   DEFAULT_MAX_ROUNDS,
-  MAX_HIT_CHANCE,
-  MIN_HIT_CHANCE,
   type BattleEndReason,
   type BattleEvent,
   type BattleInput,
@@ -43,9 +39,6 @@ import {
   type CombatantRuntime,
   type TeamSide,
 } from './types.js';
-
-/** Stats stored as fractions; a modifier on these is an absolute delta. */
-const RATE_STATS = new Set<keyof Stats>(['crit', 'critResist', 'acc', 'eva']);
 
 export interface SimulateBattleOptions {
   /**
@@ -77,15 +70,7 @@ function toRuntime(c: Combatant, side: TeamSide, index: number): CombatantRuntim
 
 /** Base stat with every active modifier folded in. */
 function effective(unit: CombatantRuntime, stat: keyof Stats): number {
-  const base = unit.base[stat];
-  if (RATE_STATS.has(stat)) {
-    let value = base;
-    for (const m of unit.modifiers) if (m.stat === stat) value += m.amount;
-    return clamp(value, 0, stat === 'acc' ? 2 : 1);
-  }
-  let pct = 0;
-  for (const m of unit.modifiers) if (m.stat === stat) pct += m.amount;
-  return Math.max(stat === 'spd' ? 0.1 : 0, base * (1 + pct));
+  return effectiveStat(unit.base, unit.modifiers, stat);
 }
 
 /** Sorted acting order: 速度 desc, then team A first, then team position. */
@@ -145,29 +130,20 @@ interface DamageOutcome {
   dodged: boolean;
 }
 
-function rollDamage(
+/** Adapts a runtime pair onto the shared `rollDamage`, RNG order untouched. */
+function strike(
   attacker: CombatantRuntime,
   defender: CombatantRuntime,
   power: number,
   rng: Rng,
 ): DamageOutcome {
-  const hitChance = clamp(
-    effective(attacker, 'acc') - effective(defender, 'eva'),
-    MIN_HIT_CHANCE,
-    MAX_HIT_CHANCE,
+  const roll = rollDamage(
+    { stats: attacker.base, modifiers: attacker.modifiers },
+    { stats: defender.base, modifiers: defender.modifiers },
+    power,
+    rng,
   );
-  if (!rng.chance(hitChance)) return { amount: 0, crit: false, dodged: true };
-
-  const critChance = clamp(effective(attacker, 'crit') - effective(defender, 'critResist'), 0, 0.95);
-  const crit = rng.chance(critChance);
-
-  const atk = effective(attacker, 'atk');
-  const def = effective(defender, 'def');
-  const core = (atk * atk) / Math.max(1, atk + def);
-  const variance = 1 + rng.range(-DAMAGE_VARIANCE, DAMAGE_VARIANCE);
-  const raw = core * power * (crit ? CRIT_MULTIPLIER : 1) * variance;
-
-  return { amount: Math.max(1, Math.round(raw)), crit, dodged: false };
+  return { amount: roll.damage, crit: roll.crit, dodged: !roll.hit };
 }
 
 /**
@@ -208,7 +184,7 @@ export function simulateBattle(input: BattleInput, options: SimulateBattleOption
     skillId: string | null,
     power: number,
   ): void => {
-    const outcome = rollDamage(actor, target, power, rng);
+    const outcome = strike(actor, target, power, rng);
     if (!outcome.dodged) {
       target.hp = Math.max(0, target.hp - outcome.amount);
       damageDealt[actor.id] = (damageDealt[actor.id] ?? 0) + outcome.amount;

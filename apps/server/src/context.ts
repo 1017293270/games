@@ -11,6 +11,7 @@ import { SettingsStore } from './game/settings.js';
 import { PresenceTracker } from './game/presence.js';
 import { Realtime } from './realtime.js';
 import { BotEngine } from './engine/bots/engine.js';
+import { NoopZoneService, type ZoneService } from './engine/zone/api.js';
 import { PartyStore } from './modules/party/store.js';
 import { FriendRepo } from './modules/friend/repo.js';
 import { DungeonRunRepo } from './modules/dungeon/repo.js';
@@ -87,6 +88,11 @@ export interface AppContext {
   parties: PartyStore;
   /** The bot world loop. Assigned during `createContext`. */
   bots: BotEngine;
+  /**
+   * The 战斗大地图 loop. Defaults to `NoopZoneService`, so a server built
+   * without the zone module behaves as though no field is open.
+   */
+  zones: ZoneService;
 }
 
 /** Wires the repositories and stores over an open database. */
@@ -129,6 +135,7 @@ export function createContext(options: {
     encounters: new EncounterStore(),
     parties: new PartyStore(),
     bots: null as unknown as BotEngine,
+    zones: new NoopZoneService(),
   };
 
   ctx.bots = new BotEngine(ctx);

@@ -4,6 +4,7 @@ export * from './techniques.js';
 export * from './monsters.js';
 export * from './maps.js';
 export * from './dungeons.js';
+export * from './zones.js';
 export * from './npcs.js';
 export * from './dialogues.js';
 export * from './quests.js';

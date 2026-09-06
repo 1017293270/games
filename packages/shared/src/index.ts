@@ -10,6 +10,7 @@
  *   domain/      zod schemas + inferred types for every persisted entity
  *   cultivation/ realm table, attributes, lazy settle, breakthrough
  *   combat/      the deterministic battle engine
+ *   zone/        the 战斗大地图 real-time simulation core (pure functions)
  *   content/     all game data (items, skills, monsters, maps, NPCs, quests, bots)
  *   protocol/    REST endpoint registry and Socket.IO typed event maps
  */
@@ -20,5 +21,6 @@ export * from './core/util.js';
 export * from './domain/index.js';
 export * from './cultivation/index.js';
 export * from './combat/index.js';
+export * from './zone/index.js';
 export * from './content/index.js';
 export * from './protocol/index.js';

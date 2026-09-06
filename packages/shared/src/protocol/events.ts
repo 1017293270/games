@@ -19,6 +19,15 @@ import { CharacterStateSchema } from '../domain/character.js';
 import { BattleResultSchema } from '../combat/types.js';
 import { DungeonWaveSchema } from './explore.js';
 import { ChatChannelSchema, ChatMessageSchema, PartySchema } from './social.js';
+import {
+  ZoneEnterSchema,
+  type ZoneDeathSchema,
+  type ZoneErrorSchema,
+  type ZoneFrameSchema,
+  type ZoneJoinedSchema,
+  type ZoneLeftSchema,
+  type ZoneLootSchema,
+} from './zone.js';
 
 export const HandshakeAuthSchema = z.object({ token: z.string().min(1) });
 export type HandshakeAuth = z.infer<typeof HandshakeAuthSchema>;
@@ -145,6 +154,12 @@ export type FriendRequestEvent = z.infer<typeof FriendRequestEventSchema>;
 export interface ClientToServerEvents {
   'chat:send': (payload: ChatSend) => void;
   'presence:ping': () => void;
+  /** Walk into a 战斗大地图; `zoneId: null` resumes the current one. */
+  'zone:enter': (payload: z.infer<typeof ZoneEnterSchema>) => void;
+  /** Stop watching. The character stays on the field and keeps farming. */
+  'zone:leave': () => void;
+  /** Leave the field for good, banking whatever was earned. */
+  'zone:retreat': () => void;
 }
 
 /** Events the server may emit. */
@@ -159,6 +174,13 @@ export interface ServerToClientEvents {
   'raid:update': (payload: RaidUpdateEvent) => void;
   'system:notice': (payload: SystemNotice) => void;
   'friend:request': (payload: FriendRequestEvent) => void;
+  'zone:joined': (payload: z.infer<typeof ZoneJoinedSchema>) => void;
+  /** Delta frame, `zoneSnapshotHz` per second. Sent volatile. */
+  'zone:frame': (payload: z.infer<typeof ZoneFrameSchema>) => void;
+  'zone:left': (payload: z.infer<typeof ZoneLeftSchema>) => void;
+  'zone:loot': (payload: z.infer<typeof ZoneLootSchema>) => void;
+  'zone:death': (payload: z.infer<typeof ZoneDeathSchema>) => void;
+  'zone:error': (payload: z.infer<typeof ZoneErrorSchema>) => void;
 }
 
 /** Reserved for Socket.IO's own inter-server events; empty for this game. */
@@ -173,9 +195,23 @@ export interface SocketData {
   isAdmin: boolean;
   /** Party room the socket is currently joined to, if any. */
   partyId: string | null;
+  /**
+   * 战斗大地图 room the socket is *watching*, if any.
+   *
+   * Distinct from where the character stands: `zone:leave` stops the frames
+   * while the character keeps fighting, so this is cleared and the character
+   * stays on the field. Only `zone:retreat` takes it off.
+   */
+  zoneId: string | null;
 }
 
-export const CLIENT_TO_SERVER_EVENTS = ['chat:send', 'presence:ping'] as const;
+export const CLIENT_TO_SERVER_EVENTS = [
+  'chat:send',
+  'presence:ping',
+  'zone:enter',
+  'zone:leave',
+  'zone:retreat',
+] as const;
 
 export const SERVER_TO_CLIENT_EVENTS = [
   'chat:message',
@@ -188,6 +224,12 @@ export const SERVER_TO_CLIENT_EVENTS = [
   'raid:update',
   'system:notice',
   'friend:request',
+  'zone:joined',
+  'zone:frame',
+  'zone:left',
+  'zone:loot',
+  'zone:death',
+  'zone:error',
 ] as const;
 
 /**
@@ -197,6 +239,9 @@ export const SERVER_TO_CLIENT_EVENTS = [
 export const CLIENT_EVENT_SCHEMAS = {
   'chat:send': ChatSendSchema,
   'presence:ping': z.void(),
+  'zone:enter': ZoneEnterSchema,
+  'zone:leave': z.void(),
+  'zone:retreat': z.void(),
 } as const;
 
 /** Room naming, shared so both sides derive the same strings. */
@@ -204,6 +249,7 @@ export const ROOMS = {
   world: () => 'world',
   party: (partyId: string) => `party:${partyId}`,
   character: (characterId: string) => `char:${characterId}`,
+  zone: (zoneId: string) => `zone:${zoneId}`,
 } as const;
 
 export { ChatChannelSchema, ChatMessageSchema };

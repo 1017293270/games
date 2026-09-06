@@ -192,11 +192,11 @@ export default defineConfig(({ command }) => ({
 
 ## 5. `packages/shared` 导出清单
 
-一个入口 `@xianxia/shared`，共 **383 个具名导出**。按模块：
+一个入口 `@xianxia/shared`，共 **465 个具名导出**。按模块：
 
 ### `core/`
-- `art.ts` — `ART_IDS`(82) 及分组常量 `ART_BACKGROUNDS` `ART_NPCS` `ART_AVATARS`
-  `ART_MONSTERS` `ART_BOSSES` `ART_ITEMS` `ART_UI`；类型 `ArtId` 等；
+- `art.ts` — `ART_IDS`(98) 及分组常量 `ART_BACKGROUNDS` `ART_NPCS` `ART_AVATARS`
+  `ART_MONSTERS` `ART_BOSSES` `ART_ITEMS` `ART_UI` `ART_ZONES` `ART_SPRITES`；类型 `ArtId` 等；
   `isArtId()`；`ArtManifest` / `ArtManifestEntry`（`tools/art` 产出的 manifest 形状）
 - `rng.ts` — `createRng(seed): Rng`（mulberry32，确定性）、`hashSeed`、`combineSeeds`
 - `util.ts` — `clamp` `round` `sum` `indexById` `formatDuration` `dayKey` `hourOfDay`
@@ -206,6 +206,7 @@ export default defineConfig(({ command }) => ({
 `stats`（`Stats` `SpiritRoot` `Element` 及品质倍率表）· `item`（`Item` 判别联合：
 `PillItem`/`MaterialItem`/`EquipmentItem`，`EquipSlot` `ItemGrade` `InventoryItem`）·
 `skill`（`Skill` `SkillType` `SKILL_SLOT_COUNT`）· `technique` · `monster`（`Monster` `LootEntry`）·
+`zone`（`Zone` `ZoneSpawn` `ZoneArea` `ZonePoint` `ZONE_TILE_PX`——战斗大地图几何） ·
 `script`（`Condition` `Effect` `Reward`——对话/任务/奇遇共用）· `quest`（`Quest`
 `QuestObjective` `QuestProgress` `StoryChapter`）· `npc`（`Npc` `DialogueTree`
 `DialogueNode` `DialogueChoice`）· `map`（`ExploreMap` `Encounter` `Dungeon`）· `shop` ·
@@ -229,22 +230,38 @@ export default defineConfig(({ command }) => ({
 - `types.ts` — `Combatant` `BattleInput` `BattleResult` `BattleEvent`（判别联合）及其
   zod schema；常量 `DEFAULT_MAX_ROUNDS`(30) `COMBAT_MANA_MAX`(100)
   `COMBAT_MANA_REGEN`(15) `CRIT_MULTIPLIER`(1.5)
+- `damage.ts` — **`rollDamage(attacker, defender, power, rng)`** `effectiveStat()`；
+  回合制引擎与战斗大地图共用同一套伤害公式与**同一 rng 抽取顺序**
+  （`chance(命中) → chance(暴击) → range(浮动)`，未命中只抽一次）
 - `engine.ts` — **`simulateBattle(input, options?)`**
+
+### `zone/` — 战斗大地图模拟核心（纯函数，服务端与客户端 mock 共用）
+- `sim.ts` — `createZoneSim(zone, rules, seed, now)` `addCultivator` `removeEntity`
+  `setOnline` `setRules` `refreshCultivator` **`stepZone(sim, now)`**
+  **`buildFrame(sim, full)`**；类型 `ZoneSim` `ZoneEntity` `ZoneRules` `ZoneStepOutput`
+- 不读 `Date.now`/`Math.random`：时间靠参数传入，随机数来自 seed，实体按槽位顺序迭代，
+  **同 seed 同轨迹**。奖励不在这里算——一步只吐出「谁死了、伤害怎么分」，
+  换算成修为/灵石/掉落是 service 的事（只有它能读写角色行）。
 
 ### `content/` — 全部游戏数据（已用 schema 校验过）
 `ITEMS`(30) `SKILLS`(15) `TECHNIQUES`(6) `MONSTERS`(12，含 4 BOSS)
-`EXPLORE_MAPS`(4) `ENCOUNTERS`(8) `DUNGEONS`(4) `NPCS`(8) `DIALOGUES`(8)
+`EXPLORE_MAPS`(4) `ZONES`(4) `ENCOUNTERS`(8) `DUNGEONS`(4) `NPCS`(8) `DIALOGUES`(8)
 `QUESTS`(12) `STORY_CHAPTERS`(3) `SHOPS`(3) `BOT_ARCHETYPES`(6)
 ——每个都配 `*_BY_ID` 的 `ReadonlyMap` 查表。
 另有 `tribulationAvatar()`、`starterSkillIds()`、`generateBotName()` `generateBotNames()`
 `decideBotAction()` `botCultivationMultiplier()`、`buyPriceAt()` `sellPriceAt()`、
 以及 **`validateContent()`**（返回全部悬空引用，测试断言为空）。
+战斗大地图另有 `MONSTER_SPRITE`（妖兽 id → `sprite/*`）、`zoneFor(stageIndex, rng?)`
+与一组 `ZONE_*` 调参常量（出手间隔、索敌半径、射程、移速、脱战距离、AoE 上限、
+PvP 保护期与境界窗口、机器人驻留时长）。
 
 ### `protocol/`
-- `common.ts` — `API_PREFIX`(`/api`) `API_ERROR_CODES`(72) `API_ERROR_STATUS`
+- `common.ts` — `API_PREFIX`(`/api`) `API_ERROR_CODES`(73) `API_ERROR_STATUS`
   `apiResponse()` `paginated()` `ok()` `fail()` `buildPath()` `Endpoint` `endpoint()`
   `RequestOf` `ResponseOf`
 - 各域 schema：`auth` `character` `inventory` `explore` `social` `npc` `admin`
+- `zone.ts` — 战斗大地图帧：`ZoneFrame` `ZoneRosterEntry` `ZoneEntityTuple` `ZONE_FLAGS`
+  `ZoneEvent` `ZoneJoined` `ZoneLeft` `ZoneLoot` `ZoneDeath` `ZoneError` `ZonePose`
 - `events.ts` — `ClientToServerEvents` / `ServerToClientEvents` / `InterServerEvents`
   / `SocketData`、`CLIENT_EVENT_SCHEMAS`、`ROOMS`、`HandshakeAuthSchema`
 - `routes.ts` — **`API`** 总表 + `allEndpoints()`
@@ -360,10 +377,28 @@ const socket: Socket<ServerToClientEvents, ClientToServerEvents> =
 | s→c | `raid:update` | `{ botId, hpPercent, lastDamage, defeated, ... }` |
 | s→c | `system:notice` | `{ kind, text, characterId, at }`（机器人突破播报等） |
 | s→c | `friend:request` | `FriendRequestEvent` |
+| c→s | `zone:enter` | `{ zoneId: string \| null }`（null = 重连恢复原图） |
+| c→s | `zone:leave` | —（只停推帧，角色留在图里继续打） |
+| c→s | `zone:retreat` | —（真正离场并结算） |
+| s→c | `zone:joined` | `{ zoneId, self, enteredAt, frame }`，frame 必为全量 |
+| s→c | `zone:frame` | `ZoneFrame` 增量帧，`zoneSnapshotHz` 次/秒，**volatile** |
+| s→c | `zone:left` | `{ reason: 'retreat' \| 'offline_cap' \| 'none' \| 'removed' }` |
+| s→c | `zone:loot` | `{ exp, spiritStones, items, kills, bossKills, since }` |
+| s→c | `zone:death` | `{ killerName, stonesLost, respawnAt }` |
+| s→c | `zone:error` | `{ code: MAP_LOCKED \| NOT_FOUND \| RATE_LIMITED \| ZONE_FULL, message }` |
 
 **服务端必须用 `CLIENT_EVENT_SCHEMAS[name].parse()` 校验每个入站事件**——
 socket 载荷和 HTTP body 一样不可信。房间名用 `ROOMS.world()` / `ROOMS.party(id)` /
-`ROOMS.character(id)` 派生，两边保证一致。
+`ROOMS.character(id)` / `ROOMS.zone(id)` 派生，两边保证一致。
+
+### 7.1 战斗大地图帧格式
+
+一张图每秒要向至多 `Zone.capacity` 个观众推 `zoneSnapshotHz` 次，所以实体走**定长
+元组**而不是对象：`[i, x*10, y*10, hp, flags, targetI, skillSlot]`。名字、头像、境界
+只在 `add` 里发一次，客户端按槽位缓存；`i` 是槽位不是身份，出现在 `remove` 里就必须
+连同缓存一起丢掉（槽位会被后来者复用）。坐标是**格的十分之一**（`ZONE_TILE_PX` = 12px
+@zoom1），全字段整数。`flags` 里 `HIT/CRIT/DODGED/CASTING` 是**一次性脉冲**——发出即清，
+客户端拿它触发一次动效，不要当持续状态；`DEAD/PROTECTED/OFFLINE/MOVING` 才是常驻。
 
 ## 8. 服务端实现约定
 
@@ -378,6 +413,14 @@ socket 载荷和 HTTP body 一样不可信。房间名用 `ROOMS.world()` / `ROO
   `.gitignore` 已忽略 `*.db*`。
 - **世界设置**：启动时 `hydrateWorldSettings(storedRow)`，PUT 时
   `applyWorldSettingsPatch(current, patch)`——别用 `{...current, ...body}` 硬合并。
+- **ZoneWorld 是第二个被授权的模拟循环**（第一个是机器人 tick）。它每
+  `zoneTickMs` 推进一次，**只推进战斗与位置**；修为仍然是懒结算的，不要在循环里
+  给任何人加修为。
+- **ZoneWorld 不持有可写的 `CharacterState` 快照**。图里的 `ZoneEntity` 只是一份
+  战斗用的投影（属性、神通、血量比例）；击杀奖励先累计成增量，`flush` 时**重新读一次
+  角色行**再落库。否则一次后台发放或一次突破就会被循环里的旧快照盖回去。
+- 时间一律靠参数传入：`stepZone(sim, now)` / `flush(now)` 都吃 `ctx.now()`，
+  测试能把整张图按自己的节奏推着走。
 
 ## 9. 客户端实现约定
 
@@ -391,17 +434,19 @@ socket 载荷和 HTTP body 一样不可信。房间名用 `ROOMS.world()` / `ROO
 
 ## 10. 测试
 
-`packages/shared` 共 **185 个测试 / 7 个文件**，全部通过：
+`packages/shared` 共 **231 个测试 / 9 个文件**，全部通过：
 
 | 文件 | 覆盖 |
 |---|---|
 | `realms.test.ts` (19) | 36 阶结构、四段时长带、化神起 1.5–2× 倍率、属性单调性 |
 | `settle.test.ts` (20) | 速率公式、离线上限与作废、小境界自动升、圆满不跨大境界、buff 中途过期分段、不可变性 |
 | `breakthrough.test.ts` (20) | 概率表 80%→35%、丹药 +15pp、95% 上限、失败扣 20%、渡劫门禁、4000 次抽样收敛 |
-| `combat.test.ts` (35) | 同 seed 逐字节一致、不同 seed 发散、maxRounds 终止、出手序、轮转与灵力、血池覆盖、平衡性抽样 |
+| `combat.test.ts` (38) | 同 seed 逐字节一致、不同 seed 发散、maxRounds 终止、出手序、轮转与灵力、血池覆盖、平衡性抽样 |
+| `zone-sim.test.ts` (29) | 500 步同 seed 逐字节一致、追帧等价、妖兽反击与脱战回家、死亡复活与保护期、PvP 开关与境界窗口、离线玩家不可攻击、BOSS 定时刷新与槽位回收、增量帧与脉冲清位、百人同图单步耗时 |
 | `content.test.ts` (42) | `validateContent()` 无悬空引用、各表数量、对话树全节点可达、任务链无环、商店买价 > 卖价、机器人原型参数 |
-| `art.test.ts` (8) | 正则从 `docs/ASSETS.md` 抽取 82 个 ID 与 `ART_IDS` 严格相等（防漂移） |
+| `art.test.ts` (9) | 正则从 `docs/ASSETS.md` 抽取 98 个 ID 与 `ART_IDS` 严格相等（防漂移） |
 | `protocol.test.ts` (41) | 66 个端点无重复路由、schema 齐备、错误码合法、样例载荷 parse、真实 `BattleResult` JSON 往返、socket 事件表与接口同步 |
+| `admin-protocol.test.ts` (13) | 后台端点与统计载荷 |
 
 新增 app 时请自带 `test` 脚本，根 `pnpm test` 会自动跑到。
 

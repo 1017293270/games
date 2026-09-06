@@ -6,5 +6,6 @@ export * from './explore.js';
 export * from './social.js';
 export * from './npc.js';
 export * from './admin.js';
+export * from './zone.js';
 export * from './events.js';
 export * from './routes.js';

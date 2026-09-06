@@ -26,7 +26,7 @@
 水墨（中国水墨/宣纸）画风。色板：宣纸 `#F3EBDC`、墨 `#1E1B18`、淡墨 `#5C5650`、朱砂 `#B23A2E`、青黛 `#3B5F6B`、金 `#C9A063`。
 Avoid（逐条写进 spec）：neon/cyberpunk colors, glossy 3D render look, photorealism, anime cel-shading, any readable text or letters, logos, watermarks, UI frames, borders, signatures, split panels.
 
-## ID 清单（共 82）
+## ID 清单（共 98）
 
 ### 场景背景 `bg/`（10，竖版 9:16，上 1/3 留淡、下 1/4 留暗给 UI）
 
@@ -125,3 +125,37 @@ Avoid（逐条写进 spec）：neon/cyberpunk colors, glossy 3D render look, pho
 | ui/seal-red | 朱砂印章（方形篆印质感，无可读字） | 256×256 |
 | ui/scroll-bg | 卷轴宣纸底（竖版，上下卷轴轴头） | 768×1024 |
 | ui/ink-splash | 水墨晕染点（叠加用） | 512×512 |
+
+### 战斗大地图底图 `zone/`（4，竖版 2:3 768×1152，非透明，俯视）
+
+战斗大地图（M4）的地面层，PixiJS 直接铺在最底下。与 `bg/map-*` 是**两回事**：`bg/map-*` 是平视远景插图，`zone/*` 是俯视地形图。同 id 的 `ExploreMap` 提供名字、描述与解锁阶。
+
+要求（逐条写进 spec）：俯视（top-down / bird's-eye），无人物、无妖兽、无建筑立面透视，地形与植被平铺满整幅，四边可被裁切；下方中央留一片开阔空地作入口，上方留一片显眼空地给 BOSS；不要网格线、不要小地图图标、不要指北针。
+
+| ID | 内容 |
+|---|---|
+| zone/qingyun-mountain | 青云山：俯视松林山径，溪流自上而下，散落青石与草坡 |
+| zone/luoshui-city | 洛水城：俯视河岸滩涂与石板码头，柳荫、木栈桥、系泊的舟 |
+| zone/youming-valley | 幽冥谷：俯视枯林谷地，磷火点点，裂隙与碎骨，偏冷灰绿 |
+| zone/kunlun-ruins | 昆仑墟：俯视雪原废墟，断柱残碑投下长影，金色天光斑 |
+
+### 妖兽俯视小像 `sprite/`（12，256×256 透明底，Q 版俯视）
+
+战斗大地图里在底图上跑动的妖兽/BOSS 小像，与 `monster/` `boss/` 的竖版立绘一一对应（后缀是妖兽 id 去掉 `monster-`/`boss-` 前缀）。
+
+要求：俯视略带 3/4 视角的 Q 版（chibi）造型，头大身小，单体居中，占画面约 80%，透明底，无地面阴影以外的背景，无边框。
+
+| ID | 内容 |
+|---|---|
+| sprite/qingyun-wolf | 青云狼：青灰小狼，俯视伏身 |
+| sprite/spirit-ape | 灵猿：抱桃木杖的小猿 |
+| sprite/luoshui-flood-dragon | 洛水蛟：盘身小蛟，水纹环绕 |
+| sprite/river-bandit | 水匪修士：蒙面持刀的小人 |
+| sprite/ghost-lantern | 幽冥灯鬼：提青灯的小鬼影 |
+| sprite/bone-general | 白骨将：残甲小骨将 |
+| sprite/ice-qilin | 冰麒麟：冰晶鳞甲小麒麟 |
+| sprite/golden-crow | 金乌：三足小金乌，火羽 |
+| sprite/qingyun-tiger-king | 青云虎王：白虎，体型比常规妖兽大一圈 |
+| sprite/luoshui-dragon-lord | 洛水龙君：人形龙首，体型更大 |
+| sprite/youming-ghost-emperor | 幽冥鬼帝：冕旒鬼王，体型更大 |
+| sprite/kunlun-heaven-beast | 昆仑天兽：九首异兽，体型最大 |

@@ -379,13 +379,20 @@ describe('domain payloads round-trip', () => {
 
 describe('socket contract', () => {
   it('lists both event maps', () => {
-    expect(CLIENT_TO_SERVER_EVENTS).toEqual(['chat:send', 'presence:ping']);
+    expect(CLIENT_TO_SERVER_EVENTS).toEqual([
+      'chat:send',
+      'presence:ping',
+      'zone:enter',
+      'zone:leave',
+      'zone:retreat',
+    ]);
     expect(SERVER_TO_CLIENT_EVENTS).toContain('chat:message');
     expect(SERVER_TO_CLIENT_EVENTS).toContain('character:update');
     expect(SERVER_TO_CLIENT_EVENTS).toContain('dungeon:result');
     expect(SERVER_TO_CLIENT_EVENTS).toContain('system:notice');
     expect(SERVER_TO_CLIENT_EVENTS).toContain('friend:request');
-    expect(SERVER_TO_CLIENT_EVENTS).toHaveLength(10);
+    expect(SERVER_TO_CLIENT_EVENTS).toContain('zone:frame');
+    expect(SERVER_TO_CLIENT_EVENTS).toHaveLength(16);
   });
 
   it('keeps the event name lists in step with the typed interfaces', () => {
@@ -394,6 +401,9 @@ describe('socket contract', () => {
     const c2s: Record<(typeof CLIENT_TO_SERVER_EVENTS)[number], keyof ClientToServerEvents> = {
       'chat:send': 'chat:send',
       'presence:ping': 'presence:ping',
+      'zone:enter': 'zone:enter',
+      'zone:leave': 'zone:leave',
+      'zone:retreat': 'zone:retreat',
     };
     const s2c: Record<(typeof SERVER_TO_CLIENT_EVENTS)[number], keyof ServerToClientEvents> = {
       'chat:message': 'chat:message',
@@ -406,9 +416,15 @@ describe('socket contract', () => {
       'raid:update': 'raid:update',
       'system:notice': 'system:notice',
       'friend:request': 'friend:request',
+      'zone:joined': 'zone:joined',
+      'zone:frame': 'zone:frame',
+      'zone:left': 'zone:left',
+      'zone:loot': 'zone:loot',
+      'zone:death': 'zone:death',
+      'zone:error': 'zone:error',
     };
-    expect(Object.keys(c2s)).toHaveLength(2);
-    expect(Object.keys(s2c)).toHaveLength(10);
+    expect(Object.keys(c2s)).toHaveLength(5);
+    expect(Object.keys(s2c)).toHaveLength(16);
   });
 
   it('validates the handshake payload', () => {

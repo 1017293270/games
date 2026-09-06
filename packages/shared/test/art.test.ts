@@ -11,7 +11,9 @@ import {
   ART_ITEMS,
   ART_MONSTERS,
   ART_NPCS,
+  ART_SPRITES,
   ART_UI,
+  ART_ZONES,
   isArtId,
 } from '../src/core/art.js';
 import { referencedArtIds } from '../src/content/registry.js';
@@ -27,7 +29,7 @@ const ASSETS_MD = resolve(HERE, '../../../docs/ASSETS.md');
  * only real IDs match — in tables, in prose lists and in the manifest example.
  */
 const ID_PATTERN =
-  /(?<![\w/-])(?:bg|npc|avatar|char|monster|boss|item|ui)\/[a-z0-9]+(?:-[a-z0-9]+)*(?![\w-])/g;
+  /(?<![\w/-])(?:bg|npc|avatar|char|monster|boss|item|ui|zone|sprite)\/[a-z0-9]+(?:-[a-z0-9]+)*(?![\w-])/g;
 
 function idsFromAssetsDoc(): string[] {
   const markdown = readFileSync(ASSETS_MD, 'utf8');
@@ -37,8 +39,8 @@ function idsFromAssetsDoc(): string[] {
 describe('ART_IDS mirrors docs/ASSETS.md', () => {
   const documented = idsFromAssetsDoc();
 
-  it('finds the documented 82 IDs in the contract file', () => {
-    expect(documented).toHaveLength(82);
+  it('finds the documented 98 IDs in the contract file', () => {
+    expect(documented).toHaveLength(98);
   });
 
   it('is exactly the same set as ART_IDS', () => {
@@ -61,7 +63,9 @@ describe('ART_IDS mirrors docs/ASSETS.md', () => {
     expect(ART_ITEMS).toHaveLength(30);
     expect(ART_CHARACTERS).toHaveLength(2);
     expect(ART_UI).toHaveLength(4);
-    expect(ART_IDS).toHaveLength(82);
+    expect(ART_ZONES).toHaveLength(4);
+    expect(ART_SPRITES).toHaveLength(12);
+    expect(ART_IDS).toHaveLength(98);
   });
 
   it('keeps every ID inside its declared prefix', () => {
@@ -74,6 +78,8 @@ describe('ART_IDS mirrors docs/ASSETS.md', () => {
       [ART_BOSSES, 'boss/'],
       [ART_ITEMS, 'item/'],
       [ART_UI, 'ui/'],
+      [ART_ZONES, 'zone/'],
+      [ART_SPRITES, 'sprite/'],
     ];
     for (const [ids, prefix] of groups) {
       for (const id of ids) expect(id.startsWith(prefix)).toBe(true);
@@ -101,5 +107,10 @@ describe('content only references contract art', () => {
     for (const id of [...ART_NPCS, ...ART_MONSTERS, ...ART_BOSSES, ...ART_ITEMS]) {
       expect(referenced.has(id)).toBe(true);
     }
+  });
+
+  it('uses every zone floor and 妖兽 sprite', () => {
+    const referenced = new Set(referencedArtIds());
+    for (const id of [...ART_ZONES, ...ART_SPRITES]) expect(referenced.has(id)).toBe(true);
   });
 });

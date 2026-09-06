@@ -48,6 +48,28 @@ export const WorldSettingsSchema = z.object({
   registrationOpen: z.boolean(),
   /** Shown on the login screen. */
   announcement: z.string().max(500),
+
+  // ------------------------------------------------------- 战斗大地图 (zone)
+  /** Milliseconds one zone simulation step covers. */
+  zoneTickMs: z.number().int().min(100).max(1000),
+  /** Delta frames pushed to each zone room per second. */
+  zoneSnapshotHz: z.number().int().min(1).max(10),
+  /** Multiplies every spawn point's population. */
+  monsterDensity: z.number().min(0.2).max(3),
+  /** Multiplies every 妖兽 respawn delay. */
+  respawnMultiplier: z.number().min(0.2).max(5),
+  /** Minutes between BOSS appearances in a zone. */
+  bossIntervalMinutes: z.number().int().min(1).max(720),
+  /** When true, cultivators may attack each other inside a zone. */
+  mapPvp: z.boolean(),
+  /** Share of the loser's 灵石 the winner takes on a zone PvP kill. */
+  mapPvpStoneLoss: z.number().min(0).max(0.5),
+  /** Seconds a fallen cultivator waits before respawning at the entrance. */
+  mapDeathRespawnSec: z.number().int().min(1).max(120),
+  /** Multiplies 修为/灵石 earned from zone kills, against the 秘境 baseline. */
+  zoneRewardScale: z.number().min(0).max(10),
+  /** Share of zone rewards an offline cultivator still banks. */
+  zoneOfflineYield: z.number().min(0).max(1),
 });
 export type WorldSettings = z.infer<typeof WorldSettingsSchema>;
 
@@ -70,6 +92,17 @@ export const DEFAULT_WORLD_SETTINGS: WorldSettings = WorldSettingsSchema.parse({
   chatHistoryLimit: 100,
   registrationOpen: true,
   announcement: '',
+
+  zoneTickMs: 250,
+  zoneSnapshotHz: 4,
+  monsterDensity: 1,
+  respawnMultiplier: 1,
+  bossIntervalMinutes: 30,
+  mapPvp: false,
+  mapPvpStoneLoss: 0.05,
+  mapDeathRespawnSec: 10,
+  zoneRewardScale: 0.3,
+  zoneOfflineYield: 0.5,
 });
 
 /**

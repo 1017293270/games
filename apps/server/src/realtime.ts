@@ -70,6 +70,34 @@ export class Realtime {
     this.io?.to(ROOMS.party(partyId)).emit(event, ...args);
   }
 
+  /**
+   * Pushes to everyone watching one 战斗大地图.
+   *
+   * Frames are sent `volatile`, which drops them for a socket whose buffer is
+   * already backed up rather than queueing them: a client that missed the last
+   * position is only interested in the next one, and a stalled phone must never
+   * grow an unbounded backlog on the server.
+   */
+  toZone<E extends keyof ServerToClientEvents>(
+    zoneId: string,
+    event: E,
+    payload: Parameters<ServerToClientEvents[E]>[0],
+    options: { volatile?: boolean } = {},
+  ): void {
+    const room = this.io?.to(ROOMS.zone(zoneId));
+    if (!room) return;
+    // Socket.IO decorates its emit signature with acknowledgement overloads, so
+    // the single payload has to be handed over as the tuple it really is.
+    const args = [payload] as unknown as Parameters<ServerToClientEvents[E]>;
+    if (options.volatile) room.volatile.emit(event, ...args);
+    else room.emit(event, ...args);
+  }
+
+  /** Sockets currently subscribed to a zone room; 0 with no Socket.IO attached. */
+  zoneWatchers(zoneId: string): number {
+    return this.io?.sockets.adapter.rooms.get(ROOMS.zone(zoneId))?.size ?? 0;
+  }
+
   chat(message: ChatMessage, partyId: string | null = null): void {
     if (message.channel === 'party' && partyId) this.toParty(partyId, 'chat:message', message);
     else this.toWorld('chat:message', message);
