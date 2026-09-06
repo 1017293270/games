@@ -2,17 +2,20 @@
 /**
  * Writes one gpt-image-2 prompt spec per asset into tools/art/specs/.
  *
- *   node tools/art/gen-specs.mjs            # write all 82
+ *   node tools/art/gen-specs.mjs            # write all 98
  *   node tools/art/gen-specs.mjs bg/login   # write only these ids
  *
- * The style/avoid blocks are assembled from shared constants so all 82 specs
- * carry byte-identical wording where it matters. Regenerating is idempotent;
- * hand-written retry specs (*-v2.txt) are never touched.
+ * The style/palette/materials/avoid blocks come from shared constants, so every
+ * spec in a category carries byte-identical wording where it matters. A category
+ * may override all four (zone/ and sprite/ do, to use the vivid dark-ground
+ * style); anything that overrides none falls back to the pale xuan-paper set,
+ * which is why regenerating the original 82 is byte-for-byte a no-op.
+ * Regenerating is idempotent; hand-written retry specs (*-v2.txt) are untouched.
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { RESOLVED, STYLE, PALETTE, AVOID_BASE } from './assets.mjs';
+import { RESOLVED, STYLE, PALETTE, AVOID_BASE, MATERIALS } from './assets.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SPECS = join(HERE, 'specs');
@@ -23,16 +26,14 @@ export function buildSpec(a) {
     `Use case: ${b.useCase}`,
     `Asset type: ${b.assetType}`,
     `Primary request: ${a.subject}`,
-    `Style/medium: ${STYLE}`,
+    `Style/medium: ${b.style ?? STYLE}`,
     `Composition/framing: ${a.compositionOverride ?? b.composition}`,
   ];
   if (a.mood) lines.push(`Lighting/mood: ${a.mood}`);
-  lines.push(`Color palette: ${PALETTE}${a.paletteExtra ?? ''}`);
-  lines.push(
-    `Materials/textures: absorbent xuan rice paper grain, wet ink bleed into damp fibre, dry-brush scratch where the brush runs out of ink`,
-  );
+  lines.push(`Color palette: ${b.palette ?? PALETTE}${a.paletteExtra ?? ''}`);
+  lines.push(`Materials/textures: ${b.materials ?? MATERIALS}`);
   lines.push(`Constraints: ${b.constraints}${a.extraConstraints ?? ''}`);
-  lines.push(`Avoid: ${AVOID_BASE}, ${b.avoidExtra}`);
+  lines.push(`Avoid: ${b.avoid ?? AVOID_BASE}, ${b.avoidExtra}`);
   lines.push(`Output size: ${a.request}`);
 
   let text = lines.join('\n') + '\n';

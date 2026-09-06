@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-09-05T09:51:09.506Z",
+  "generatedAt": "2026-09-06T14:05:57.365Z",
   "assets": {
     "bg/cultivation-day": {
       "src": "/art/bg/cultivation-day.webp",
@@ -502,6 +502,102 @@
       "src": "/art/ui/ink-splash.webp",
       "w": 512,
       "h": 512,
+      "alpha": true
+    },
+    "zone/qingyun-mountain": {
+      "src": "/art/zone/qingyun-mountain.webp",
+      "w": 768,
+      "h": 1152,
+      "alpha": false
+    },
+    "zone/luoshui-city": {
+      "src": "/art/zone/luoshui-city.webp",
+      "w": 768,
+      "h": 1152,
+      "alpha": false
+    },
+    "zone/youming-valley": {
+      "src": "/art/zone/youming-valley.webp",
+      "w": 768,
+      "h": 1152,
+      "alpha": false
+    },
+    "zone/kunlun-ruins": {
+      "src": "/art/zone/kunlun-ruins.webp",
+      "w": 768,
+      "h": 1152,
+      "alpha": false
+    },
+    "sprite/qingyun-wolf": {
+      "src": "/art/sprite/qingyun-wolf.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "sprite/spirit-ape": {
+      "src": "/art/sprite/spirit-ape.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "sprite/luoshui-flood-dragon": {
+      "src": "/art/sprite/luoshui-flood-dragon.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "sprite/river-bandit": {
+      "src": "/art/sprite/river-bandit.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "sprite/ghost-lantern": {
+      "src": "/art/sprite/ghost-lantern.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "sprite/bone-general": {
+      "src": "/art/sprite/bone-general.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "sprite/ice-qilin": {
+      "src": "/art/sprite/ice-qilin.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "sprite/golden-crow": {
+      "src": "/art/sprite/golden-crow.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "sprite/qingyun-tiger-king": {
+      "src": "/art/sprite/qingyun-tiger-king.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "sprite/luoshui-dragon-lord": {
+      "src": "/art/sprite/luoshui-dragon-lord.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "sprite/youming-ghost-emperor": {
+      "src": "/art/sprite/youming-ghost-emperor.webp",
+      "w": 256,
+      "h": 256,
+      "alpha": true
+    },
+    "sprite/kunlun-heaven-beast": {
+      "src": "/art/sprite/kunlun-heaven-beast.webp",
+      "w": 256,
+      "h": 256,
       "alpha": true
     }
   }

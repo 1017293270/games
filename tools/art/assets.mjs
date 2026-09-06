@@ -1,7 +1,7 @@
 /**
  * Single source of truth for the Image2 art pipeline.
  *
- * Mirrors the 82 IDs defined in docs/ASSETS.md (that file is the contract; this
+ * Mirrors the 98 IDs defined in docs/ASSETS.md (that file is the contract; this
  * file must follow it, never the other way around). Consumed by:
  *   gen-specs.mjs  -> writes specs/<id with '/' replaced by '--'>.txt
  *   process.mjs    -> raw/<same>.png -> apps/client/public/art/<id>.webp + manifest.json
@@ -9,8 +9,10 @@
  */
 
 // ---------------------------------------------------------------------------
-// Shared prompt fragments. The STYLE string is byte-identical in all 82 specs —
-// that is what keeps the set looking like one painter's hand.
+// Shared prompt fragments. Every category picks exactly one style string and
+// repeats it byte-identically across its specs — that is what keeps a set looking
+// like one painter's hand. There are two of them: STYLE (pale xuan paper, the
+// original 82) and STYLE_VIVID below (deep ground + gold, zone/ and sprite/).
 // ---------------------------------------------------------------------------
 
 export const STYLE =
@@ -22,6 +24,10 @@ export const STYLE =
 export const PALETTE =
   'paper #F3EBDC, ink #1E1B18, light ink #5C5650, vermilion #B23A2E, indigo #3B5F6B, antique gold #C9A063';
 
+export const MATERIALS =
+  'absorbent xuan rice paper grain, wet ink bleed into damp fibre, ' +
+  'dry-brush scratch where the brush runs out of ink';
+
 /** Verbatim Avoid list from docs/ASSETS.md. Every spec starts its Avoid line with this. */
 export const AVOID_BASE =
   'neon or cyberpunk colors, glossy 3D render look, photorealism, anime cel-shading, ' +
@@ -29,6 +35,38 @@ export const AVOID_BASE =
 
 export const TRANSPARENT =
   'genuinely transparent background, preserve the alpha channel, no backdrop, no drop shadow';
+
+// ---------------------------------------------------------------------------
+// The vivid ink-wash style, introduced with zone/ and sprite/ (M4a).
+//
+// The reference is 《一念逍遥》: a deep black-navy ground rather than rice paper,
+// gold dust and gilded contours, and cyan-teal / vermilion / gold carried at full
+// saturation. Only the zone and sprite categories use it for now — the other
+// eight still carry STYLE above, so their specs regenerate byte-identically.
+// A category opts in by setting `style`/`palette`/`avoid`/`materials`; gen-specs
+// falls back to the pale-paper constants when a category sets none of them.
+// ---------------------------------------------------------------------------
+
+export const STYLE_VIVID =
+  'vivid Chinese ink-wash fantasy illustration on a deep black-navy ground #0E1116, ' +
+  'luminous antique-gold accents, gilded contour lines and drifting gold dust #D9B15F, ' +
+  'saturated cyan-teal #4FA7B8, vermilion #C8402F and gold as the three accent hues, ' +
+  'expressive calligraphic brush strokes with flung ink splash and wet bleed, ' +
+  'dramatic rim light separating every form from the dark ground, 国风 xianxia';
+
+export const PALETTE_VIVID =
+  'black-navy ground #0E1116, deep ink blue #16202B, antique gold #D9B15F, ' +
+  'saturated cyan-teal #4FA7B8, vermilion #C8402F, pale jade highlight #A8D8D0';
+
+/** AVOID_BASE plus the two failure modes the pale-paper style used to invite. */
+export const AVOID_VIVID =
+  AVOID_BASE +
+  ', pale rice-paper or beige background, washed-out pastel colours, ' +
+  'low-saturation muted palette, flat even lighting';
+
+export const MATERIALS_VIVID =
+  'wet ink bleeding across a dark ground, flung ink droplets and dry-brush drag, ' +
+  'fine suspended gold dust, thin gold leaf catching the light along lit contours';
 
 // ---------------------------------------------------------------------------
 // Per-category rules: how to ask for it, and how to process what comes back.
@@ -152,10 +190,65 @@ export const CATEGORIES = {
       'no text, no frame, no border',
     avoidExtra: 'drop shadow, glow halo, background wash, buttons, panels, readable characters',
   },
+  // --- vivid style (M4a) ----------------------------------------------------
+  zone: {
+    request: '1024x1536',
+    out: [768, 1152],
+    alpha: false,
+    style: STYLE_VIVID,
+    palette: PALETTE_VIVID,
+    avoid: AVOID_VIVID,
+    materials: MATERIALS_VIVID,
+    useCase: 'stylized-concept',
+    assetType:
+      'top-down battle-map floor plate for a mobile idle-cultivation RPG — the ground layer that character and monster sprites are composited on top of',
+    composition:
+      'vertical 2:3 portrait format seen from directly overhead, a bird-eye top-down camera with at most a very slight tilt; ' +
+      'terrain and vegetation fill the whole plate edge to edge and are cut off by all four edges, so no horizon and no sky are visible; ' +
+      'the upper third is noticeably darker and holds one conspicuous open clearing where a boss will be placed; ' +
+      'the lower centre holds a second open clearing that reads as the entrance to the field; ' +
+      'a legible route connects the two clearings through the middle of the plate',
+    constraints:
+      'nothing stands on this ground: no people, no creatures, no boats crewed or occupied, no floating objects; ' +
+      'buildings are seen as roofs from above only, never in elevation; ' +
+      'keep the overall contrast moderate and the value range mid — bright sprites and dark sprites both have to stay readable against it, ' +
+      'so no blown-out highlights and no pitch-black holes outside the darker upper band; ' +
+      'the two clearings are genuinely empty ground with nothing painted in them; ' +
+      'no grid lines, no map icons, no waypoint pins, no compass rose, no route arrows, no text and no place names',
+    avoidExtra:
+      'characters, monsters, isometric or three-quarter camera, side view, horizon line, sky, clouds seen from below, ' +
+      'minimap markers, waypoint pins, compass rose, grid overlay, vignette frame, drop shadow border',
+  },
+  sprite: {
+    request: '1024x1024',
+    out: [256, 256],
+    alpha: true,
+    style: STYLE_VIVID,
+    palette: PALETTE_VIVID,
+    avoid: AVOID_VIVID,
+    materials: MATERIALS_VIVID,
+    useCase: 'stylized-concept',
+    assetType:
+      'transparent top-down chibi creature sprite for the battle map of a mobile idle-cultivation RPG',
+    composition:
+      'square 1:1 format; exactly one creature, centred, filling about 70 percent of the frame, ' +
+      'seen from a high three-quarter angle looking down onto it and turned towards the lower left of the frame; ' +
+      'chibi proportions — oversized head, compact body, short limbs — a bold silhouette that still reads at 64 pixels; ' +
+      'nothing else is in the frame',
+    constraints:
+      TRANSPARENT +
+      '; the deep black-navy ground named in the style belongs to the creature\'s own dark colouring only — ' +
+      'do not paint any background behind it, every pixel around the silhouette must be fully transparent; ' +
+      'the body is dark and richly inked with one concentrated area of high-saturation accent colour and a gilded rim light; ' +
+      'exactly one creature, complete body inside the frame, no ground plane, no cast shadow, no base or platform, no text',
+    avoidExtra:
+      'multiple creatures, a scene or setting, ground plane, cast shadow, drop shadow, glow halo, base platform, ' +
+      'pedestal, health bars, pure side view, realistic adult proportions, cropped limbs',
+  },
 };
 
 // ---------------------------------------------------------------------------
-// The 82 assets. `subject` becomes the Primary request line; optional fields
+// The 98 assets. `subject` becomes the Primary request line; optional fields
 // override or extend the category defaults.
 // ---------------------------------------------------------------------------
 
@@ -415,6 +508,50 @@ export const ASSETS = [
       'square format; the blot is roughly centred and fills about 70 percent of the frame; everything not touched by ink is fully transparent',
     mood: 'raw wet ink on damp paper, high contrast between the dense core and the pale bleed',
   },
+
+  // --- zone (4) ------------------------------------------------------------
+  // Top-down terrain plates for the M4 battle map. Not to be confused with the
+  // bg/map-* vistas, which are eye-level landscape illustrations of the same places.
+  {
+    id: 'zone/qingyun-mountain',
+    subject:
+      'a pine forest mountainside seen from straight above: dense blue-green pine crowns as rings of wet brush strokes, a pale winding footpath of scattered flagstones climbing from the bottom of the plate to the top, a narrow stream running down beside it with teal water catching gold light, boulders and grass slopes filling the gaps between the trees, drifting cloud wisps thinning over the darker upper band',
+    mood: 'cold high-mountain light raking across the canopy from the left, gold dust caught in the air, deep shadow pooling between the pines',
+  },
+  {
+    id: 'zone/luoshui-city',
+    subject:
+      'a riverside city waterfront seen from straight above: a broad teal river with gold light broken across its ripples filling the left of the plate, a stone-flagged quay and grey tiled rooftops of the city seen from overhead on the right, wooden jetties reaching out over the water, empty moored boats, willow crowns hanging over the bank, a paved square at the bottom centre',
+    mood: 'dusk over the water, gold reflections and lantern-warm points among the dark rooftops, cyan-teal water against warm gilded stone',
+  },
+  {
+    id: 'zone/youming-valley',
+    subject:
+      'a dead valley floor seen from straight above: bare twisted trees reduced to claw-like branch silhouettes over black soil, a jagged fissure splitting the ground down the middle of the plate with faint light in its depths, drifts of cold fog lying in the hollows, scattered pale bones and broken stone, small ghost-fire points of cold blue floating between the trunks with a few vermilion embers among them',
+    mood: 'haunted blue darkness, ghost-fire as the only light source, sparse vermilion accents, heavy low fog',
+  },
+  {
+    id: 'zone/kunlun-ruins',
+    subject:
+      'a high snowfield of ancient ruins seen from straight above: the broken circular stumps of enormous stone columns arranged across the snow, a cracked toppled stele half buried, drifted snow banks and dark exposed rock, faint gold veins running through the stonework, long shadows thrown sideways by the columns',
+    mood: 'a shaft of gold dawn light breaking across the snow from the upper right, cold cyan-blue shadow in the drifts, immense and ancient',
+  },
+
+  // --- sprite (12) ---------------------------------------------------------
+  // Chibi top-down counterparts of monster/* and boss/*; content/zones.ts maps
+  // 'monster-qingyun-wolf' -> 'sprite/qingyun-wolf' by stripping the id prefix.
+  { id: 'sprite/qingyun-wolf', subject: 'a chibi blue-grey mountain wolf crouched low on all fours, oversized head with pricked ears and a short muzzle, hackles raised along its back, cyan-teal spirit light in its eyes' },
+  { id: 'sprite/spirit-ape', subject: 'a chibi spirit ape standing upright on short legs, oversized shaggy head and huge shoulders, hugging a gnarled peachwood staff against its chest with both hands' },
+  { id: 'sprite/luoshui-flood-dragon', subject: 'a chibi river flood-dragon coiled into a compact spiral with its oversized horned head reared up in the centre, long whiskers curling outward, a ring of cyan-teal water swirl breaking around its coils' },
+  { id: 'sprite/river-bandit', subject: 'a chibi masked river-pirate cultivator in a crouched fighting stance, oversized head under a cloth mask covering the lower face, ragged short jacket, a curved sabre held low in one hand' },
+  { id: 'sprite/ghost-lantern', subject: 'a chibi hollow-eyed ghost hovering just off the ground in tattered trailing robes, oversized head with two empty glowing sockets, holding up a small paper lantern with a cold cyan flame, its lower body trailing off into mist' },
+  { id: 'sprite/bone-general', subject: 'a chibi skeletal warlord in shattered rusted lamellar armour, oversized skull under a battered helm, a broken halberd gripped in one bony hand, short tattered war cape' },
+  { id: 'sprite/ice-qilin', subject: 'a chibi qilin standing square on four short legs, oversized antlered head, hide rendered as pale translucent ice crystal, a mane of frozen spines, a small curl of cold breath at its muzzle' },
+  { id: 'sprite/golden-crow', subject: 'a chibi three-legged golden crow with its wings half spread, oversized head and beak, three stubby legs clearly visible, wreathed in a small curl of vermilion and gold ink flame' },
+  { id: 'sprite/qingyun-tiger-king', subject: 'a chibi white tiger king, noticeably larger and heavier than a common beast sprite, oversized head with jaws parted in a roar, bold black stripe strokes over white fur, thick forelegs braced wide, a gilded crown marking on its brow' },
+  { id: 'sprite/luoshui-dragon-lord', subject: 'a chibi dragon lord, noticeably larger than a common beast sprite: a horned draconic head with long whiskers on a short robed humanoid body in imperial river-court dress, clawed hands raised, a swirl of teal water breaking at the hem' },
+  { id: 'sprite/youming-ghost-emperor', subject: 'a chibi ghost emperor, noticeably larger than a common beast sprite, in dark funerary court robes with a flat-topped crown whose hanging bead strings half veil a fleshless face, arms folded into wide sleeves, cold cyan wisps rising from the hem' },
+  { id: 'sprite/kunlun-heaven-beast', subject: 'a chibi nine-headed divine beast, the largest sprite of the set: nine short serpentine necks fanning out from one squat four-legged body, every oversized head snarling in a different direction, gilded scales along the necks' },
 ];
 
 /** 'bg/cultivation-day' -> 'bg--cultivation-day' (spec + raw filenames). */
