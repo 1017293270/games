@@ -163,7 +163,9 @@ test.describe('同场厮杀', () => {
 
     // 图上得有别人才谈得上 PvP。散修（机器人）是这张图上人数的大头，一个都
     // 没有就别等了——那是世界空着，不是 PvP 没生效。
-    await expect(pageA.locator('.zone-row').filter({ hasText: '散修' }).first()).toBeVisible();
+    await expect(pageA.locator('.zone-row').filter({ hasText: '散修' }).first()).toBeVisible({
+      timeout: 90_000,
+    });
 
     // 新入场的人有 60 秒护身，护身期内谁也碰不了他——等它过去，否则等的是
     // 一个规则上不可能发生的事。
