@@ -230,6 +230,9 @@ export function stats(ctx: AppContext, now: number): AdminStats {
   const startOfDay = Date.parse(`${dayKey(now)}T00:00:00.000Z`);
   const stages = botStageStats(ctx);
   const lastTick = ctx.bots.lastTick;
+  // Empty until the 战斗大地图 loop has actually run, which is how the panel
+  // tells "no zones on this server" from "zones with nobody in them".
+  const zones = ctx.zones.stats();
 
   return {
     players: {
@@ -260,6 +263,7 @@ export function stats(ctx: AppContext, now: number): AdminStats {
       ...(lastTick === null ? {} : { lastTick }),
       version: ctx.version,
     },
+    ...(zones.length === 0 ? {} : { zones }),
   };
 }
 

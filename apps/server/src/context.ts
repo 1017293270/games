@@ -12,6 +12,7 @@ import { PresenceTracker } from './game/presence.js';
 import { Realtime } from './realtime.js';
 import { BotEngine } from './engine/bots/engine.js';
 import { NoopZoneService, type ZoneService } from './engine/zone/api.js';
+import { ZoneServiceImpl } from './engine/zone/service.js';
 import { PartyStore } from './modules/party/store.js';
 import { FriendRepo } from './modules/friend/repo.js';
 import { DungeonRunRepo } from './modules/dungeon/repo.js';
@@ -139,5 +140,10 @@ export function createContext(options: {
   };
 
   ctx.bots = new BotEngine(ctx);
+  // Same two-step as the bot engine, for the same reason: the 战斗大地图 loop
+  // reads characters, settings and the realtime bus off the context it lives
+  // in, so it is attached once that object exists. This replaces the
+  // `NoopZoneService` the literal above booted with.
+  ctx.zones = new ZoneServiceImpl(ctx);
   return ctx;
 }

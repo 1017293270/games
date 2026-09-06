@@ -43,6 +43,8 @@ export interface HarnessOptions {
   inviteCode?: string;
   adminPassword?: string;
   startBots?: boolean;
+  /** Defaults off: a test that wants the field drives `ctx.zones` by hand. */
+  startZones?: boolean;
   config?: Partial<ServerConfig>;
   /** Extra handlers merged over the default registry, for modules not yet wired into app.ts. */
   handlers?: HandlerRegistry;
@@ -72,6 +74,7 @@ export function createHarness(options: HarnessOptions = {}): Harness {
     config,
     now: clock.now,
     startBots: options.startBots ?? false,
+    startZones: options.startZones ?? false,
     handlers:
       options.registry ??
       (options.handlers ? { ...defaultHandlers, ...options.handlers } : undefined),

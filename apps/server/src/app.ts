@@ -52,6 +52,8 @@ export interface BuildAppOptions {
   now?: () => number;
   /** Skips the bot timer. Tests tick by hand. */
   startBots?: boolean;
+  /** Skips the 战斗大地图 timers. Tests call `step` / `flush` by hand. */
+  startZones?: boolean;
   /** Replaces the default registry; module tests merge their own handlers over `handlers`. */
   handlers?: HandlerRegistry;
 }
@@ -142,11 +144,15 @@ export function buildApp(options: BuildAppOptions = {}): BuiltApp {
 
   app.addHook('onClose', () => {
     ctx.bots.stop();
+    // Stops the timers and banks every unflushed 战斗大地图 reward, so this has
+    // to run while the database is still open.
+    ctx.zones.stop();
     ctx.realtime.detach();
     db.close();
   });
 
   if (options.startBots ?? true) ctx.bots.start();
+  if (options.startZones ?? true) ctx.zones.start();
 
   return { app, ctx, routes };
 }
