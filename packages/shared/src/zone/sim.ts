@@ -95,14 +95,27 @@ export const ZONE_CLAIMED_PENALTY = ZONE_SEEK_RADIUS * 2;
  *
  * The BOSS is one 妖兽 among dozens and almost never the nearest, so it simply
  * stood in its clearing: two 150-second observations at `bossIntervalMinutes`
- * 1 saw nobody walk up to 青云虎王 at all. Anyone already in the northern half
- * drops what it is doing; further out it is merely attractive, at
- * `ZONE_BOSS_PULL`. The entrance crowd is 70 cells away and carries on farming,
- * which is what keeps the low band from emptying every time a BOSS appears.
+ * 1 saw nobody walk up to 青云虎王 at all. Anyone in the northern half who is
+ * up to it (`ZONE_BOSS_CALL_STAGES`) drops what it is doing; further out it is
+ * merely attractive, at `ZONE_BOSS_PULL`. The entrance crowd is 70 cells away
+ * and carries on farming, which is what keeps the low band from emptying every
+ * time a BOSS appears.
  */
 export const ZONE_BOSS_CALL = 30;
 /** Weight on the distance to a BOSS standing beyond `ZONE_BOSS_CALL`. */
 export const ZONE_BOSS_PULL = 0.35;
+/**
+ * 境界 a cultivator may trail the BOSS by and still hear its call.
+ *
+ * The call is an invitation to a fight, and a 练气·前期 newcomer has no place
+ * in it: 青云虎王 is 筑基·中期 with 1216 气血 and stands seventy cells north of
+ * the gate. On a crowded field it would answer anyway — with every wolf at the
+ * entrance claimed, `ZONE_CLAIMED_PENALTY` on a wolf underfoot (31) is more
+ * than the clearing at `ZONE_BOSS_PULL` (24.5) — and walk half the map to die.
+ * Below the threshold the BOSS is not a target at all. Being mauled by one
+ * still is.
+ */
+export const ZONE_BOSS_CALL_STAGES = 2;
 
 export const ZONE_ENTITY_STATES = [
   'idle',
@@ -724,31 +737,75 @@ function claimedByOther(sim: ZoneSim, actor: ZoneEntity, beast: ZoneEntity): boo
   return holder !== null && !isBeast(holder.kind) && holder.targetI === beast.i;
 }
 
-/** How far away a 妖兽 counts as being, once the BOSS's pull is priced in. */
-function seekReach(sim: ZoneSim, actor: ZoneEntity, beast: ZoneEntity): number {
-  const d = distance(actor, beast);
-  if (beast.i !== sim.bossI) return d;
+/**
+ * The living BOSS this cultivator answers to, or null.
+ *
+ * Anyone within `ZONE_BOSS_CALL_STAGES` 阶 of it is invited. Anyone below that
+ * only ever fights it once it has drawn blood — the difference between being
+ * called and being hunted.
+ */
+function bossHeardBy(sim: ZoneSim, actor: ZoneEntity): ZoneEntity | null {
+  if (sim.bossI === null || isBeast(actor.kind)) return null;
+  const boss = livingAt(sim, sim.bossI);
+  if (boss === null) return null;
+  if (actor.lastHitBy === boss.i) return boss;
+  return actor.stageIndex >= boss.stageIndex - ZONE_BOSS_CALL_STAGES ? boss : null;
+}
+
+/** How far away the BOSS counts as being, once its call is priced in. */
+function bossReach(actor: ZoneEntity, boss: ZoneEntity): number {
+  const d = distance(actor, boss);
   return d <= ZONE_BOSS_CALL ? 0 : d * ZONE_BOSS_PULL;
 }
 
 /**
- * Nearest living 妖兽 — crowded ones pushed down the list, ones another
- * cultivator has already claimed pushed far down it, and the BOSS pulled in.
+ * The 妖兽 to walk to: the best one within sight, the nearest on the map when
+ * sight holds nothing living, and the BOSS whenever its call outbids them.
+ *
+ * The two rings exist because the penalties add up. A claimed wolf one cell
+ * away scores 29, so scoring the whole map at once let a free 妖兽 forty cells
+ * north — or a BOSS seventy cells north at `ZONE_BOSS_PULL` — win it, and a
+ * busy entrance band sent its newcomers hiking instead of fighting. Crowding
+ * and claims now only break ties among the 妖兽 already in sight; they can no
+ * longer promote one that is out of it.
  */
 function pickBeast(sim: ZoneSim, actor: ZoneEntity, locks: number[]): number {
   let best = -1;
   let bestScore = Number.POSITIVE_INFINITY;
+  let far = -1;
+  let farDist = Number.POSITIVE_INFINITY;
   for (const other of sim.entities) {
     if (!other || other.state === 'dead' || !isBeast(other.kind)) continue;
+    // The BOSS is not part of either ring: it is judged by its own call.
+    if (other.i === sim.bossI) continue;
+    const d = distance(actor, other);
+    if (d > ZONE_SEEK_RADIUS) {
+      if (d < farDist) {
+        farDist = d;
+        far = other.i;
+      }
+      continue;
+    }
     const crowded = (locks[other.i] ?? 0) >= ZONE_CROWD_LOCKS;
     const score =
-      seekReach(sim, actor, other) +
+      d +
       (crowded ? ZONE_SEEK_RADIUS * 0.5 : 0) +
       (claimedByOther(sim, actor, other) ? ZONE_CLAIMED_PENALTY : 0);
     if (score < bestScore) {
       bestScore = score;
       best = other.i;
     }
+  }
+  if (best < 0) {
+    best = far;
+    bestScore = farDist;
+  }
+
+  const boss = bossHeardBy(sim, actor);
+  if (boss !== null) {
+    const crowded = (locks[boss.i] ?? 0) >= ZONE_CROWD_LOCKS;
+    const score = bossReach(actor, boss) + (crowded ? ZONE_SEEK_RADIUS * 0.5 : 0);
+    if (best < 0 || score < bestScore) return boss.i;
   }
   return best;
 }
@@ -851,8 +908,9 @@ function respawnPhase(sim: ZoneSim, out: ZoneStepOutput): void {
  * kills a minute, because it kept being pulled off a wolf it had half killed.
  *
  * Two things still break the hold: a rival's blow, which must be answered, and
- * a living BOSS whose weighted distance already beats the current target's —
- * exactly the comparison `pickBeast` is about to make.
+ * a BOSS this cultivator can hear (`bossHeardBy`) whose weighted distance
+ * already beats the current target's — exactly the comparison `pickBeast` is
+ * about to make.
  */
 function stickyTarget(sim: ZoneSim, e: ZoneEntity, target: ZoneEntity): boolean {
   if (isBeast(e.kind) || !isBeast(target.kind)) return false;
@@ -861,9 +919,9 @@ function stickyTarget(sim: ZoneSim, e: ZoneEntity, target: ZoneEntity): boolean 
     const aggressor = livingAt(sim, e.lastHitBy);
     if (aggressor && !isBeast(aggressor.kind)) return false;
   }
-  if (sim.bossI !== null && target.i !== sim.bossI) {
-    const boss = livingAt(sim, sim.bossI);
-    if (boss && seekReach(sim, e, boss) < distance(e, target)) return false;
+  if (target.i !== sim.bossI) {
+    const boss = bossHeardBy(sim, e);
+    if (boss !== null && bossReach(e, boss) < distance(e, target)) return false;
   }
   return true;
 }

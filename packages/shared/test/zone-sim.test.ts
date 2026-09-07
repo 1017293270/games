@@ -28,6 +28,9 @@ import {
   zoneMonsterCount,
   zonePlayerCount,
   ZONE_BOSS_CALL,
+  ZONE_BOSS_CALL_STAGES,
+  ZONE_BOSS_PULL,
+  ZONE_CLAIMED_PENALTY,
   ZONE_RETARGET_TICKS,
   type AddCultivatorInput,
   type ZoneEntity,
@@ -429,6 +432,34 @@ describe('目标选择', () => {
     expect(fresh.targetI).toBe(a.i);
   });
 
+  it('takes a claimed 妖兽 in sight over a free one out of it', () => {
+    const { sim, a, b } = pair(109);
+    b.x = 20;
+    b.y = 38; // eighteen cells north of a, well past the sight radius
+    b.home = { x: b.x, y: b.y };
+
+    const owner = addCultivator(sim, cultivator('owner', 20));
+    owner.x = 20;
+    owner.y = 20.5;
+    owner.targetI = a.i;
+    a.lastHitBy = owner.i;
+
+    const late = addCultivator(sim, cultivator('late', 20));
+    late.x = 20;
+    late.y = 21; // one cell from a, seventeen from b
+    expect(Math.hypot(b.x - late.x, b.y - late.y)).toBeGreaterThan(ZONE_SEEK_RADIUS);
+
+    run(sim, 1);
+    // The claim penalty settles which 妖兽 in sight to take; it never sends
+    // anyone out of sight, however busy the ones underfoot are.
+    expect(late.targetI).toBe(a.i);
+
+    // With nothing left alive in sight, the rest of the field is fair game.
+    removeEntity(sim, a.i);
+    run(sim, 1);
+    expect(late.targetI).toBe(b.i);
+  });
+
   it('never treats the BOSS as claimed, however many are already on it', () => {
     const sim = createZoneSim(testZone(), rules({ bossIntervalMinutes: 1 }), 107, T0);
     for (const m of monstersOf(sim)) removeEntity(sim, m.i);
@@ -493,6 +524,89 @@ describe('BOSS 号召', () => {
     expect(hero.targetI).not.toBe(bossI);
     const target = entity(sim, hero.targetI);
     expect(target.monsterId).toBe('monster-qingyun-wolf');
+  });
+
+  /**
+   * The gate of 青云山 at its worst: six 青云狼 within a stride of the entrance,
+   * every one of them locked on and bloodied by a cultivator of its own, and
+   * 青云虎王 already out in its clearing seventy cells north.
+   */
+  function crowdedGate(seed: number, heroStage: number) {
+    const zone = ZONE_BY_ID.get('map-qingyun-mountain') as Zone;
+    const sim = createZoneSim(zone, rules({ bossIntervalMinutes: 1 }), seed, T0);
+    const wolves = monstersOf(sim)
+      .filter((m) => m.monsterId === 'monster-qingyun-wolf')
+      .slice(0, 6);
+    const kept = new Set(wolves.map((w) => w.i));
+    for (const m of monstersOf(sim)) if (!kept.has(m.i)) removeEntity(sim, m.i);
+    stepZone(sim, T0 + 61_000); // the BOSS takes its clearing
+    const bossI = sim.bossI as number;
+    expect(bossI).toBeGreaterThanOrEqual(0);
+
+    for (const [n, wolf] of wolves.entries()) {
+      wolf.x = zone.entrance.x - 2 + n;
+      wolf.y = zone.entrance.y - 1;
+      wolf.home = { x: wolf.x, y: wolf.y };
+      wolf.maxHp = 1_000_000; // nobody's kill lands, so nobody's claim lapses
+      wolf.hp = wolf.maxHp;
+      const owner = addCultivator(sim, cultivator(`owner${n}`, 20));
+      owner.x = wolf.x;
+      owner.y = wolf.y + 0.5;
+      owner.targetI = wolf.i;
+      wolf.lastHitBy = owner.i;
+    }
+
+    const hero = addCultivator(
+      sim,
+      cultivator('hero', heroStage, { skills: starterSkillIds('metal') }),
+    );
+    hero.x = zone.entrance.x;
+    hero.y = zone.entrance.y;
+    return { sim, bossI, wolves, hero };
+  }
+
+  it('leaves a 练气 newcomer at a claimed gate instead of sending it up the mountain', () => {
+    const { sim, bossI, wolves, hero } = crowdedGate(117, 0);
+    const boss = entity(sim, bossI);
+    const gap = Math.hypot(boss.x - hero.x, boss.y - hero.y);
+    // The trap this closes: seventy cells priced at ZONE_BOSS_PULL come to
+    // less than a claimed wolf underfoot, so the newcomer used to walk it.
+    expect(gap).toBeGreaterThan(ZONE_BOSS_CALL);
+    expect(gap * ZONE_BOSS_PULL).toBeLessThan(1 + ZONE_CLAIMED_PENALTY);
+    expect(hero.stageIndex).toBeLessThan(boss.stageIndex - ZONE_BOSS_CALL_STAGES);
+
+    const slots = new Set(wolves.map((w) => w.i));
+    const start = { x: hero.x, y: hero.y };
+    for (let n = 0; n < 60; n += 1) {
+      run(sim, 1);
+      expect(hero.targetI).not.toBe(bossI);
+      expect(slots.has(hero.targetI)).toBe(true);
+      // It stays at the gate: no target of its own is ever out of sight.
+      expect(Math.hypot(hero.x - start.x, hero.y - start.y)).toBeLessThan(ZONE_SEEK_RADIUS);
+    }
+    expect(hero.state).not.toBe('dead');
+  });
+
+  it('answers the call from one 阶 inside the threshold', () => {
+    const { sim, bossI, hero } = crowdedGate(119, 3);
+    const boss = entity(sim, bossI);
+    expect(hero.stageIndex).toBe(boss.stageIndex - ZONE_BOSS_CALL_STAGES);
+    const startY = hero.y;
+
+    run(sim, ZONE_RETARGET_TICKS);
+    expect(hero.targetI).toBe(bossI);
+    expect(hero.y).toBeLessThan(startY); // north, up the mountain
+  });
+
+  it('lets a newcomer the BOSS has mauled fight back', () => {
+    const { sim, bossI, hero } = crowdedGate(121, 0);
+    const boss = entity(sim, bossI);
+    boss.x = hero.x;
+    boss.y = hero.y - 2;
+    hero.lastHitBy = boss.i;
+
+    run(sim, 1);
+    expect(hero.targetI).toBe(bossI);
   });
 
   it('keeps its wounds and its damage ledger when it walks home', () => {
