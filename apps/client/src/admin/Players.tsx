@@ -233,6 +233,12 @@ function PlayerActions({
   const [qty, setQty] = useState(1);
   const [exp, setExp] = useState(0);
   const [stones, setStones] = useState(0);
+  const [materials, setMaterials] = useState({
+    jade: 0,
+    stardust: 0,
+    starStones: 0,
+    breakthroughWood: 0,
+  });
   const [stageIndex, setStageIndex] = useState<number | null>(null);
 
   const [password, setPassword] = useState('');
@@ -256,6 +262,7 @@ function PlayerActions({
       if (!player.characterId) throw new Error('这个账号还没有角色，无法发放。');
       const state = await adminApi.grant({
         characterId: player.characterId,
+        ...materials,
         ...(exp > 0 ? { exp } : {}),
         ...(stones !== 0 ? { spiritStones: stones } : {}),
         ...(stageIndex !== null ? { stageIndex } : {}),
@@ -264,6 +271,15 @@ function PlayerActions({
       const item = ITEMS.find((i) => i.id === itemId);
       const parts: string[] = [];
       if (qty > 0 && item) parts.push(`${item.name} ×${qty}`);
+      for (const [key, name] of Object.entries({
+        jade: '仙玉',
+        stardust: '星尘',
+        starStones: '星辉石',
+        breakthroughWood: '天罡木',
+      })) {
+        const amount = materials[key as keyof typeof materials];
+        if (amount) parts.push(`${name} ${amount}`);
+      }
       if (exp > 0) parts.push(`修为 ${exp}`);
       if (stones !== 0) parts.push(`灵石 ${stones}`);
       if (stageIndex !== null) parts.push(`境界 ${stageName(stageIndex)}`);
@@ -276,6 +292,7 @@ function PlayerActions({
         spiritStones: state.spiritStones,
       });
       setExp(0);
+      setMaterials({ jade: 0, stardust: 0, starStones: 0, breakthroughWood: 0 });
       setStones(0);
       setStageIndex(null);
     });
@@ -331,11 +348,31 @@ function PlayerActions({
         />
       </div>
       <div className="adm-grid">
+        {Object.entries({
+          jade: '仙玉',
+          stardust: '星尘',
+          starStones: '星辉石',
+          breakthroughWood: '天罡木',
+        }).map(([key, label]) => (
+          <NumField
+            key={key}
+            label={label}
+            value={materials[key as keyof typeof materials]}
+            onChange={(value) => setMaterials((current) => ({ ...current, [key]: value }))}
+            min={0}
+            max={1_000_000}
+            step={10}
+          />
+        ))}
+      </div>
+      <div className="adm-grid">
         <label className="adm-check">
           <input
             type="checkbox"
             checked={stageIndex !== null}
-            onChange={(event) => setStageIndex(event.target.checked ? (player.stageIndex ?? 0) : null)}
+            onChange={(event) =>
+              setStageIndex(event.target.checked ? (player.stageIndex ?? 0) : null)
+            }
           />
           直接改境界
         </label>
@@ -417,9 +454,7 @@ function PlayerActions({
           <div className="adm-editor__foot">
             {confirmingBan ? (
               <>
-                <span className="adm-editor__warn">
-                  封禁会立刻删除该账号的所有会话并切断连接。
-                </span>
+                <span className="adm-editor__warn">封禁会立刻删除该账号的所有会话并切断连接。</span>
                 <span className="adm-editor__actions">
                   <button
                     type="button"

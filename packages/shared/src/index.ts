@@ -24,3 +24,5 @@ export * from './combat/index.js';
 export * from './zone/index.js';
 export * from './content/index.js';
 export * from './protocol/index.js';
+
+export * from './progression/index.js';

@@ -1,3 +1,4 @@
+import { progressEvent } from '../../game/progression.js';
 import { randomUUID } from 'node:crypto';
 import {
   combineSeeds,
@@ -130,6 +131,7 @@ export function explore(
     reward = nameReward({ ...scaled, items: drops });
     next = applyReward(state, reward, ctx.inventory);
     next = recordMonsterKill(next, monster.id);
+    next = progressEvent(next, now, 'kills');
   }
 
   const saved = withFreshPower(next, resolveEquipment(next, ctx.inventory));

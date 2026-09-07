@@ -1,3 +1,4 @@
+import { mainTreasureOf } from './character.js';
 import {
   combineSeeds,
   MONSTER_BY_ID,
@@ -24,11 +25,13 @@ export function characterCombatant(
   stats: Stats,
   options: { hpPercent?: number } = {},
 ): Combatant {
+  const mainTreasure = mainTreasureOf(state);
   const combatant: Combatant = {
     id: state.id,
     name: state.name,
     art: state.avatarArt,
     stats,
+    ...(mainTreasure ? { mainTreasure } : {}),
     skills: state.skillSlots.filter((s): s is string => s !== null),
   };
   const share = options.hpPercent;

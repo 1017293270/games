@@ -128,6 +128,7 @@ export class Realtime {
       exp: state.exp,
       spiritStones: state.spiritStones,
       powerScore: state.powerScore,
+      ...(state.progression ? { progression: state.progression } : {}),
       stageName: stageName(state.stageIndex),
       lastSettledAt: state.lastSettledAt,
       ...extra,

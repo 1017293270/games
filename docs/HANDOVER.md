@@ -1,12 +1,14 @@
 # 交接说明（HANDOVER）
 
-> 给接手的人或 AI agent 看的。最后更新：2026-09-07，main @ M4a 收尾（fix-6 之后）。
+> 给接手的人或 AI agent 看的。最后更新：2026-09-07，M4b 养成闭环与官网风格玩家端已完成本地验收；本轮未部署。
 
 ## 1. 现在到哪了
 
 - **M1–M3 + W5**：单机核心、机器人、组队/秘境/论道/围攻/好友、NPC 任务商店、道录司后台、Docker/Caddy 部署包、PWA。已在用户 VPS 试玩过一轮。
 - **M4a 战斗大地图（已完成，待用户 VPS 试玩反馈）**：服务端持续模拟的 2D 战场（`packages/shared/src/zone/sim.ts` 纯函数核心 + `apps/server/src/engine/zone/**`），玩家与机器人同图自动刷怪，离线留场，Socket.IO 按图分房间推 4Hz 增量帧（已开 perMessageDeflate，线上约 2 KB/s），客户端 PixiJS 渲染（`apps/client/src/features/zone/**`，无 WebGL 时退 DOM 名册），后台「世界 › 战斗大地图」三组旋钮与概览「山河」读数，新画风（深底描金浓彩水墨，`tools/art/assets.mjs` 的 `STYLE_VIVID`）出了 4 张俯视底图 + 12 只妖兽 chibi。
-- **M4b 法宝 · 古宝 · 抽卡** 与 **M4c 画风重出 · 灵兽 · 新地图**：未开工，设计见本文第 5 节。
+- **M4b 法宝 · 古宝 · 寻宝**：20 法宝、24 古宝、两池免费/单抽/十连、独立保底、重复碎片、等级/注灵/升星、日常/里程碑及后台材料发放已实现。本命六形制作用于地图和回合战斗，古宝收藏及三件套同时影响战斗与修炼。规则和原作证据见 `docs/M4B.md`。
+- **玩家端画风**：按官网常驻内容区的黛蓝夜色、暖白书法和细金统一登录/洞府/导航/面板/弹层，后台仍为浅色。新增 2 场景与 9 器物底图，共约 750 KiB，提示词及来源见 `docs/M4B-ART.md`。旧 98 张素材保留。
+- **仍待推进**：随机词条、品阶晋升、主动古宝、独立灵兽、新高境界地图与剩余旧素材重绘；不把本轮基础养成视为原作全部系统的复刻。
 
 ## 2. 怎么跑、怎么验
 
@@ -21,6 +23,8 @@ docker compose -f deploy/docker-compose.yml up -d --build   # 生产镜像；见
 - 本地起服务器要**先** `pnpm --filter @xianxia/client build`（fastify-static 启动时枚举 dist）；服务端吃 `packages/shared` 的 dist，改了 shared 要 `pnpm --filter @xianxia/shared build`，或用 `npx tsx --conditions=development src/index.ts` 直接吃 src。
 - 开发凭据在 `apps/server/.env`（gitignored）：`ADMIN_USERNAME=admin`、`ADMIN_PASSWORD`、`INVITE_CODE`；生产在 `deploy/.env`，**部署前必须换掉默认值**。
 - 素材：`docs/ASSETS.md` 是 98 个素材 ID 的契约，`tools/art/README.md` 是出图流程（Codex Image2 → sharp → WebP → manifest），`node tools/art/check.mjs` 必须 98/98。
+- 本轮验收：`pnpm verify` 全绿，shared 266 / server 254 / client 189；`e2e/tests/04-progression.spec.ts` 在独立临时数据库的真实服务端通过。覆盖普通 HTTP、双池免费、十连幂等、养成、日课、地图结算及刷新持久化。未运行本轮生产镜像或 VPS 试玩。
+- PWA 更新：已有打开的页面可能先显示缓存版本；刷新后核对新主题。美术通过现有运行时缓存读取，不加入预缓存大包。
 
 ## 3. 文档地图
 
@@ -36,7 +40,7 @@ docker compose -f deploy/docker-compose.yml up -d --build   # 生产镜像；见
 ## 4. 待办与待拍板（按优先级）
 
 1. **机器人作息时区**：`activeHours` 按 UTC 小时判定，散修/隐士在 22–06 UTC 睡觉（= 北京 06–14 时），中国玩家白天新手图机器人只剩个位数。建议加世界设置 `botClockOffsetHours`（默认 +8，后台可调），或直接放宽散修作息。
-2. 机器人论道挑战新号过频（观察到 3.5 分钟 20 场）：给挑战加冷却或按境界差过滤。
+2. 机器人频繁登门已修复：同一真人每十分钟最多接受一次机器人主动论道，跨机器人/重启共享，真人主动论道不受限制。
 3. 土灵根起手神通是自增益（`content/skills.ts`），单挑入口狼比其它灵根慢一档。
 4. 青云狼 chibi 压在深色松冠上对比度低：渲染层给 sprite 加描边或底光（`features/zone/renderer/sprites.ts`）。
 5. 留场归来弹层的已知局限：PWA 挂后台不刷新页面时同一会话不再弹（战果仍进探索页 HUD）。
@@ -47,12 +51,14 @@ docker compose -f deploy/docker-compose.yml up -d --build   # 生产镜像；见
 
 - `packages/shared` 是唯一契约源：协议（zod）、数据表、公式、战斗引擎与地图模拟都在这里；改协议先改 shared，两端由类型驱动。
 - `CharacterState` 是 `characters.state_json` 里的记录之本，加字段不用迁移；所有写者都是整行读-改-写，**任何后台循环都不许持有可写快照**（ZoneWorld 只累计增量、flush 时重读新行）。
-- 迁移文件 `apps/server/src/db/migrations/NNN_*.sql` 按文件名顺序执行，已到 006。
+- 迁移文件 `apps/server/src/db/migrations/NNN_*.sql` 按文件名顺序执行，已到 `007_gacha.sql`。新养成状态在可选 `CharacterState.progression` 内，旧存档无需重写；抽取流水单独持久化，不能清理掉仍用于幂等的历史。
 - 机器人参数必须后台热生效（`SettingsStore.onChange`）。
 - 提交前 `pnpm verify` 全绿；一个逻辑单元一个 commit，信息写动机与取舍；不提交 `.env`、截图目录、散落文件。
 - 若沿用「架构师 + 子 agent」方式：主会话只规划/派遣/验收，派遣令六段（背景与目标 / 已知事实 / 边界 / 纪律 / 验证 / 汇报格式），并行任务文件域必须互不相交，子 agent 不 commit、不 git add、不 stash。
 
-## 6. M4 设计（从总体规划复制，M4b/M4c 按此派遣）
+## 6. M4 历史设计（保留决策背景）
+
+以下是 2026-09-06 的原规划。M4b 的实际字段、古宝收藏规则、素材数量、旧装备兼容方式和迁移编号以当前代码及 `docs/M4B.md` 为准；不要再次照旧规划创建已存在或编号冲突的表。
 
 ### M4 改版规划（2026-09-06，M3 试玩反馈后）
 

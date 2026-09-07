@@ -131,6 +131,7 @@ export class ZoneScene {
       const py = pose.y * ZONE_TILE_PX;
       view.place(px, py);
       view.setHpRatio(pose.hp / view.entry.maxHp);
+      view.setShield(buffer.shield ?? 0);
       view.applyFlags(buffer.next.flags, dt);
       view.tick(dt);
       view.showLabel(this.claimLabel(px, py, slot === source.self));
@@ -266,7 +267,7 @@ export class ZoneScene {
     const roster = source.roster;
     for (const [slot, view] of this.views) {
       const entry = roster[slot];
-      if (!entry || entry.id !== view.entry.id) {
+      if (!entry || entry !== view.entry) {
         view.destroy();
         this.views.delete(slot);
         this.seenAt.delete(slot);

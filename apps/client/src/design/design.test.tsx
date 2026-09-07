@@ -146,3 +146,27 @@ describe('Overlay', () => {
     expect(useUiStore.getState().overlayDepth).toBe(0);
   });
 });
+
+it('traps Sheet keyboard focus and restores its opener on close', async () => {
+  const user = userEvent.setup();
+  const opener = document.createElement('button');
+  document.body.appendChild(opener);
+  opener.focus();
+  const { rerender } = render(
+    <Sheet open title="宝物" onClose={() => {}}>
+      <button type="button">注灵</button>
+    </Sheet>,
+  );
+  expect(screen.getByRole('dialog')).toHaveFocus();
+  await user.tab({ shift: true });
+  expect(screen.getByRole('button', { name: '注灵' })).toHaveFocus();
+  await user.tab();
+  expect(screen.getByRole('button', { name: '关闭面板' })).toHaveFocus();
+  rerender(
+    <Sheet open={false} title="宝物" onClose={() => {}}>
+      <button type="button">注灵</button>
+    </Sheet>,
+  );
+  expect(opener).toHaveFocus();
+  opener.remove();
+});

@@ -6,6 +6,7 @@
  * is a compile error on both sides rather than a runtime 404.
  */
 
+import { progressionEndpoints } from './progression.js';
 import { authEndpoints } from './auth.js';
 import { characterEndpoints } from './character.js';
 import { inventoryEndpoints } from './inventory.js';
@@ -17,6 +18,7 @@ import type { Endpoint } from './common.js';
 
 export const API = {
   auth: authEndpoints,
+  progression: progressionEndpoints,
   character: characterEndpoints,
   inventory: inventoryEndpoints,
   explore: exploreEndpoints,

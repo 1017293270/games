@@ -15,8 +15,7 @@ export class SettingsRepo {
 
   get(key: string): unknown {
     const row = this.db.prepare('SELECT value_json FROM settings WHERE key = ?').get(key) as
-      | { value_json: string }
-      | undefined;
+      { value_json: string } | undefined;
     if (!row) return undefined;
     try {
       return JSON.parse(row.value_json);
@@ -129,12 +128,7 @@ export class ChatRepo {
    * every other party's talk, which is why the caller has to establish
    * membership before asking.
    */
-  history(
-    channel: string,
-    limit: number,
-    before?: number,
-    partyId?: string,
-  ): ChatMessage[] {
+  history(channel: string, limit: number, before?: number, partyId?: string): ChatMessage[] {
     const scope = partyId === undefined ? '' : ' AND party_id = ?';
     const scopeArgs = partyId === undefined ? [] : [partyId];
     const rows = (
@@ -236,10 +230,26 @@ export class BattleRepo {
     return id;
   }
 
+  /** Shared across bot attackers and survives engine restarts; uses the defender/time index. */
+  hasBotArenaAfter(defenderId: string, after: number): boolean {
+    return (
+      this.db
+        .prepare(
+          `SELECT 1 FROM battle_records b
+      JOIN characters attacker ON attacker.id = b.attacker_id
+      WHERE b.defender_id = ? AND b.fought_at > ? AND b.kind = 'arena'
+        AND attacker.is_bot = 1 LIMIT 1`,
+        )
+        .get(defenderId, after) !== undefined
+    );
+  }
+
   countSince(since: number, kind?: BattleRecordInput['kind']): number {
     const row = (
       kind === undefined
-        ? this.db.prepare('SELECT COUNT(*) AS c FROM battle_records WHERE fought_at >= ?').get(since)
+        ? this.db
+            .prepare('SELECT COUNT(*) AS c FROM battle_records WHERE fought_at >= ?')
+            .get(since)
         : this.db
             .prepare('SELECT COUNT(*) AS c FROM battle_records WHERE fought_at >= ? AND kind = ?')
             .get(since, kind)

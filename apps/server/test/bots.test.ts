@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   BREAKTHROUGH_BASE_CHANCE,
   breakthroughChance,
@@ -8,11 +8,11 @@ import {
   ZONE_BOT_MIN_STAY_MS,
 } from '@xianxia/shared';
 import type { CharacterState } from '@xianxia/shared';
-import { eloDelta, insightWorld, ZONE_ENTER_CHANCE } from '../src/engine/bots/engine.js';
+import { BotEngine, eloDelta, insightWorld, ZONE_ENTER_CHANCE } from '../src/engine/bots/engine.js';
 import { generateBots } from '../src/engine/bots/generate.js';
 import { BOT_CHAT_TEMPLATES, renderBotLine } from '../src/engine/bots/chatter.js';
 import type { ZoneEnterResult, ZoneService, ZoneStats } from '../src/engine/zone/api.js';
-import { createHarness, makePlayer, type Harness } from './helpers.js';
+import { auth, expectOk, createHarness, makePlayer, type Harness } from './helpers.js';
 
 /**
  * Records where the engine sent each bot. The field itself is not simulated —
@@ -66,6 +66,7 @@ describe('bot engine', () => {
     h = createHarness();
   });
   afterEach(async () => {
+    vi.restoreAllMocks();
     await h.close();
   });
 
@@ -268,6 +269,62 @@ describe('bot engine', () => {
     const ratings = h.ctx.characters.allBots().map((b) => b.arenaRating);
     expect(new Set(ratings).size).toBeGreaterThan(1);
     expect(challenged.length).toBeGreaterThan(0);
+  });
+
+  it('shares a durable ten-minute player challenge cooldown across bots and a tick, without limiting players', async () => {
+    const player = await makePlayer(h);
+    h.ctx.settings.patch({ botCount: 0, cultivationMultiplier: 0 });
+    const bots = generateBots(
+      h.ctx,
+      { count: 2, archetypeId: 'bot-moxiu', minStageIndex: 0, maxStageIndex: 0, seed: 5 },
+      h.clock.now(),
+    );
+    for (const bot of bots) {
+      h.ctx.characters.save({
+        ...bot,
+        botParams: { ...bot.botParams!, diligence: 0, aggression: 1, activeHours: [0, 24] },
+      });
+    }
+    // Force both genuine tick decisions to choose this player; battle execution
+    // and the persistent record query remain real.
+    const targetPlayer = () =>
+      vi
+        .spyOn(h.ctx.bots as unknown as { pickOpponent: () => string }, 'pickOpponent')
+        .mockReturnValue(player.characterId);
+    targetPlayer();
+    const firstAt = h.clock.now();
+    expect(h.ctx.bots.tick(firstAt).battles).toBe(1);
+    expect(h.ctx.battles.countSince(0, 'arena')).toBe(1);
+    expect(
+      h.ctx.characters
+        .allBots()
+        .map((b) => b.dailyCounters.arena)
+        .sort(),
+    ).toEqual([0, 1]);
+
+    // A fresh engine carries no in-memory timer, so the database must enforce it.
+    h.ctx.bots = new BotEngine(h.ctx);
+    targetPlayer();
+    h.clock.set(firstAt + 600000 - 1);
+    expect(h.ctx.bots.tick(h.clock.now()).battles).toBe(0);
+    h.clock.advance(1);
+    expect(h.ctx.bots.tick(h.clock.now()).battles).toBe(1);
+    expect(h.ctx.battles.countSince(0, 'arena')).toBe(2);
+
+    for (let i = 0; i < 2; i += 1) {
+      expectOk(
+        (
+          await h.app.inject({
+            method: 'POST',
+            url: '/api/arena/challenge',
+            headers: auth(player.token),
+            payload: { targetId: bots[0]!.id },
+          })
+        ).json(),
+      );
+    }
+    expect(h.ctx.characters.byId(player.characterId)!.dailyCounters.arena).toBe(2);
+    expect(h.ctx.battles.countSince(0, 'arena')).toBe(4);
   });
 
   it('rates an upset heavier than an expected win', () => {

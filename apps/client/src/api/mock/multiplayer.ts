@@ -14,6 +14,7 @@
 
 import {
   API,
+  getProgression,
   combineSeeds,
   createRng,
   DUNGEON_BY_ID,
@@ -124,8 +125,7 @@ function neighbours(w: MockWorld, char: CharacterState, count: number): Characte
   return bots(w)
     .filter((b) => b.id !== char.id)
     .sort(
-      (a, b) =>
-        Math.abs(a.powerScore - char.powerScore) - Math.abs(b.powerScore - char.powerScore),
+      (a, b) => Math.abs(a.powerScore - char.powerScore) - Math.abs(b.powerScore - char.powerScore),
     )
     .slice(0, count);
 }
@@ -196,13 +196,12 @@ function seed(w: MockWorld, char: CharacterState, s: MpState): void {
     band.filter((b) => !raided.has(b.id)),
     RAID_TARGET_COUNT,
     1,
-  )
-    .map((bot, i) => ({
-      botId: bot.id,
-      hpPercent: i === 0 ? 0.18 : i === 1 ? 0.46 : Math.max(0.3, 1 - rng.next() * 0.55),
-      protectedUntil: i === 2 ? now + 11 * 60_000 : 0,
-      bounty: 2_000 + Math.round(bot.powerScore * 0.9) + rng.int(0, 4_000),
-    }));
+  ).map((bot, i) => ({
+    botId: bot.id,
+    hpPercent: i === 0 ? 0.18 : i === 1 ? 0.46 : Math.max(0.3, 1 - rng.next() * 0.55),
+    protectedUntil: i === 2 ? now + 11 * 60_000 : 0,
+    bounty: 2_000 + Math.round(bot.powerScore * 0.9) + rng.int(0, 4_000),
+  }));
 
   // ---- 战绩: eight past bouts, the three newest still holding a replay.
   near.slice(2, 10).forEach((bot, i) => {
@@ -604,6 +603,10 @@ export function registerMultiplayerHandlers(kit: MockKit): void {
       char = { ...char, spiritStones: char.spiritStones + reward.spiritStones };
       for (const drop of reward.items) addItem(ctx.w, char.id, drop.itemId, drop.qty);
     }
+    const progression = getProgression(char.progression, ctx.now);
+    progression.daily.dungeon = Math.max(progression.daily.dungeon, char.dailyCounters.dungeon);
+    progression.daily.arena = Math.max(progression.daily.arena, char.dailyCounters.arena);
+    char = { ...char, progression };
     const saved = save(ctx, char);
     const bundle = { ...reward, itemNames: itemNames(reward.items) };
 
@@ -706,6 +709,10 @@ export function registerMultiplayerHandlers(kit: MockKit): void {
     };
     char = grantExp(char, reward.exp);
     char = { ...char, spiritStones: char.spiritStones + reward.spiritStones };
+    const progression = getProgression(char.progression, ctx.now);
+    progression.daily.dungeon = Math.max(progression.daily.dungeon, char.dailyCounters.dungeon);
+    progression.daily.arena = Math.max(progression.daily.arena, char.dailyCounters.arena);
+    char = { ...char, progression };
     const saved = save(ctx, char);
 
     const s = state(ctx.w, saved);

@@ -12,3 +12,5 @@ export * from './shop.js';
 export * from './bot.js';
 export * from './world.js';
 export * from './character.js';
+
+export * from './progression.js';

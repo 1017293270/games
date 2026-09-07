@@ -5,6 +5,7 @@
 
 import {
   API,
+  getProgression,
   attemptBreakthrough,
   BREAKTHROUGH_PILL_ID,
   combineSeeds,
@@ -51,6 +52,7 @@ import {
   type MockWorld,
 } from './world';
 import { registerMultiplayerHandlers } from './multiplayer';
+import { registerProgressionHandlers } from './progression';
 import { registerContentHandlers } from './content';
 
 export class MockFail extends Error {
@@ -61,14 +63,14 @@ export class MockFail extends Error {
   }
 }
 
-interface Ctx {
+export interface Ctx {
   w: MockWorld;
   user: MockUser | null;
   char: CharacterState | null;
   now: number;
 }
 
-type Handler = (
+export type Handler = (
   ctx: Ctx,
   input: Record<string, unknown>,
   params: Record<string, string | number>,
@@ -260,7 +262,10 @@ on(API.character.breakthrough, (ctx, input) => {
   if (result.blocked === 'max_stage') throw new MockFail('MAX_STAGE', '已至大道尽头');
 
   for (let i = 0; i < result.pillsUsed; i += 1) takeItem(ctx.w, char.id, BREAKTHROUGH_PILL_ID, 1);
-  const saved = save(ctx, result.character);
+  const progression = getProgression(result.character.progression, ctx.now);
+  if (result.success && !progression.achievements.includes('first_breakthrough'))
+    progression.achievements.push('first_breakthrough');
+  const saved = save(ctx, { ...result.character, progression });
 
   if (result.success) {
     emit(ctx.w, 'system:notice', {
@@ -356,7 +361,10 @@ on(API.character.cultivators, (ctx, input) => {
   const all = [...ctx.w.characters.values()].filter(
     (c) => (!q || c.name.includes(q)) && (!input.onlyOnline || isOnline(c)),
   );
-  return page(all.map((c) => toProfile(ctx.w, c)), input);
+  return page(
+    all.map((c) => toProfile(ctx.w, c)),
+    input,
+  );
 });
 
 on(API.character.rankings, (ctx, input) => {
@@ -543,7 +551,10 @@ on(API.explore.battle, (ctx, input) => {
     const encounters = map.encounterIds
       .map((id) => ENCOUNTER_BY_ID.get(id))
       .filter((e): e is NonNullable<typeof e> => Boolean(e));
-    const encounter = rng.weighted(encounters, encounters.map((e) => e.weight));
+    const encounter = rng.weighted(
+      encounters,
+      encounters.map((e) => e.weight),
+    );
     const token = nextId(ctx.w, 'enc');
     ctx.w.encounters.set(token, { token, encounterId: encounter.id, mapId: map.id });
     return { kind: 'encounter', encounter, encounterToken: token, view: buildView(ctx.w, char) };
@@ -633,7 +644,10 @@ on(API.explore.chooseEvent, (ctx, input) => {
     if (condition.type === 'stage_at_least' && char.stageIndex < condition.stageIndex) {
       throw new MockFail('CHOICE_BLOCKED', `需 ${stageName(condition.stageIndex)} 方可为之`);
     }
-    if (condition.type === 'has_item' && countItem(ctx.w, char.id, condition.itemId) < condition.qty) {
+    if (
+      condition.type === 'has_item' &&
+      countItem(ctx.w, char.id, condition.itemId) < condition.qty
+    ) {
       throw new MockFail('CHOICE_BLOCKED', '缺少所需之物');
     }
   }
@@ -725,7 +739,14 @@ registerMultiplayerHandlers({ on, Fail: MockFail, refresh, save, rollDailyReset,
 //
 // Also wraps `explore.battle` with the 击杀 counter the real server bumps
 // inside `explore()`, which is why the current handler is handed over.
-registerContentHandlers({ on, Fail: MockFail, save, exploreBattle: findHandler(API.explore.battle) });
+registerContentHandlers({
+  on,
+  Fail: MockFail,
+  save,
+  exploreBattle: findHandler(API.explore.battle),
+});
+
+registerProgressionHandlers({ on, Fail: MockFail, save });
 
 // ------------------------------------------------------------------ dispatch
 

@@ -1,3 +1,4 @@
+import { getProgression, progressionBonuses } from '../src/progression/index.js';
 import { describe, expect, it } from 'vitest';
 import {
   cultivationRatePerSec,
@@ -276,4 +277,17 @@ describe('secondsToNextStage', () => {
       6,
     );
   });
+});
+
+it('collected relic cultivation bonus increases actual offline gains and reduces ETA', () => {
+  const progression = getProgression(undefined, T0);
+  progression.relics = [{ definitionId: 'r-spirit-5', spiritLevel: 3, stars: 2, fragments: 0 }];
+  const plain = makeChar(),
+    enhanced = makeChar({ progression });
+  const a = settleCultivation(plain, T0 + 60000, world),
+    b = settleCultivation(enhanced, T0 + 60000, world);
+  expect(b.gainedExp / a.gainedExp).toBeCloseTo(
+    1 + progressionBonuses(progression).cultivationBonus,
+  );
+  expect(secondsToNextStage(enhanced, world)).toBeLessThan(secondsToNextStage(plain, world));
 });

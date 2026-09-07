@@ -1,3 +1,4 @@
+import { progressEvent } from '../../game/progression.js';
 import type { z } from 'zod';
 import {
   combineSeeds,
@@ -20,7 +21,13 @@ import {
 import type { AppContext } from '../../context.js';
 import { ApiError } from '../../http/errors.js';
 import { buildView, resolveEquipment, statsOf, withFreshPower } from '../../game/character.js';
-import { battleSeed, characterCombatant, hpShareAfter, monsterTeam, runBattle } from '../../game/combat.js';
+import {
+  battleSeed,
+  characterCombatant,
+  hpShareAfter,
+  monsterTeam,
+  runBattle,
+} from '../../game/combat.js';
 import { applyReward, emptyReward, nameReward, rollLoot, scaleReward } from '../../game/rewards.js';
 import { loadOtherHealed } from '../../game/hp.js';
 import { activeMemberIds } from '../party/service.js';
@@ -81,7 +88,12 @@ function waveName(index: number, total: number): string {
  * carrying the roster next to the replay is what saves the client from
  * reverse-engineering the cast from the keys it happens to see.
  */
-function toWave(index: number, total: number, enemies: readonly Combatant[], battle: BattleResult): DungeonWave {
+function toWave(
+  index: number,
+  total: number,
+  enemies: readonly Combatant[],
+  battle: BattleResult,
+): DungeonWave {
   return {
     name: waveName(index, total),
     enemies: enemies.map((enemy) => ({
@@ -229,6 +241,8 @@ export function startDungeon(
       hpPercent: hpShares.get(state.id) ?? next.hpPercent,
       dailyCounters: { ...next.dailyCounters, dungeon: next.dailyCounters.dungeon + 1 },
     };
+    next = progressEvent(next, now, 'dungeon');
+    if (cleared) next = progressEvent(next, now, 'first_boss');
     const saved = withFreshPower(next, resolveEquipment(next, ctx.inventory));
     ctx.characters.save(saved);
     ctx.realtime.characterUpdate(saved);

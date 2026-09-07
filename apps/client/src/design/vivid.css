@@ -1,0 +1,181 @@
+/* Player routes share one nocturnal ink palette. Removing the root attribute
+   restores the established light administrative workspace and all its tokens. */
+:root[data-player-theme='vivid'] {
+  color-scheme: dark;
+  --paper: #111925;
+  --paper-raised: #1b283b;
+  --paper-sunk: #152032;
+  --paper-deep: #0b111d;
+  --ink: #f4efdf;
+  --ink-soft: #b0b8c5;
+  --cinnabar: #db756a;
+  --indigo: #91bddb;
+  --gold: #d0b17b;
+  --ink-hair: #c8aa7438;
+  --ink-hair-strong: #c8aa7470;
+  --ink-veil: #d3d9e60c;
+  --ink-scrim: #040912bf;
+  --cinnabar-veil: #ae55442b;
+  --indigo-veil: #709cb420;
+  --gold-veil: #b8995824;
+  --paper-grain:
+    radial-gradient(circle at 22% 34%, #d6bc8038 0 0.45px, transparent 0.6px),
+    radial-gradient(circle at 68% 72%, #c4d7ec12 0 0.5px, transparent 0.65px);
+  --paper-grain-size: 47px 61px, 19px 29px;
+  --shadow-lift: 0 5px 20px #03081140;
+  --shadow-sheet: 0 -10px 40px #030811a0;
+  --shadow-frame: 0 0 0 1px #b99e644f, 0 24px 100px #0008;
+}
+[data-player-theme='vivid'] .frame-stage {
+  background: radial-gradient(ellipse at 30% 20%, #273d59 0, #0b111d 66%);
+}
+[data-player-theme='vivid'] .frame {
+  background: radial-gradient(ellipse at top right, #26364d55, transparent 50%), var(--paper);
+}
+[data-player-theme='vivid'] :is(.topbar, .tabbar) {
+  background: linear-gradient(110deg, #152033, #26354b 55%, #172235);
+  border-color: #bea57470;
+  box-shadow: 0 1px 12px #03081255;
+}
+[data-player-theme='vivid'] .topbar__avatar {
+  border-color: #c9aa72;
+  box-shadow:
+    0 0 0 2px #142033,
+    0 0 0 3px #c9aa7238;
+}
+[data-player-theme='vivid'] :is(.topbar__stage, .topbar__stone-count, .tab--on) {
+  color: #e4c68b;
+}
+[data-player-theme='vivid'] .field__input::placeholder {
+  color: var(--ink-soft);
+  opacity: 0.8;
+}
+[data-player-theme='vivid'] :is(.page-head__title, .panel__title, .modal__title, .sheet__title) {
+  color: #f4efdf;
+  letter-spacing: 0.13em;
+}
+[data-player-theme='vivid'] .panel {
+  background-color: #1a2639;
+  border-color: #bba06e4d;
+  box-shadow: inset 0 0 0 3px #182234;
+}
+[data-player-theme='vivid'] :is(.sheet, .modal) {
+  background-color: #172337;
+  border-color: #cbb07b77;
+  color: #eee8da;
+}
+[data-player-theme='vivid'] :is(.btn--primary, .btn--seal) {
+  --btn-fg: #fff2d9;
+  --btn-bg: #954c45;
+  --btn-bd: #c89775;
+  background: linear-gradient(160deg, #ac6256, #743939);
+  color: #fff2d9;
+}
+[data-player-theme='vivid'] .btn--ghost {
+  --btn-fg: #e7d8b5;
+  --btn-bg: #223149;
+  --btn-bd: #b69c686b;
+}
+[data-player-theme='vivid'] :is(.login__seal, .char-create__seal) {
+  color: #fff2d9;
+  background: #9e5047;
+}
+[data-player-theme='vivid'] .vivid-scene {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+[data-player-theme='vivid'] .login__plate {
+  height: 47vh;
+  max-height: 28rem;
+}
+[data-player-theme='vivid'] .login__plate::after {
+  background: linear-gradient(180deg, transparent 60%, #111925b8);
+}
+[data-player-theme='vivid'] :is(.login__wordmark, .login__tag) {
+  color: #fff6e3;
+  text-shadow: 0 2px 14px #071020b8;
+}
+[data-player-theme='vivid'] .login__form {
+  border-top: 1px solid #c6ac7952;
+  background: linear-gradient(#1e2b40, #111925);
+}
+[data-player-theme='vivid'] .cultivation__stage {
+  min-height: 25rem;
+}
+[data-player-theme='vivid'] .cultivation__bg::after {
+  background: linear-gradient(180deg, #11192500 70%, #11192599 100%);
+}
+[data-player-theme='vivid'] .cultivation__plate {
+  color: #fff6e3;
+  text-shadow: 0 2px 10px #071020;
+}
+[data-player-theme='vivid'] .cultivation__deck {
+  background: linear-gradient(#1c293d, #111925);
+  border-top: 1px solid #b99e6c3b;
+}
+[data-player-theme='vivid'] .zhoutian__halo {
+  stroke: #0f1a3080;
+}
+[data-player-theme='vivid'] .zhoutian__trough {
+  stroke: #d5bd7b45;
+}
+[data-player-theme='vivid'] .zhoutian__progress {
+  stroke: #e9ca82;
+}
+[data-player-theme='vivid'] .zhoutian__tick {
+  stroke: #dfca954f;
+}
+[data-player-theme='vivid'] .zhoutian__tick--done {
+  stroke: #f0dcad;
+}
+[data-player-theme='vivid'] .zhoutian__figure {
+  filter: drop-shadow(0 0 16px #a7c6e34d);
+}
+[data-player-theme='vivid'] .progression {
+  --pg-muted: #aebdce;
+  background: radial-gradient(ellipse at 90% 0%, #344d6a66, transparent 60%), #111925;
+}
+[data-player-theme='vivid'] :is(.pg-panel, .pg-home) {
+  background: linear-gradient(130deg, #202f46, #152034);
+}
+[data-player-theme='vivid'] .pg-slot {
+  background: linear-gradient(145deg, #394966, #19253b);
+}
+[data-player-theme='vivid'] :is(.pg-home a, .pg-tabs button, .progression .btn) {
+  background: #25364e;
+  color: #ecdfbf;
+}
+[data-player-theme='vivid'] .pg-tabs button[aria-pressed='true'] {
+  background: #67543e;
+  border-color: #d4b778;
+}
+[data-player-theme='vivid'] .progression .btn--seal {
+  background: linear-gradient(#a56556, #753f3d);
+}
+[data-player-theme='vivid'] .pg-card {
+  background: linear-gradient(150deg, color-mix(in srgb, var(--grade) 21%, #1c2940), #142035);
+}
+[data-player-theme='vivid'] .pg-hero {
+  background-color: #172539;
+}
+[data-player-theme='vivid'] .pg-hero::after {
+  background: linear-gradient(0deg, #111925, transparent 65%);
+}
+[data-player-theme='vivid'] .sheet:has(.pg-detail) {
+  background: radial-gradient(ellipse at top right, #2e4260, #152034 65%);
+}
+[data-player-theme='vivid'] .sheet:has(.pg-detail) .btn {
+  background: #2a3d57;
+}
+[data-player-theme='vivid'] :is(.zone-hud, .zone-hud__top, .zone-hud__bottom) {
+  color: #eee7d7;
+}
+[data-player-theme='vivid'] :focus-visible {
+  outline-color: #e8c880;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-player-theme='vivid'] * {
+    scroll-behavior: auto;
+  }
+}

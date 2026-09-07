@@ -6,6 +6,16 @@ import { call } from './http';
  * table stays the only place a path or payload is written down.
  */
 export const api = {
+  progression: () => call(API.progression.get, {}),
+  progressionDraw: (body: RequestOf<typeof API.progression.draw>) =>
+    call(API.progression.draw, body),
+  progressionEquip: (body: RequestOf<typeof API.progression.equip>) =>
+    call(API.progression.equip, body),
+  progressionUpgrade: (body: RequestOf<typeof API.progression.upgrade>) =>
+    call(API.progression.upgrade, body),
+  progressionClaim: (body: RequestOf<typeof API.progression.claim>) =>
+    call(API.progression.claim, body),
+  progressionHistory: () => call(API.progression.history, {}),
   register: (body: RequestOf<typeof API.auth.register>) => call(API.auth.register, body),
   login: (body: RequestOf<typeof API.auth.login>) => call(API.auth.login, body),
   logout: () => call(API.auth.logout, {}),

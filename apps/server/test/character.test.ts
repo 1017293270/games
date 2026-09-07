@@ -192,6 +192,9 @@ describe('character', () => {
       expect(result.tribulation).toBeNull();
       if (result.success) {
         expect(result.toStageName).toBe('筑基·前期');
+        expect(h.ctx.characters.byId(player.characterId)!.progression?.achievements).toContain(
+          'first_breakthrough',
+        );
         succeeded = true;
       } else {
         expect(result.expLost).toBeGreaterThan(0);
@@ -317,9 +320,7 @@ describe('character', () => {
       payload: { techniqueId: 'tech-tuna' },
     });
     // 吐纳养气篇 needs 练气·后期 before its 300 灵石 matter.
-    expect(['STAGE_TOO_LOW', 'INSUFFICIENT_STONES']).toContain(
-      expectFail(tooPoor.json()).code,
-    );
+    expect(['STAGE_TOO_LOW', 'INSUFFICIENT_STONES']).toContain(expectFail(tooPoor.json()).code);
 
     const state = h.ctx.characters.byId(player.characterId)!;
     h.ctx.characters.save({

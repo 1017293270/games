@@ -1,3 +1,4 @@
+import { ProgressionHub } from '../progression/ProgressionHub';
 import { useState } from 'react';
 import {
   breakthroughChance,
@@ -6,6 +7,7 @@ import {
   ITEM_BY_ID,
   spiritRootName,
 } from '@xianxia/shared';
+import { VividScene } from '../../art/VividScene';
 import { ArtImage } from '../../art/ArtImage';
 import { Button, Sheet } from '../../design';
 import { DAY_END_HOUR, DAY_START_HOUR } from '../../config';
@@ -36,11 +38,16 @@ export function CultivationPage() {
     <div className="cultivation">
       <section className="cultivation__stage">
         <div className={`cultivation__bg ${daytime ? '' : 'cultivation__bg--night'}`}>
-          <ArtImage
-            id={daytime ? 'bg/cultivation-day' : 'bg/cultivation-night'}
-            label={daytime ? '云海山巅·昼' : '云海山巅·夜'}
-            motif="scene"
-            small
+          <VividScene
+            label="星海云山 · 洞府"
+            fallback={
+              <ArtImage
+                id={daytime ? 'bg/cultivation-day' : 'bg/cultivation-night'}
+                label={daytime ? '云海山巅·昼' : '云海山巅·夜'}
+                motif="scene"
+                small
+              />
+            }
           />
         </div>
         <QiParticles tone={daytime ? 'day' : 'night'} />
@@ -50,17 +57,14 @@ export function CultivationPage() {
         <div className="cultivation__plate">
           <h1 className="cultivation__stagename">{view.stageName}</h1>
           {live.atPerfection ? (
-            <p className="cultivation__eta cultivation__eta--full">
-              修为已满，只待一念破境
-            </p>
+            <p className="cultivation__eta cultivation__eta--full">修为已满，只待一念破境</p>
           ) : (
-            <p className="cultivation__eta numeral">
-              距下一境 {formatDuration(live.remainingSec)}
-            </p>
+            <p className="cultivation__eta numeral">距下一境 {formatDuration(live.remainingSec)}</p>
           )}
         </div>
       </section>
 
+      <ProgressionHub />
       <section className="cultivation__deck">
         {view.character.buffs.length > 0 && (
           <div className="buffs">

@@ -11,3 +11,5 @@ export * from './quests.js';
 export * from './shops.js';
 export * from './bots.js';
 export * from './registry.js';
+
+export * from './progression.js';

@@ -3,12 +3,11 @@ import {
   BotArchetypeSchema,
   BotParamsSchema,
   dayKey,
+  getProgression,
   ITEM_BY_ID,
   MAX_STAGE_INDEX,
   ROOMS,
   clamp,
-  computeStats,
-  powerScore,
   type AdminSession,
   type AdminStats,
   type BotArchetype,
@@ -68,10 +67,7 @@ export function adminLogin(
 }
 
 /** Applies a partial world-settings update. Takes effect immediately. */
-export function putSettings(
-  ctx: AppContext,
-  patch: WorldSettingsPatch,
-): WorldSettings {
+export function putSettings(ctx: AppContext, patch: WorldSettingsPatch): WorldSettings {
   try {
     return ctx.settings.patch(patch);
   } catch (error) {
@@ -176,9 +172,9 @@ export function updateBot(
   next = {
     ...next,
     lastSettledAt: now,
-    powerScore: powerScore(computeStats({ stageIndex: next.stageIndex, technique: null })),
   };
 
+  next = withFreshPower(next, resolveEquipment(next, ctx.inventory));
   ctx.characters.save(next);
   const names = new Map(ctx.archetypes.all().map((a) => [a.id, a.name]));
   return toBotSummary(ctx, next, names);
@@ -303,6 +299,10 @@ export function grant(
     spiritStones?: number;
     stageIndex?: number;
     items?: { itemId: string; qty: number }[];
+    jade?: number;
+    stardust?: number;
+    starStones?: number;
+    breakthroughWood?: number;
   },
   now: number,
 ): CharacterState {
@@ -338,6 +338,18 @@ export function grant(
     next = { ...next, spiritStones: Math.max(0, next.spiritStones + input.spiritStones) };
   }
 
+  const currencies = ['jade', 'stardust', 'starStones', 'breakthroughWood'] as const;
+  if (currencies.some((key) => input[key] !== undefined)) {
+    const progression = getProgression(next.progression, now);
+    for (const key of currencies) {
+      const amount = input[key] ?? 0;
+      const total = progression.materials[key] + amount;
+      if (!Number.isSafeInteger(total) || total < 0)
+        throw new ApiError('VALIDATION_ERROR', '材料数量超出范围');
+      progression.materials[key] = total;
+    }
+    next = { ...next, progression };
+  }
   transact(ctx.db, () => {
     for (const entry of input.items ?? []) {
       ctx.inventory.add(next.id, entry.itemId, entry.qty);

@@ -13,6 +13,8 @@ import {
   CharacterStateSchema,
   combineSeeds,
   computeStats,
+  progressionBonuses,
+  getProgression,
   createRng,
   cultivationRatePerSec,
   dayKey,
@@ -370,6 +372,7 @@ export function statsFor(char: CharacterState, inv: readonly InventoryItem[] = [
   const stats = computeStats({
     stageIndex: char.stageIndex,
     equipment: equipmentOf(char, inv),
+    ...progressionBonuses(char.progression),
     technique,
   });
   return { stats, technique, power: powerScore(stats) };
@@ -388,7 +391,8 @@ export function buildView(w: MockWorld, char: CharacterState): CharacterView {
     ratePerSec: cultivationRatePerSec({
       stageIndex: char.stageIndex,
       spiritRootQuality: char.spiritRoot.quality,
-      techniqueBonus: technique?.cultivationBonus ?? 0,
+      techniqueBonus:
+        (technique?.cultivationBonus ?? 0) + progressionBonuses(char.progression).cultivationBonus,
       pillBonus: activePillBonus(char.buffs, now),
       world: w.settings,
     }),
@@ -447,12 +451,7 @@ export function grantExp(char: CharacterState, amount: number): CharacterState {
   return { ...char, stageIndex, exp };
 }
 
-export function addItem(
-  w: MockWorld,
-  characterId: string,
-  itemId: string,
-  qty: number,
-): void {
+export function addItem(w: MockWorld, characterId: string, itemId: string, qty: number): void {
   const inv = w.inventories.get(characterId) ?? [];
   const item = ITEM_BY_ID.get(itemId);
   if (!item) return;
@@ -485,7 +484,9 @@ export function takeItem(w: MockWorld, characterId: string, itemId: string, qty:
   const rest = row.qty - qty;
   w.inventories.set(
     characterId,
-    rest > 0 ? inv.map((r) => (r.uid === row.uid ? { ...r, qty: rest } : r)) : inv.filter((r) => r.uid !== row.uid),
+    rest > 0
+      ? inv.map((r) => (r.uid === row.uid ? { ...r, qty: rest } : r))
+      : inv.filter((r) => r.uid !== row.uid),
   );
   return true;
 }
@@ -563,7 +564,10 @@ export function tribulationBattle(w: MockWorld, char: CharacterState): BattleRes
 
 export function settleInto(w: MockWorld, char: CharacterState) {
   const technique = getTechnique(char.techniqueId);
-  return settleCultivation(char, Date.now(), w.settings, { technique });
+  const result = settleCultivation(char, Date.now(), w.settings, { technique });
+  const progression = getProgression(result.character.progression, Date.now());
+  progression.daily.cultivationSeconds += result.creditedSec;
+  return { ...result, character: { ...result.character, progression } };
 }
 
 /** Broadcasts to the mock socket. */

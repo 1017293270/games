@@ -14,6 +14,7 @@ import type { ZonePose } from '@xianxia/shared';
 
 /** 一个槽位的插值缓冲。store 侧原地改写这两个对象，渲染器只读。 */
 export interface PoseBuffer {
+  shield?: number;
   prev: ZonePose;
   next: ZonePose;
 }

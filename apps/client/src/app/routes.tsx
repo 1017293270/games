@@ -10,6 +10,10 @@ import { SocialPage } from '../features/social/SocialPage';
 import { CharacterPage } from '../features/character/CharacterPage';
 import { TownPage } from '../features/npc/TownPage';
 
+const ProgressionPage = lazy(() =>
+  import('../features/progression/ProgressionPage').then((m) => ({ default: m.ProgressionPage })),
+);
+
 const AdminPage = lazy(() => import('../admin'));
 
 /** Every route in the game lives here, one line each. */
@@ -21,6 +25,14 @@ export const router = createBrowserRouter([
     element: <AppShell />,
     children: [
       { index: true, element: <CultivationPage /> },
+      ...(['treasures', 'relics', 'gacha', 'daily'] as const).map((page) => ({
+        path: page,
+        element: (
+          <Suspense fallback={<div className="empty">载入仙府……</div>}>
+            <ProgressionPage page={page} />
+          </Suspense>
+        ),
+      })),
       { path: 'explore', element: <ZonePage /> },
       { path: 'town', element: <TownPage /> },
       { path: 'realm', element: <RealmPage /> },

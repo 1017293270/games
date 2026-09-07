@@ -14,14 +14,7 @@ import { arenaHandlers } from '../src/modules/arena/routes.js';
 import { OPPONENT_STAGE_WINDOW, winHint } from '../src/modules/arena/service.js';
 import { REPLAY_KEEP } from '../src/modules/arena/repo.js';
 import { generateBots } from '../src/engine/bots/generate.js';
-import {
-  auth,
-  createHarness,
-  expectFail,
-  expectOk,
-  makePlayer,
-  type Harness,
-} from './helpers.js';
+import { auth, createHarness, expectFail, expectOk, makePlayer, type Harness } from './helpers.js';
 
 type ClientSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
@@ -43,10 +36,13 @@ interface RecordPage {
 function once<T>(socket: ClientSocket, event: keyof ServerToClientEvents, ms = 6000): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error(`timed out waiting for ${event}`)), ms);
-    socket.once(event as never, ((payload: T) => {
-      clearTimeout(timer);
-      resolve(payload);
-    }) as never);
+    socket.once(
+      event as never,
+      ((payload: T) => {
+        clearTimeout(timer);
+        resolve(payload);
+      }) as never,
+    );
   });
 }
 
@@ -242,6 +238,7 @@ describe('arena', () => {
       expectOk<ArenaChallengeResponse>((await challenge(alice.token, bob.characterId)).json());
     }
     expect(h.ctx.characters.byId(alice.characterId)!.dailyCounters.arena).toBe(2);
+    expect(h.ctx.characters.byId(alice.characterId)!.progression?.daily.arena).toBe(2);
 
     const blocked = await challenge(alice.token, bob.characterId);
     expect(blocked.statusCode).toBe(429);
@@ -258,9 +255,7 @@ describe('arena', () => {
     );
 
     const before = h.ctx.characters.byId(bot!.id)!;
-    const result = expectOk<ArenaChallengeResponse>(
-      (await challenge(alice.token, bot!.id)).json(),
-    );
+    const result = expectOk<ArenaChallengeResponse>((await challenge(alice.token, bot!.id)).json());
 
     expect(result.opponent.isBot).toBe(true);
     const after = h.ctx.characters.byId(bot!.id)!;

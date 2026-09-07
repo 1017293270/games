@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router';
+import { VividScene } from '../../art/VividScene';
 import { ArtImage } from '../../art/ArtImage';
 import { Button, Field } from '../../design';
 import { GAME_NAME, GAME_TAGLINE } from '../../config';
@@ -47,7 +48,10 @@ export function LoginPage() {
   return (
     <div className="login">
       <div className="login__plate">
-        <ArtImage id="bg/login" label="孤峰远影" motif="scene" small />
+        <VividScene
+          label="星海云山"
+          fallback={<ArtImage id="bg/login" label="孤峰远影" motif="scene" small />}
+        />
         <div className="login__inscription">
           <p className="login__tag">{GAME_TAGLINE}</p>
           <div className="login__title">

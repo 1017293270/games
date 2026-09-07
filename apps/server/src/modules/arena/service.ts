@@ -1,3 +1,4 @@
+import { progressEvent } from '../../game/progression.js';
 import {
   clamp,
   expRequired,
@@ -11,7 +12,12 @@ import {
 } from '@xianxia/shared';
 import type { AppContext } from '../../context.js';
 import { ApiError } from '../../http/errors.js';
-import { buildPublicProfile, resolveEquipment, statsOf, withFreshPower } from '../../game/character.js';
+import {
+  buildPublicProfile,
+  resolveEquipment,
+  statsOf,
+  withFreshPower,
+} from '../../game/character.js';
 import { battleSeed, characterCombatant, hpShareAfter, runBattle } from '../../game/combat.js';
 import { applyReward, nameReward, scaleReward } from '../../game/rewards.js';
 import { loadOtherHealed } from '../../game/hp.js';
@@ -153,6 +159,7 @@ export function challenge(
       : hpShareAfter(battle, defender.id, defenderStats.hp),
   };
 
+  nextAttacker = progressEvent(nextAttacker, now, 'arena');
   const savedAttacker = withFreshPower(nextAttacker, resolveEquipment(nextAttacker, ctx.inventory));
   const savedDefender = withFreshPower(nextDefender, resolveEquipment(nextDefender, ctx.inventory));
   ctx.characters.save(savedAttacker);

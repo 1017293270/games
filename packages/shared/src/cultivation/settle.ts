@@ -1,3 +1,4 @@
+import { progressionBonuses } from '../progression/index.js';
 /**
  * Lazy cultivation settlement.
  *
@@ -35,6 +36,7 @@ export interface CultivationRateInput {
   spiritRootQuality: CharacterState['spiritRoot']['quality'];
   /** Additive bonus from the studied 功法. */
   techniqueBonus?: number;
+  progressionBonus?: number;
   /** Additive bonus from active pill buffs. */
   pillBonus?: number;
   world: Pick<WorldSettings, 'cultivationMultiplier'>;
@@ -50,7 +52,7 @@ export function cultivationRatePerSec(input: CultivationRateInput): number {
   return (
     base *
     spiritRootMultiplier(input.spiritRootQuality) *
-    (1 + (input.techniqueBonus ?? 0)) *
+    (1 + (input.techniqueBonus ?? 0) + (input.progressionBonus ?? 0)) *
     (1 + (input.pillBonus ?? 0)) *
     (input.world.cultivationMultiplier ?? 1) *
     (input.botMultiplier ?? 1)
@@ -67,10 +69,7 @@ export function activePillBonus(buffs: readonly CultivationBuff[], atMs: number)
 }
 
 /** Drops buffs that expired at or before `atMs`. */
-export function pruneBuffs(
-  buffs: readonly CultivationBuff[],
-  atMs: number,
-): CultivationBuff[] {
+export function pruneBuffs(buffs: readonly CultivationBuff[], atMs: number): CultivationBuff[] {
   return buffs.filter((b) => b.expiresAt > atMs);
 }
 
@@ -161,6 +160,7 @@ export function settleCultivation(
         stageIndex,
         spiritRootQuality: character.spiritRoot.quality,
         techniqueBonus,
+        progressionBonus: progressionBonuses(character.progression).cultivationBonus,
         pillBonus,
         world,
         botMultiplier,
@@ -247,6 +247,7 @@ export function secondsToNextStage(
     stageIndex: character.stageIndex,
     spiritRootQuality: character.spiritRoot.quality,
     techniqueBonus: options.technique?.cultivationBonus ?? 0,
+    progressionBonus: progressionBonuses(character.progression).cultivationBonus,
     pillBonus: activePillBonus(character.buffs, nowMs),
     world,
     botMultiplier:

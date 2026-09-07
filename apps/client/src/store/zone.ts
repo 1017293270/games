@@ -37,6 +37,7 @@ import { toast } from './ui';
  * instant — `ZonePose` is a frozen protocol type and cannot carry them.
  */
 export interface ZoneTrack {
+  shield?: number;
   prev: ZonePose;
   next: ZonePose;
   /** Slot this entity is fighting, or -1. */
@@ -284,6 +285,10 @@ export const useZoneStore = create<ZoneState>((set, get) => ({
       // starts a new track rather than easing out of the old one's position.
       if (roster[entry.i]?.id !== entry.id) zoneFrames.delete(entry.i);
       roster[entry.i] = entry;
+      if (!entry.mainTreasure) {
+        const track = zoneFrames.get(entry.i);
+        if (track) track.shield = 0;
+      }
     }
 
     for (const slot of frame.remove) {
@@ -302,6 +307,12 @@ export const useZoneStore = create<ZoneState>((set, get) => ({
       } else {
         zoneFrames.set(i, { prev: { ...pose }, next: pose, targetI, skillSlot });
       }
+    }
+
+    if (frame.full) for (const track of zoneFrames.values()) track.shield = 0;
+    for (const treasure of frame.treasureStates ?? []) {
+      const track = zoneFrames.get(treasure.i);
+      if (track && roster[treasure.i]?.mainTreasure) track.shield = treasure.shield;
     }
 
     const boss =

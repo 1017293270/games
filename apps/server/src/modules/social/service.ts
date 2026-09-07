@@ -1,6 +1,9 @@
+import { transact } from '../../db/index.js';
+import { progressEvent } from '../../game/progression.js';
 import { randomUUID } from 'node:crypto';
 import {
   stageName,
+  type CharacterState,
   type ChatChannel,
   type ChatMessage,
   type WorldSettings,
@@ -60,15 +63,26 @@ export function recordMessage(
     sentAt: now,
   };
 
-  ctx.chat.insert(stored, partyId);
-  ctx.counters.bump('chat', now);
+  let updated: CharacterState | undefined;
+  transact(ctx.db, () => {
+    ctx.chat.insert(stored, partyId);
+    ctx.counters.bump('chat', now);
+    if (message.senderId) {
+      const fresh = ctx.characters.byId(message.senderId);
+      if (fresh && !fresh.isBot) {
+        const next = progressEvent(fresh, now, 'chat');
+        ctx.characters.save(next);
+        updated = next;
+      }
+    }
 
-  // Trimming on write keeps the table at `chatHistoryLimit` without a sweeper.
-  // 队伍频道 is trimmed inside its own party, so the cap is per scrollback.
-  if (world.chatHistoryLimit > 0) {
-    if (partyId === null) ctx.chat.trim(message.channel, world.chatHistoryLimit);
-    else ctx.chat.trim(message.channel, world.chatHistoryLimit, partyId);
-  }
-
+    // Trimming on write keeps the table at `chatHistoryLimit` without a sweeper.
+    // 队伍频道 is trimmed inside its own party, so the cap is per scrollback.
+    if (world.chatHistoryLimit > 0) {
+      if (partyId === null) ctx.chat.trim(message.channel, world.chatHistoryLimit);
+      else ctx.chat.trim(message.channel, world.chatHistoryLimit, partyId);
+    }
+  });
+  if (updated) ctx.realtime.characterUpdate(updated);
   return stored;
 }

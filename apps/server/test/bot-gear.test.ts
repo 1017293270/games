@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   baselinePowerAtStage,
+  botProgression,
+  progressionBonuses,
   computeStats,
   EQUIP_SLOTS,
   getStage,
@@ -100,6 +102,7 @@ describe('bot gear', () => {
     const expected = powerScore(
       computeStats({
         stageIndex: geared!.stageIndex,
+        ...progressionBonuses(botProgression(geared!.id, geared!.stageIndex)),
         equipment: botEquipment(geared!),
         technique: getTechnique(STARTER_TECHNIQUE_ID),
       }),

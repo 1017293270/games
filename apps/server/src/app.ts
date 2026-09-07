@@ -26,6 +26,7 @@ import { raidHandlers } from './modules/raid/routes.js';
 import { friendHandlers } from './modules/friend/routes.js';
 import { npcHandlers } from './modules/npc/routes.js';
 import { questHandlers } from './modules/quest/routes.js';
+import { progressionHandlers } from './modules/progression/routes.js';
 import { shopHandlers } from './modules/shop/routes.js';
 
 /** Every implemented endpoint, keyed `group.name`. */
@@ -44,6 +45,7 @@ export const handlers: HandlerRegistry = {
   ...npcHandlers,
   ...questHandlers,
   ...shopHandlers,
+  ...progressionHandlers,
 };
 
 export interface BuildAppOptions {

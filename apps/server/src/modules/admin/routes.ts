@@ -91,6 +91,9 @@ export const adminHandlers: HandlerRegistry = {
     if (c.input.spiritStones !== undefined) input.spiritStones = c.input.spiritStones;
     if (c.input.stageIndex !== undefined) input.stageIndex = c.input.stageIndex;
     if (c.input.items !== undefined) input.items = c.input.items;
+    for (const key of ['jade', 'stardust', 'starStones', 'breakthroughWood'] as const) {
+      if (c.input[key] !== undefined) input[key] = c.input[key];
+    }
     return grant(c.ctx, input, c.now);
   }),
 

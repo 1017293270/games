@@ -1,0 +1,393 @@
+.progression {
+  --pg-gold: #edc978;
+  --pg-muted: #a8c1be;
+  color: #f7efda;
+  background: #101f24;
+  min-height: 100%;
+  padding: 18px 16px 28px;
+  background-image: radial-gradient(ellipse at 90% 0%, #23566580, transparent 52%);
+}
+.progression h1,
+.progression h2,
+.progression h3 {
+  color: var(--pg-gold);
+  font-family: var(--font-display);
+}
+.progression h1 {
+  margin: 0;
+  font-size: 27px;
+}
+.progression h2 {
+  margin: 0 0 10px;
+  font-size: 20px;
+}
+.progression p {
+  line-height: 1.65;
+}
+.progression button,
+.progression a {
+  -webkit-tap-highlight-color: transparent;
+}
+.progression button:focus-visible,
+.progression a:focus-visible {
+  outline: 2px solid #f0d184;
+  outline-offset: 3px;
+}
+.progression .btn {
+  color: #f7e7ba;
+  border-color: #a48549;
+  background: #253b40;
+}
+.progression .btn--seal {
+  background: #994a39;
+  color: #fff3dd;
+}
+.progression .btn:disabled {
+  opacity: 0.42;
+}
+.pg-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.pg-header a {
+  color: #c9dbd4;
+  font-size: 13px;
+  text-decoration: none;
+}
+.pg-header small {
+  margin-left: auto;
+  color: var(--pg-muted);
+}
+.pg-resources {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 10px 0;
+  border-block: 1px solid #b4944c55;
+  gap: 4px;
+  margin-bottom: 18px;
+}
+.pg-resources span {
+  text-align: center;
+  color: var(--pg-muted);
+  font-size: 11px;
+}
+.pg-resources strong {
+  display: block;
+  color: #f1d797;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.pg-muted {
+  color: var(--pg-muted);
+  font-size: 13px;
+}
+.pg-panel {
+  padding: 14px;
+  border: 1px solid #b4944c55;
+  background: #162a2be6;
+  margin-block: 12px;
+  border-radius: 4px;
+}
+.pg-slots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.pg-slot {
+  min-width: 0;
+  padding: 10px 5px;
+  text-align: center;
+  border: 1px solid #b4944c80;
+  background: linear-gradient(155deg, #375553, #13272d);
+  color: #eacf92;
+  border-radius: 4px;
+}
+.pg-slot strong {
+  display: block;
+  font-size: 13px;
+  margin-top: 4px;
+}
+.pg-slot small {
+  display: block;
+  color: #b8c9c4;
+  font-size: 11px;
+}
+.pg-tabs {
+  display: flex;
+  gap: 8px;
+  margin-block: 12px;
+}
+.pg-tabs button {
+  flex: 1;
+  border: 1px solid #668e8c;
+  background: #193136;
+  color: #bdcec6;
+  padding: 10px 4px;
+  border-radius: 3px;
+}
+.pg-tabs button[aria-pressed='true'] {
+  color: #ffe3a3;
+  border-color: #d6b565;
+  background: #6b5130;
+}
+.pg-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+.pg-card {
+  --grade: #8fa8ae;
+  min-width: 0;
+  position: relative;
+  padding: 8px 4px;
+  color: #f7eed8;
+  border: 1px solid color-mix(in srgb, var(--grade) 70%, transparent);
+  border-radius: 4px;
+  background: linear-gradient(155deg, color-mix(in srgb, var(--grade) 22%, #18282b), #122026);
+  text-align: center;
+}
+.pg-card[data-grade='spirit'] {
+  --grade: #58a8ec;
+}
+.pg-card[data-grade='immortal'] {
+  --grade: #b685e2;
+}
+.pg-card[data-grade='saint'] {
+  --grade: #e6ba50;
+}
+.pg-card[data-grade='divine'] {
+  --grade: #eb7261;
+}
+.pg-card strong {
+  font-size: 13px;
+  display: block;
+  color: var(--grade);
+  overflow-wrap: anywhere;
+}
+.pg-card small {
+  display: block;
+  font-size: 10px;
+  margin-top: 4px;
+  color: #c0c8bf;
+}
+.pg-card--missing {
+  opacity: 0.58;
+}
+.pg-art {
+  display: block;
+  width: 66px;
+  height: 66px;
+  margin: 0 auto 6px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+.pg-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pg-hero {
+  min-height: 250px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: end;
+  text-align: center;
+  padding: 22px 12px;
+  margin: 0 -16px;
+  isolation: isolate;
+  background: #183740;
+}
+.pg-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: url('/art/progression/gacha-hall-v1.webp') center 42% / cover;
+}
+.pg-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(0deg, #101f24 0%, #101f2455 55%, #101f2444);
+}
+.pg-hero h2 {
+  font-size: 32px;
+  letter-spacing: 0.18em;
+  text-shadow: 0 2px 18px #000;
+}
+.pg-hero .pg-art {
+  width: 105px;
+  height: 105px;
+  box-shadow: 0 0 45px #f2ce6577;
+  border: 1px solid #d0ac69;
+}
+.pg-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.pg-actions > * {
+  flex: 1;
+  min-width: 90px;
+}
+.pg-error {
+  background: #5f302a;
+  border: 1px solid #ca8270;
+  color: #ffe3d6;
+  padding: 10px 12px;
+  margin-block: 12px;
+  font-size: 13px;
+}
+.pg-task {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 13px 0;
+  border-bottom: 1px solid #b4944c33;
+}
+.pg-task > div {
+  flex: 1;
+  min-width: 0;
+}
+.pg-task strong {
+  font-size: 14px;
+}
+.pg-task p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--pg-muted);
+}
+.pg-detail {
+  color: #263733;
+}
+.pg-detail .pg-art {
+  width: 100px;
+  height: 100px;
+}
+.pg-detail p {
+  font-size: 13px;
+  line-height: 1.6;
+}
+.pg-detail .pg-actions .btn {
+  min-width: 100px;
+}
+.pg-result {
+  animation: pg-reveal 0.55s both;
+}
+@keyframes pg-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.pg-reveal-skip .pg-result {
+  animation: none;
+}
+.pg-home {
+  background: #132b31;
+  color: #eacd91;
+  padding: 14px 16px;
+  border-top: 1px solid #b59555;
+}
+.pg-home__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.pg-home__head strong {
+  font-family: var(--font-display);
+  font-size: 19px;
+}
+.pg-home__head small {
+  align-self: center;
+  color: #b6c8bf;
+}
+.pg-home nav {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.pg-home a {
+  display: block;
+  padding: 11px 2px;
+  border: 1px solid #ae915b70;
+  background: #29413e;
+  color: #eddcb1;
+  text-align: center;
+  text-decoration: none;
+  font-size: 13px;
+}
+.pg-home a small {
+  display: block;
+  font-size: 10px;
+  color: #a9c4bc;
+  margin-top: 4px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pg-result {
+    animation: none;
+  }
+}
+
+/* Only progression drill-downs inherit the ink palette; other sheets keep theirs. */
+.sheet:has(.pg-detail) {
+  color: #f7efda;
+  background: radial-gradient(ellipse at top right, #29494d 0, #13262b 65%);
+  border-top: 1px solid #d0ac69;
+  box-shadow: 0 -8px 32px #0008;
+  max-height: 88%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.sheet:has(.pg-detail) .sheet__title {
+  color: #edc978;
+}
+.sheet:has(.pg-detail) .sheet__grip {
+  background: #a99361;
+}
+.sheet:has(.pg-detail) .pg-detail {
+  color: #e4e8dc;
+}
+.sheet:has(.pg-detail) .btn {
+  color: #f7e7ba;
+  border-color: #a48549;
+  background: #294448;
+}
+.sheet:has(.pg-detail) .btn:disabled {
+  opacity: 0.45;
+}
+.sheet:has(.pg-detail) .btn:focus-visible {
+  outline: 2px solid #f0d184;
+  outline-offset: 3px;
+}
+.sheet:has(.pg-detail) a {
+  color: #9ad4d5;
+}
+.sheet:has(.pg-detail) .pg-grid {
+  margin-block: 16px;
+}
+.sheet:has(.pg-detail) .pg-actions p {
+  color: #bfcdbd;
+  font-size: 12px;
+}
+.sheet:has(.pg-detail) .pg-art {
+  border: 1px solid #b19a5b66;
+}
+.sheet:has(.pg-detail) .pg-card .pg-art {
+  width: min(66px, 100%);
+  height: auto;
+  aspect-ratio: 1;
+}

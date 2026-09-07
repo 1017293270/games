@@ -10,8 +10,9 @@
  */
 
 import type { Container, Sprite, Text } from 'pixi.js';
+import { progressionArtSource } from '../../progression/art';
 import type { ArtId, ZoneRosterEntry } from '@xianxia/shared';
-import { ZONE_FLAGS } from '@xianxia/shared';
+import { ZONE_FLAGS, TREASURE_FORM_NAMES } from '@xianxia/shared';
 import {
   ZONE_FONT_FAMILY,
   ZONE_PALETTE,
@@ -59,6 +60,9 @@ export class ZoneEntityView {
   private readonly label: Text | null;
   private readonly hpWidth: number;
 
+  private readonly treasure: Sprite | null;
+  private readonly shield: Sprite | null;
+  private orbit = 0;
   private flashLeft = 0;
   private castLeft = 0;
   private deadFor = -1;
@@ -181,6 +185,39 @@ export class ZoneEntityView {
       this.label = null;
     }
 
+    this.treasure = entry.mainTreasure
+      ? new pixi.Sprite(textures.char(TREASURE_FORM_NAMES[entry.mainTreasure.form]))
+      : null;
+    this.shield = entry.mainTreasure ? new pixi.Sprite(textures.ring()) : null;
+    if (this.treasure) {
+      this.treasure.anchor.set(0.5);
+      this.treasure.width = this.treasure.height = 12;
+      this.treasure.tint = 0xffd16f;
+      this.treasure.position.set(this.radius + 8, 0);
+      this.root.addChild(this.treasure);
+      const treasureSprite = this.treasure;
+      const fallback = this.resolveArt(entry.mainTreasure!.art);
+      const source = progressionArtSource({
+        id: entry.mainTreasure!.definitionId,
+        form: entry.mainTreasure!.form,
+      });
+      void (async () => {
+        const texture =
+          (source ? await textures.bitmap(source) : null) ??
+          (fallback ? await textures.bitmap(fallback) : null);
+        if (texture && !this.destroyed) {
+          treasureSprite.texture = texture;
+          treasureSprite.tint = 0xffffff;
+        }
+      })();
+    }
+    if (this.shield) {
+      this.shield.anchor.set(0.5);
+      this.shield.width = this.shield.height = this.radius * 3.2;
+      this.shield.tint = 0x6ae6df;
+      this.shield.visible = false;
+      this.root.addChild(this.shield);
+    }
     void this.loadArt();
   }
 
@@ -188,6 +225,10 @@ export class ZoneEntityView {
   place(x: number, y: number): void {
     this.root.position.set(x, y);
     this.root.zIndex = y;
+  }
+
+  setShield(amount: number): void {
+    if (this.shield) this.shield.visible = amount > 0;
   }
 
   setHpRatio(ratio: number): void {
@@ -266,6 +307,13 @@ export class ZoneEntityView {
 
   /** 每帧推进一次性动效。 */
   tick(dtMs: number): void {
+    if (this.treasure && !this.reducedMotion) {
+      this.orbit += dtMs / 1800;
+      this.treasure.position.set(
+        Math.cos(this.orbit) * (this.radius + 8),
+        Math.sin(this.orbit) * (this.radius + 5),
+      );
+    }
     if (this.flashLeft > 0) {
       this.flashLeft -= dtMs;
       this.flashLayer.alpha = Math.max(0, this.flashLeft / FLASH_MS) * 0.85;

@@ -17,7 +17,7 @@ import {
 } from '@xianxia/shared';
 import type { AppContext } from '../../context.js';
 import { ZoneMemberRepo } from '../../db/repo/zoneMembers.js';
-import { resolveEquipment, statsOf } from '../../game/character.js';
+import { mainTreasureOf, resolveEquipment, statsOf } from '../../game/character.js';
 import { loadOtherHealed } from '../../game/hp.js';
 import type { ZoneEnterResult, ZoneService, ZoneStats } from './api.js';
 import { flushZone } from './flush.js';
@@ -286,7 +286,11 @@ export class ZoneServiceImpl implements ZoneService {
     if (!canEnterZone(zoneId, state.stageIndex)) {
       const map = zoneMap(zoneId);
       const need = map ? stageName(map.unlockStage) : '更高境界';
-      return { ok: false, code: 'MAP_LOCKED', message: `境界不足，${map?.name ?? '此地'}需${need}` };
+      return {
+        ok: false,
+        code: 'MAP_LOCKED',
+        message: `境界不足，${map?.name ?? '此地'}需${need}`,
+      };
     }
     if (world.cultivators >= zone.capacity) {
       return { ok: false, code: 'ZONE_FULL', message: '此地修士已满，换一处再来' };
@@ -400,13 +404,9 @@ export class ZoneServiceImpl implements ZoneService {
   }
 
   /** Projects a character onto a field: attributes, 神通, 气血 share, presence. */
-  private place(
-    world: ZoneWorld,
-    state: CharacterState,
-    isBot: boolean,
-    now: number,
-  ): ZoneEntity {
+  private place(world: ZoneWorld, state: CharacterState, isBot: boolean, now: number): ZoneEntity {
     const stats = statsOf(state, resolveEquipment(state, this.ctx.inventory));
+    const mainTreasure = mainTreasureOf(state);
     const entity = world.add(
       {
         id: state.id,
@@ -416,6 +416,7 @@ export class ZoneServiceImpl implements ZoneService {
         stageIndex: state.stageIndex,
         stats,
         skills: state.skillSlots,
+        ...(mainTreasure ? { mainTreasure } : {}),
         // 气血 carried in from 论道 wounds; a bot fights whole every time.
         hpShare: isBot ? 1 : state.hpPercent,
         online: isBot ? true : this.ctx.presence.isOnline(state.id),

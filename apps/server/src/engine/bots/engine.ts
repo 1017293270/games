@@ -50,6 +50,7 @@ const ELO_K = 32;
 
 /** How many stages either side of a bot it will look for an opponent in. */
 const OPPONENT_STAGE_WINDOW = 3;
+const PLAYER_CHALLENGE_COOLDOWN_MS = 10 * 60_000;
 
 /** Ceiling on bots created in one tick, so raising `botCount` cannot stall it. */
 const MAX_CREATED_PER_TICK = 500;
@@ -245,6 +246,7 @@ export class BotEngine {
     const dirty = new Map<string, CharacterState>();
     const notices: { text: string; characterId: string }[] = [];
     const chats: CharacterState[] = [];
+    const zoneMoves: (() => void)[] = [];
     const fights: {
       attacker: CharacterState;
       defenderId: string;
@@ -327,7 +329,9 @@ export class BotEngine {
 
       // Walking onto (or off) a 战斗大地图 is decided from the equipped state,
       // so the field gets the bot with the 战力 it will actually fight at.
-      this.stepZone(equipped, action, scheduleMultiplier, rng, now);
+      zoneMoves.push(() =>
+        this.stepZone(dirty.get(equipped.id) ?? equipped, action, scheduleMultiplier, rng, now),
+      );
     }
 
     // ---- fights, resolved after the settle pass so both sides are current
@@ -337,6 +341,7 @@ export class BotEngine {
       if (!defender) continue;
 
       const resolved = this.runArena(attacker, defender, fight.seed, world, now);
+      if (!resolved) continue;
       dirty.set(resolved.attacker.id, resolved.attacker);
       dirty.set(resolved.defender.id, resolved.defender);
       stats.battles += 1;
@@ -346,6 +351,10 @@ export class BotEngine {
     transact(this.ctx.db, () => {
       this.ctx.characters.saveMany([...dirty.values()]);
     });
+
+    // Leaving a field flushes its rewards; do it after saving this tick so an
+    // earlier snapshot cannot overwrite the freshly banked spoils.
+    for (const move of zoneMoves) move();
 
     // ---- broadcasts, after the data is durable
     for (const notice of notices) {
@@ -519,7 +528,14 @@ export class BotEngine {
     seed: number,
     world: WorldSettings,
     now: number,
-  ): { attacker: CharacterState; defender: CharacterState } {
+  ): { attacker: CharacterState; defender: CharacterState } | null {
+    // Check at execution, not target selection: several bots choose during the
+    // same tick, and each completed fight immediately writes its durable record.
+    if (
+      !defender.isBot &&
+      this.ctx.battles.hasBotArenaAfter(defender.id, now - PLAYER_CHALLENGE_COOLDOWN_MS)
+    )
+      return null;
     // `resolveEquipment` already answers for both kinds of cultivator: an
     // `inventory` lookup for a player, the derived loadout for a bot.
     const attackerStats = statsOf(attacker, resolveEquipment(attacker, this.ctx.inventory));

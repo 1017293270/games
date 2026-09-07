@@ -1,5 +1,8 @@
 import {
   activePillBonus,
+  botProgression,
+  progressionBonuses,
+  mainTreasureCombat,
   computeStats,
   cultivationRatePerSec,
   EQUIP_SLOTS,
@@ -23,6 +26,7 @@ import {
   type WorldSettings,
 } from '@xianxia/shared';
 import type { InventoryRepo } from '../db/repo/inventory.js';
+import { progressCultivation } from './progression.js';
 import { botEquipment } from '../engine/bots/gear.js';
 
 /**
@@ -39,10 +43,7 @@ import { botEquipment } from '../engine/bots/gear.js';
  * function every module already calls is what gives 论道, 围攻, 公开档案 and
  * the rankings a geared bot without any of them special-casing one.
  */
-export function resolveEquipment(
-  state: CharacterState,
-  inventory: InventoryRepo,
-): EquipmentItem[] {
+export function resolveEquipment(state: CharacterState, inventory: InventoryRepo): EquipmentItem[] {
   if (state.isBot) return botEquipment(state);
 
   const pieces: EquipmentItem[] = [];
@@ -56,10 +57,19 @@ export function resolveEquipment(
   return pieces;
 }
 
+/** Bots use the same content and formulas with a deterministic earned loadout. */
+export function progressionOf(state: CharacterState) {
+  return state.isBot ? botProgression(state.id, state.stageIndex) : state.progression;
+}
+export function mainTreasureOf(state: CharacterState) {
+  return mainTreasureCombat(progressionOf(state));
+}
+
 /** Full attributes with gear and 功法 folded in. */
 export function statsOf(state: CharacterState, equipment: readonly EquipmentItem[]): Stats {
   return computeStats({
     stageIndex: state.stageIndex,
+    ...progressionBonuses(progressionOf(state)),
     equipment,
     technique: getTechnique(state.techniqueId),
   });
@@ -90,12 +100,11 @@ export function ratePerSecOf(
     stageIndex: state.stageIndex,
     spiritRootQuality: state.spiritRoot.quality,
     techniqueBonus: getTechnique(state.techniqueId)?.cultivationBonus ?? 0,
+    progressionBonus: progressionBonuses(progressionOf(state)).cultivationBonus,
     pillBonus: activePillBonus(state.buffs, nowMs),
     world: { cultivationMultiplier: world.cultivationMultiplier * extraMultiplier },
     botMultiplier:
-      state.isBot && state.botParams
-        ? state.botParams.talent * (1 + state.botParams.insight)
-        : 1,
+      state.isBot && state.botParams ? state.botParams.talent * (1 + state.botParams.insight) : 1,
   });
 }
 
@@ -113,7 +122,11 @@ export function settle(
   extraMultiplier = 1,
 ): SettleResult {
   return settleCultivation(
-    state,
+    progressCultivation(
+      state.isBot ? { ...state, progression: progressionOf(state) } : state,
+      nowMs,
+      world.offlineCapHours,
+    ),
     nowMs,
     {
       cultivationMultiplier: world.cultivationMultiplier * extraMultiplier,
@@ -150,7 +163,7 @@ export function buildView(
     expRequired: expRequired(state.stageIndex),
     ratePerSec: ratePerSecOf(state, world, nowMs),
     secondsToNextStage: secondsToNextStage(
-      state,
+      state.isBot ? { ...state, progression: progressionOf(state) } : state,
       { cultivationMultiplier: world.cultivationMultiplier },
       { technique: getTechnique(state.techniqueId), nowMs },
     ),

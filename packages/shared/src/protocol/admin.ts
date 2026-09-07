@@ -119,13 +119,15 @@ export const PlayerListQuerySchema = PaginationQuerySchema.extend({
 });
 
 export const GrantRequestSchema = z.object({
+  jade: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
+  stardust: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
+  starStones: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
+  breakthroughWood: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
   characterId: z.string().min(1),
   exp: z.number().min(0).optional(),
   spiritStones: z.number().int().optional(),
   stageIndex: z.number().int().min(0).max(MAX_STAGE_INDEX).optional(),
-  items: z
-    .array(z.object({ itemId: z.string().min(1), qty: z.number().int().min(1) }))
-    .optional(),
+  items: z.array(z.object({ itemId: z.string().min(1), qty: z.number().int().min(1) })).optional(),
 });
 export type GrantRequest = z.infer<typeof GrantRequestSchema>;
 

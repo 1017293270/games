@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ProgressionStateSchema } from './progression.js';
 import { ART_AVATARS, ART_IDS } from '../core/art.js';
 import { MAX_STAGE_INDEX } from '../cultivation/realms.js';
 import { SpiritRootSchema, StatsSchema } from './stats.js';
@@ -73,6 +74,7 @@ export const CharacterStateSchema = z.object({
   techniqueId: z.string().min(1).nullable().default(null),
   learnedTechniqueIds: z.array(z.string().min(1)).default([]),
   equipment: EquipmentSlotsSchema,
+  progression: ProgressionStateSchema.optional(),
 
   buffs: z.array(CultivationBuffSchema).default([]),
 

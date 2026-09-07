@@ -36,10 +36,13 @@ interface DungeonListEntry {
 function once<T>(socket: ClientSocket, event: keyof ServerToClientEvents, ms = 6000): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error(`timed out waiting for ${event}`)), ms);
-    socket.once(event as never, ((payload: T) => {
-      clearTimeout(timer);
-      resolve(payload);
-    }) as never);
+    socket.once(
+      event as never,
+      ((payload: T) => {
+        clearTimeout(timer);
+        resolve(payload);
+      }) as never,
+    );
   });
 }
 
@@ -191,6 +194,7 @@ describe('dungeon', () => {
 
     expectOk<DungeonStartResponse>((await start(alice.token, QINGYUN.id)).json());
     expect(h.ctx.characters.byId(alice.characterId)!.dailyCounters.dungeon).toBe(1);
+    expect(h.ctx.characters.byId(alice.characterId)!.progression?.daily.dungeon).toBe(1);
 
     const second = await start(alice.token, QINGYUN.id);
     expect(second.statusCode).toBe(429);
@@ -298,5 +302,6 @@ describe('dungeon', () => {
     expect(h.ctx.dungeonRuns.countCleared(alice.characterId)).toBe(0);
     // The entry is still spent — a wipe costs the attempt.
     expect(h.ctx.characters.byId(alice.characterId)!.dailyCounters.dungeon).toBe(1);
+    expect(h.ctx.characters.byId(alice.characterId)!.progression?.daily.dungeon).toBe(1);
   });
 });

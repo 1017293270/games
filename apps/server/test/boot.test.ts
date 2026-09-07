@@ -19,11 +19,11 @@ describe('boot', () => {
     expect(applied.map((m) => m.name)).toContain('001_init.sql');
   });
 
-  it('registers all 66 endpoints from the shared table', () => {
+  it('registers all 72 endpoints from the shared table', () => {
     h = createHarness();
-    expect(h.routes.total).toBe(66);
+    expect(h.routes.total).toBe(72);
     expect(h.routes.total).toBe(allEndpoints().length);
-    expect(h.routes.implemented.length + h.routes.pending.length).toBe(66);
+    expect(h.routes.implemented.length + h.routes.pending.length).toBe(72);
   });
 
   it('implements exactly the handlers registered in app.ts', () => {

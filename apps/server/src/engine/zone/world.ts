@@ -228,10 +228,10 @@ export class ZoneWorld {
    * returns. Called from inside the flush transaction, so the receipt and the
    * character row it describes land together or not at all.
    */
-  bankOffline(characterId: string, loot: ZoneLoot): void {
+  bankOffline(characterId: string, loot: ZoneLoot): ZoneLoot {
     const merged = mergeLoot(this.pendingLoot.get(characterId) ?? null, loot);
-    this.pendingLoot.set(characterId, merged);
     this.members.setLoot(characterId, merged);
+    return merged;
   }
 
   /** Puts a cultivator on the field and opens its accrual window. */

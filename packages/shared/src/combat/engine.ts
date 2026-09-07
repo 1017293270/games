@@ -20,6 +20,12 @@
  * `atk^2 / (atk + def) x power x crit x variance`, floored at 1.
  */
 
+import {
+  createTreasureRuntime,
+  stepTreasure,
+  absorbTreasureShield,
+  treasureAttackBonus,
+} from './treasure.js';
 import { createRng, type Rng } from '../core/rng.js';
 import type { Skill } from '../domain/skill.js';
 import type { Stats } from '../domain/stats.js';
@@ -49,7 +55,10 @@ export interface SimulateBattleOptions {
 }
 
 function toRuntime(c: Combatant, side: TeamSide, index: number): CombatantRuntime {
-  const maxHp = Math.max(1, Math.round(c.hp !== undefined ? Math.max(c.hp, c.stats.hp) : c.stats.hp));
+  const maxHp = Math.max(
+    1,
+    Math.round(c.hp !== undefined ? Math.max(c.hp, c.stats.hp) : c.stats.hp),
+  );
   const hp = Math.max(1, Math.round(c.hp ?? c.stats.hp));
   return {
     id: c.id,
@@ -58,6 +67,9 @@ function toRuntime(c: Combatant, side: TeamSide, index: number): CombatantRuntim
     index,
     base: c.stats,
     skills: c.skills.slice(0, 4),
+    ...(c.mainTreasure
+      ? { mainTreasure: c.mainTreasure, treasureRuntime: createTreasureRuntime(0) }
+      : {}),
     hp: Math.min(hp, maxHp),
     maxHp,
     mana: COMBAT_MANA_MAX,
@@ -136,9 +148,16 @@ function strike(
   defender: CombatantRuntime,
   power: number,
   rng: Rng,
+  now: number,
 ): DamageOutcome {
   const roll = rollDamage(
-    { stats: attacker.base, modifiers: attacker.modifiers },
+    {
+      stats: attacker.base,
+      modifiers: [
+        ...attacker.modifiers,
+        { stat: 'atk', amount: treasureAttackBonus(attacker.treasureRuntime, now) },
+      ],
+    },
     { stats: defender.base, modifiers: defender.modifiers },
     power,
     rng,
@@ -151,7 +170,10 @@ function strike(
  *
  * @throws if any combatant id is duplicated across the two teams.
  */
-export function simulateBattle(input: BattleInput, options: SimulateBattleOptions = {}): BattleResult {
+export function simulateBattle(
+  input: BattleInput,
+  options: SimulateBattleOptions = {},
+): BattleResult {
   const skillTable = options.skills ?? SKILL_BY_ID;
   const maxRounds = input.maxRounds ?? DEFAULT_MAX_ROUNDS;
   const rng = createRng(input.seed);
@@ -184,8 +206,9 @@ export function simulateBattle(input: BattleInput, options: SimulateBattleOption
     skillId: string | null,
     power: number,
   ): void => {
-    const outcome = strike(actor, target, power, rng);
+    const outcome = strike(actor, target, power, rng, (round - 1) * 1200);
     if (!outcome.dodged) {
+      outcome.amount = absorbTreasureShield(target.treasureRuntime, outcome.amount);
       target.hp = Math.max(0, target.hp - outcome.amount);
       damageDealt[actor.id] = (damageDealt[actor.id] ?? 0) + outcome.amount;
     }
@@ -343,6 +366,55 @@ export function simulateBattle(input: BattleInput, options: SimulateBattleOption
           targetIds: target ? [target.id] : [],
         });
         if (target) applyDamage(actor, target, null, BASIC_ATTACK_POWER);
+      }
+
+      if (actor.mainTreasure && actor.treasureRuntime) {
+        const treasure = actor.mainTreasure;
+        for (const effect of stepTreasure(treasure, actor.treasureRuntime, (round - 1) * 1200)) {
+          const targets = livingEnemies(units, actor)
+            .sort((a, b) => a.hp - b.hp || a.index - b.index)
+            .slice(0, effect.targets);
+          log.push({
+            type: 'skill_cast',
+            round,
+            actorId: actor.id,
+            skillId: treasure.definitionId,
+            skillName: treasure.name,
+            manaSpent: 0,
+            targetIds: effect.shieldFraction ? [actor.id] : targets.map((t) => t.id),
+          });
+          if (effect.shieldFraction) {
+            actor.treasureRuntime.shield = Math.max(
+              actor.treasureRuntime.shield,
+              Math.round(actor.maxHp * effect.shieldFraction),
+            );
+            log.push({
+              type: 'buff',
+              round,
+              actorId: actor.id,
+              targetId: actor.id,
+              skillId: treasure.definitionId,
+              stat: 'shield',
+              amount: actor.treasureRuntime.shield,
+              durationRounds: 7,
+            });
+          }
+          if (effect.attackBonus) {
+            log.push({
+              type: 'buff',
+              round,
+              actorId: actor.id,
+              targetId: actor.id,
+              skillId: treasure.definitionId,
+              stat: 'atk',
+              amount: effect.attackBonus,
+              durationRounds: 4,
+            });
+          }
+          if (effect.power)
+            for (const target of targets)
+              if (target.alive) applyDamage(actor, target, treasure.definitionId, effect.power);
+        }
       }
 
       if (!sideAlive('A') || !sideAlive('B')) {

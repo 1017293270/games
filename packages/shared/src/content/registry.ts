@@ -1,3 +1,4 @@
+import { TREASURES, RELICS } from './progression.js';
 /**
  * Cross-reference integrity for the content tables.
  *
@@ -43,12 +44,7 @@ function checkSkill(issues: ContentIssue[], where: string, skillId: string): voi
   if (!SKILL_BY_ID.has(skillId)) issues.push({ where, message: `unknown skill "${skillId}"` });
 }
 
-function checkZoneArea(
-  issues: ContentIssue[],
-  where: string,
-  zone: Zone,
-  area: ZoneArea,
-): void {
+function checkZoneArea(issues: ContentIssue[], where: string, zone: Zone, area: ZoneArea): void {
   if (!zoneAreaInBounds(area, zone.width, zone.height)) {
     issues.push({ where, message: `area ${area.x},${area.y} ${area.w}x${area.h} leaves the zone` });
   }
@@ -95,6 +91,7 @@ function checkEffects(issues: ContentIssue[], where: string, effects: readonly E
 /** Returns every dangling reference in the content tables. Empty means clean. */
 export function validateContent(): ContentIssue[] {
   const issues: ContentIssue[] = [];
+  for (const entry of [...TREASURES, ...RELICS]) checkArt(issues, entry.id, entry.art);
 
   for (const item of ITEMS) checkArt(issues, `item:${item.id}`, item.art);
 

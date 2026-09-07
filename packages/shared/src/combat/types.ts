@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { MainTreasureCombatSchema, type MainTreasureCombat } from '../domain/progression.js';
+import type { TreasureRuntime } from './treasure.js';
 import { ART_IDS } from '../core/art.js';
 import { StatsSchema, type Stats } from '../domain/stats.js';
 
@@ -25,6 +27,7 @@ export const CombatantSchema = z.object({
   name: z.string().min(1),
   art: ArtIdSchema.optional(),
   stats: StatsSchema,
+  mainTreasure: MainTreasureCombatSchema.optional(),
   /** Up to four 神通 ids, cast in rotation order. */
   skills: z.array(z.string().min(1)).max(4),
   /** Overrides starting 气血; used for raid blood pools and wounded raiders. */
@@ -153,6 +156,8 @@ export interface CombatantRuntime {
   readonly index: number;
   readonly base: Stats;
   readonly skills: readonly string[];
+  mainTreasure?: MainTreasureCombat;
+  treasureRuntime?: TreasureRuntime;
   hp: number;
   maxHp: number;
   mana: number;
@@ -161,6 +166,6 @@ export interface CombatantRuntime {
   /** Remaining cooldown per skill, positionally aligned with `skills`. */
   cooldowns: number[];
   /** Active stat modifiers with their remaining round counts. */
-  modifiers: { stat: keyof Stats; amount: number; rounds: number }[];
+  modifiers: { stat: keyof Stats; amount: number; rounds: number; source?: string }[];
   alive: boolean;
 }

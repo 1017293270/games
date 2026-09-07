@@ -1,4 +1,4 @@
-import { stageName, ZONE_FLAGS, type ZoneRosterEntry } from '@xianxia/shared';
+import { TREASURE_FORM_NAMES, stageName, ZONE_FLAGS, type ZoneRosterEntry } from '@xianxia/shared';
 import { ProgressBar } from '../../design';
 import { useZoneStore, zoneFrames } from '../../store/zone';
 import './zone.css';
@@ -98,6 +98,15 @@ export function ZoneList() {
               label={`${entry.name} 气血`}
             />
 
+            {entry.mainTreasure && (
+              <div className="zone-row__meta">
+                <span>
+                  本命 · {entry.mainTreasure.name}（{TREASURE_FORM_NAMES[entry.mainTreasure.form]}）
+                </span>
+                <span>威能间隔 {entry.mainTreasure.intervalMs / 1000} 秒</span>
+                {(track?.shield ?? 0) > 0 && <span>法宝护盾 {track?.shield}</span>}
+              </div>
+            )}
             <div className="zone-row__meta">
               <span className="numeral">
                 {Math.max(0, hp).toLocaleString('zh-CN')} / {entry.maxHp.toLocaleString('zh-CN')}

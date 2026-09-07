@@ -14,6 +14,8 @@
 
 import {
   addCultivator,
+  mainTreasureCombat,
+  getProgression,
   buildFrame,
   canEnterZone,
   createZoneSim,
@@ -141,6 +143,15 @@ export function createZoneDriver(bridge: Bridge): MockZoneDriver {
     for (const kill of out.kills) {
       if (kill.killerI !== selfSlot) continue;
       const monster = kill.monsterId ? MONSTER_BY_ID.get(kill.monsterId) : undefined;
+      const self = sim.entities[selfSlot];
+      const char = self && world.characters.get(self.id);
+      if (char) {
+        const progression = getProgression(char.progression, Date.now());
+        progression.daily.kills++;
+        if (kill.isBoss && !progression.achievements.includes('first_boss'))
+          progression.achievements.push('first_boss');
+        world.characters.set(char.id, { ...char, progression });
+      }
       const kills = tally.kills + 1;
       // Stand-in for the drop table: every fifth 妖兽, and every BOSS, parts
       // with the first thing on its own loot list.
@@ -205,6 +216,7 @@ export function createZoneDriver(bridge: Bridge): MockZoneDriver {
           stageIndex: char.stageIndex,
           stats,
           skills: char.skillSlots,
+          mainTreasure: mainTreasureCombat(char.progression),
           hpShare: char.hpPercent,
           online: true,
           aggression: 0.1,
@@ -219,6 +231,7 @@ export function createZoneDriver(bridge: Bridge): MockZoneDriver {
             stageIndex: bot.stageIndex,
             stats: statsFor(bot, []).stats,
             skills: bot.skillSlots,
+            mainTreasure: mainTreasureCombat(bot.progression),
             hpShare: 1,
             online: isOnline(bot),
             aggression: bot.botParams?.aggression ?? 0.2,

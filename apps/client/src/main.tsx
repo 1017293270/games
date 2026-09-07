@@ -4,6 +4,7 @@ import './design/tokens.css';
 import './design/base.css';
 import './design/components.css';
 import './shell/shell.css';
+import './design/vivid.css';
 import { App } from './app/App';
 
 async function boot(): Promise<void> {

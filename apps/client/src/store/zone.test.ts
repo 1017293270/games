@@ -428,3 +428,35 @@ describe('zone store · 进图节流', () => {
     expect(emit).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('main treasure projections', () => {
+  it('uses server shield values, clears on unequip and ignores projections without a treasure', () => {
+    const store = useZoneStore.getState();
+    store.applyJoined(joined());
+    const entry = roster(0, {
+      kind: 'player',
+      id: 'char-demo',
+      mainTreasure: {
+        definitionId: 't-starter-bell',
+        name: '清音铃',
+        art: 'item/treasure-bell',
+        form: 'bell',
+        power: 1,
+        intervalMs: 1000,
+        awakened: false,
+      },
+    });
+    store.applyFrame(frame({ seq: 2, add: [entry], treasureStates: [{ i: 0, shield: 25 }] }));
+    expect(zoneFrames.get(0)?.shield).toBe(25);
+    store.applyFrame(
+      frame({
+        seq: 3,
+        add: [roster(0, { kind: 'player', id: 'char-demo' })],
+        treasureStates: [{ i: 0, shield: 50 }],
+      }),
+    );
+    expect(zoneFrames.get(0)?.shield).toBe(0);
+    store.applyFrame(frame({ seq: 4, remove: [0] }));
+    expect(zoneFrames.has(0)).toBe(false);
+  });
+});

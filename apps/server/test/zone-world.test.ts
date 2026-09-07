@@ -1,4 +1,5 @@
 import { rmSync } from 'node:fs';
+import { generateBots } from '../src/engine/bots/generate.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   computeStats,
@@ -78,6 +79,46 @@ describe('zone world', () => {
     await h.close();
   });
 
+  it('keeps deltas and offline receipts untouched when the flush rolls back', async () => {
+    const p = await makePlayer(h);
+    h.ctx.zones.enter(p.characterId, ZONE, h.clock.now());
+    const world = worldOf(h);
+    const before = h.ctx.characters.byId(p.characterId)!;
+    world.delta(p.characterId, h.clock.now()).stones = 123;
+    h.ctx.db.exec(`CREATE TRIGGER fail_zone_save BEFORE UPDATE ON characters
+      BEGIN SELECT RAISE(ABORT, 'injected write failure'); END;`);
+    expect(() => h.ctx.zones.flush(h.clock.now())).toThrow('injected write failure');
+    expect(world.deltas.get(p.characterId)?.stones).toBe(123);
+    expect(world.pendingLoot.has(p.characterId)).toBe(false);
+    expect(h.ctx.characters.byId(p.characterId)?.spiritStones).toBe(before.spiritStones);
+    h.ctx.db.exec('DROP TRIGGER fail_zone_save');
+    h.ctx.zones.flush(h.clock.now());
+    expect(h.ctx.characters.byId(p.characterId)?.spiritStones).toBe(before.spiritStones + 123);
+    expect(world.pendingLoot.get(p.characterId)?.spiritStones).toBe(123);
+  });
+
+  it('preserves rewards flushed when a bot leaves during its tick', () => {
+    h.ctx.settings.patch({ botCount: 0 });
+    h.clock.set(Date.UTC(2026, 0, 1, 2));
+    const [bot] = generateBots(
+      h.ctx,
+      {
+        count: 1,
+        archetypeId: 'bot-sanxiu',
+        minStageIndex: 0,
+        maxStageIndex: 0,
+        seed: 77,
+      },
+      h.clock.now(),
+    );
+    if (!bot) throw new Error('bot missing');
+    expect(h.ctx.zones.enterBot(bot, ZONE, h.clock.now())).toBe(true);
+    worldOf(h).delta(bot.id, h.clock.now()).stones = 123;
+    h.ctx.bots.tick(h.clock.now());
+    expect(h.ctx.zones.zoneOf(bot.id)).toBe(null);
+    expect(h.ctx.characters.byId(bot.id)?.spiritStones).toBe(bot.spiritStones + 123);
+  });
+
   it('banks 修为, 灵石, 掉落 and 击杀 quest counters on flush', async () => {
     const p = await makePlayer(h);
     promote(h, p.characterId, 12);
@@ -119,8 +160,7 @@ describe('zone world', () => {
     const bankedExp = delta.exp;
     const bankedStones = delta.stones;
     const drops = [...delta.items.entries()].map(
-      ([itemId, qty]) =>
-        [itemId, qty, h.ctx.inventory.quantityOf(p.characterId, itemId)] as const,
+      ([itemId, qty]) => [itemId, qty, h.ctx.inventory.quantityOf(p.characterId, itemId)] as const,
     );
     const wolves = delta.monsterKills.get('monster-qingyun-wolf') ?? 0;
     expect(wolves).toBeGreaterThan(0);
@@ -246,10 +286,7 @@ describe('zone world', () => {
       const monster = MONSTER_BY_ID.get(monsterId);
       if (!monster) continue;
       expected +=
-        n *
-        Math.round(
-          monster.expReward * settings.zoneRewardScale * settings.zoneOfflineYield,
-        );
+        n * Math.round(monster.expReward * settings.zoneRewardScale * settings.zoneOfflineYield);
     }
     expect(delta?.exp).toBe(expected);
   });
@@ -694,7 +731,10 @@ function memberRow(h: Harness, characterId: string): { zone_id: string } | undef
 }
 
 /** The 离线战果 column as the client would see it, parsed straight from SQLite. */
-function memberLoot(h: { ctx: { db: Harness['ctx']['db'] } }, characterId: string): ZoneLoot | null {
+function memberLoot(
+  h: { ctx: { db: Harness['ctx']['db'] } },
+  characterId: string,
+): ZoneLoot | null {
   const row = h.ctx.db
     .prepare('SELECT loot_json FROM zone_members WHERE character_id = ?')
     .get(characterId) as { loot_json: string | null } | undefined;

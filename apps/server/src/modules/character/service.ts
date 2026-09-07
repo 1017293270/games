@@ -1,3 +1,4 @@
+import { progressEvent } from '../../game/progression.js';
 import { randomUUID } from 'node:crypto';
 import {
   attemptBreakthrough,
@@ -175,7 +176,10 @@ export function breakthrough(
     const held = ctx.inventory.quantityOf(state.id, BREAKTHROUGH_PILL_ID);
     if (held < requested) {
       const name = ITEM_BY_ID.get(BREAKTHROUGH_PILL_ID)?.name ?? BREAKTHROUGH_PILL_ID;
-      throw new ApiError('INSUFFICIENT_ITEMS', `${name}不足，需要 ${requested} 颗，你只有 ${held} 颗`);
+      throw new ApiError(
+        'INSUFFICIENT_ITEMS',
+        `${name}不足，需要 ${requested} 颗，你只有 ${held} 颗`,
+      );
     }
   }
 
@@ -236,7 +240,9 @@ export function breakthrough(
   }
 
   const next = withFreshPower(
-    attempt.character,
+    attempt.success
+      ? progressEvent(attempt.character, now, 'first_breakthrough')
+      : attempt.character,
     resolveEquipment(attempt.character, ctx.inventory),
   );
   ctx.characters.save(next);

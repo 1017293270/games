@@ -5,6 +5,7 @@
 
 import {
   fail,
+  getProgression,
   ok,
   stageName,
   type ApiResult,
@@ -30,25 +31,27 @@ export function installMock(): void {
 }
 
 export function installMockTransport(): void {
-  setMockTransport(async (endpoint: Endpoint, input, params, token): Promise<ApiResult<unknown>> => {
-    // A touch of latency so loading states are real rather than theoretical.
-    await new Promise((resolve) => setTimeout(resolve, 60));
-    const handler = findHandler(endpoint);
-    if (!handler) {
-      return fail('NOT_FOUND', `mock 未实现 ${endpoint.method} ${endpoint.path}`);
-    }
-    const ctx = makeCtx(token);
-    if (endpoint.auth !== 'none' && !ctx.user) {
-      return fail('UNAUTHORIZED', '登录状态已失效，请重新登录');
-    }
-    try {
-      return ok(handler(ctx, (input ?? {}) as Record<string, unknown>, params));
-    } catch (error) {
-      if (error instanceof MockFail) return fail(error.code, error.message);
-      console.error('[mock] handler threw', endpoint.path, error);
-      return fail('INTERNAL_ERROR', '模拟服务出错，详见控制台');
-    }
-  });
+  setMockTransport(
+    async (endpoint: Endpoint, input, params, token): Promise<ApiResult<unknown>> => {
+      // A touch of latency so loading states are real rather than theoretical.
+      await new Promise((resolve) => setTimeout(resolve, 60));
+      const handler = findHandler(endpoint);
+      if (!handler) {
+        return fail('NOT_FOUND', `mock 未实现 ${endpoint.method} ${endpoint.path}`);
+      }
+      const ctx = makeCtx(token);
+      if (endpoint.auth !== 'none' && !ctx.user) {
+        return fail('UNAUTHORIZED', '登录状态已失效，请重新登录');
+      }
+      try {
+        return ok(handler(ctx, (input ?? {}) as Record<string, unknown>, params));
+      } catch (error) {
+        if (error instanceof MockFail) return fail(error.code, error.message);
+        console.error('[mock] handler threw', endpoint.path, error);
+        return fail('INTERNAL_ERROR', '模拟服务出错，详见控制台');
+      }
+    },
+  );
 }
 
 const BOT_CHAT_LINES = [
@@ -187,6 +190,11 @@ export function createMockSocket(): GameSocket {
         text: payload.text,
         sentAt: Date.now(),
       };
+      if (char) {
+        const progression = getProgression(char.progression, Date.now());
+        progression.daily.chat++;
+        world.characters.set(char.id, { ...char, progression });
+      }
       world.chat.push(message);
       bridge('chat:message', message);
     },

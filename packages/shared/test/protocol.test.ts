@@ -60,6 +60,7 @@ describe('endpoint registry', () => {
         'auth',
         'npc',
         'party',
+        'progression',
         'quests',
         'raid',
         'shop',
@@ -114,7 +115,11 @@ describe('endpoint registry', () => {
   it('leaves only registration, login and admin login unauthenticated', () => {
     const open = endpoints.filter((e) => e.endpoint.auth === 'none').map((e) => e.endpoint.path);
     expect(open.sort()).toEqual(
-      [`${API_PREFIX}/auth/register`, `${API_PREFIX}/auth/login`, `${API_PREFIX}/admin/login`].sort(),
+      [
+        `${API_PREFIX}/auth/register`,
+        `${API_PREFIX}/auth/login`,
+        `${API_PREFIX}/admin/login`,
+      ].sort(),
     );
   });
 
@@ -144,8 +149,9 @@ describe('response envelope', () => {
   });
 
   it('rejects an unknown error code', () => {
-    expect(ApiFailureSchema.safeParse({ ok: false, error: { code: 'NOPE', message: 'x' } }).success)
-      .toBe(false);
+    expect(
+      ApiFailureSchema.safeParse({ ok: false, error: { code: 'NOPE', message: 'x' } }).success,
+    ).toBe(false);
   });
 
   it('rejects a success payload whose data does not match', () => {
@@ -194,8 +200,9 @@ describe('request schemas parse realistic payloads', () => {
   });
 
   it('rejects a bad username', () => {
-    expect(RegisterRequestSchema.safeParse({ username: 'a', password: 'longenough' }).success)
-      .toBe(false);
+    expect(RegisterRequestSchema.safeParse({ username: 'a', password: 'longenough' }).success).toBe(
+      false,
+    );
     expect(
       RegisterRequestSchema.safeParse({ username: 'has spaces', password: 'longenough' }).success,
     ).toBe(false);
@@ -268,7 +275,12 @@ describe('domain payloads round-trip', () => {
     lastSettledAt: T0,
     lastSeenAt: T0,
     createdAt: T0 - 86400_000,
-    dailyCounters: { date: '2023-11-14', dungeon: 1, arena: 3, gatherAt: { 'map-qingyun-mountain': T0 } },
+    dailyCounters: {
+      date: '2023-11-14',
+      dungeon: 1,
+      arena: 3,
+      gatherAt: { 'map-qingyun-mountain': T0 },
+    },
     arenaRating: 1180,
     arenaWins: 12,
     arenaLosses: 4,
@@ -288,8 +300,9 @@ describe('domain payloads round-trip', () => {
   });
 
   it('rejects the wrong number of skill slots', () => {
-    expect(CharacterStateSchema.safeParse({ ...character, skillSlots: [null, null] }).success)
-      .toBe(false);
+    expect(CharacterStateSchema.safeParse({ ...character, skillSlots: [null, null] }).success).toBe(
+      false,
+    );
   });
 
   it('parses a PublicProfile', () => {
@@ -357,8 +370,9 @@ describe('domain payloads round-trip', () => {
   });
 
   it('rejects settings outside their guard rails', () => {
-    expect(WorldSettingsSchema.safeParse({ ...DEFAULT_WORLD_SETTINGS, botCount: -1 }).success)
-      .toBe(false);
+    expect(WorldSettingsSchema.safeParse({ ...DEFAULT_WORLD_SETTINGS, botCount: -1 }).success).toBe(
+      false,
+    );
     expect(
       WorldSettingsSchema.safeParse({ ...DEFAULT_WORLD_SETTINGS, offlineCapHours: 10_000 }).success,
     ).toBe(false);
@@ -437,7 +451,9 @@ describe('socket contract', () => {
     expect(ChatSendSchema.parse({ channel: 'world', text: '有道友在么' }).channel).toBe('world');
     expect(ChatSendSchema.safeParse({ channel: 'system', text: 'x' }).success).toBe(false);
     expect(ChatSendSchema.safeParse({ channel: 'world', text: '' }).success).toBe(false);
-    expect(ChatSendSchema.safeParse({ channel: 'world', text: 'x'.repeat(201) }).success).toBe(false);
+    expect(ChatSendSchema.safeParse({ channel: 'world', text: 'x'.repeat(201) }).success).toBe(
+      false,
+    );
   });
 
   it('exposes a runtime validator for every client event', () => {

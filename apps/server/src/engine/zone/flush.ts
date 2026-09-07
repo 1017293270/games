@@ -1,14 +1,23 @@
+import { progressEvent } from '../../game/progression.js';
 import {
   ITEM_BY_ID,
+  awardProgressionMaterials,
   refreshCultivator,
   type CharacterState,
   type Stats,
+  type MainTreasureCombat,
   type WorldSettings,
   type ZoneLoot,
 } from '@xianxia/shared';
 import type { AppContext } from '../../context.js';
 import { transact } from '../../db/index.js';
-import { resolveEquipment, settle, statsOf, withFreshPower } from '../../game/character.js';
+import {
+  mainTreasureOf,
+  resolveEquipment,
+  settle,
+  statsOf,
+  withFreshPower,
+} from '../../game/character.js';
 import { grantExp } from '../../game/rewards.js';
 import { recordMonsterKill } from '../../modules/quest/service.js';
 import type { ZoneDelta, ZoneWorld } from './world.js';
@@ -66,6 +75,7 @@ function deltaIsEmpty(delta: ZoneDelta): boolean {
 interface PendingRefresh {
   slot: number;
   stats: Stats;
+  mainTreasure: MainTreasureCombat | undefined;
   skills: (string | null)[];
   stageIndex: number;
 }
@@ -91,6 +101,8 @@ export function flushZone(
   const pushes: PendingPush[] = [];
   const refreshes: PendingRefresh[] = [];
   const vanished: string[] = [];
+  const consumed: string[] = [];
+  const receipts = new Map<string, ZoneLoot>();
 
   transact(ctx.db, () => {
     for (const id of ids) {
@@ -103,11 +115,11 @@ export function flushZone(
       // twice a minute to add zero to them would cost more than the simulation.
       const banked = !deltaIsEmpty(delta);
       if (!banked && world.entityOf(id)?.kind !== 'player') continue;
-      if (banked) world.deltas.delete(id);
+      if (banked) consumed.push(id);
 
       const fresh = ctx.characters.byId(id);
       if (!fresh) {
-        world.deltas.delete(id);
+        consumed.push(id);
         vanished.push(id);
         continue;
       }
@@ -135,6 +147,16 @@ export function flushZone(
         for (let n = 0; n < count; n += 1) next = recordMonsterKill(next, monsterId);
       }
 
+      if (delta.kills > 0) next = progressEvent(next, now, 'kills', delta.kills);
+      if (delta.bossKills > 0) {
+        next = progressEvent(next, now, 'first_boss');
+        if (next.progression && !next.isBot) {
+          awardProgressionMaterials(next.progression, {
+            jade: delta.bossKills * 20,
+            starStones: delta.bossKills * 5,
+          });
+        }
+      }
       const equipment = resolveEquipment(next, ctx.inventory);
       next = withFreshPower(next, equipment);
 
@@ -143,6 +165,7 @@ export function flushZone(
         refreshes.push({
           slot,
           stats: statsOf(next, equipment),
+          mainTreasure: mainTreasureOf(next),
           skills: next.skillSlots,
           stageIndex: next.stageIndex,
         });
@@ -169,12 +192,15 @@ export function flushZone(
       // reached the character row — they always did — but the 「闭关归来 ›
       // 挂机战果」 panel had nothing to show for a night on the field.
       if (ctx.presence.isOnline(next.id)) pushes.push({ state: next, loot });
-      else world.bankOffline(next.id, loot);
+      else receipts.set(next.id, world.bankOffline(next.id, loot));
     }
 
     ctx.characters.saveMany(dirty);
   });
 
+  // Keep pending rewards available if any database write rolled back.
+  for (const id of consumed) world.deltas.delete(id);
+  for (const [id, loot] of receipts) world.pendingLoot.set(id, loot);
   result.characters = dirty.length;
 
   // The field's copy of a cultivator is refreshed from the row that was just
@@ -183,6 +209,7 @@ export function flushZone(
   for (const refresh of refreshes) {
     refreshCultivator(world.sim, refresh.slot, {
       stats: refresh.stats,
+      mainTreasure: refresh.mainTreasure,
       skills: refresh.skills,
       stageIndex: refresh.stageIndex,
       maxHp: refresh.stats.hp,

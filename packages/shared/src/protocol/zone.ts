@@ -1,3 +1,4 @@
+import { MainTreasureCombatSchema } from '../domain/progression.js';
 /**
  * 战斗大地图 wire protocol.
  *
@@ -41,6 +42,7 @@ export const ZoneRosterEntrySchema = z.object({
   art: ArtIdSchema.nullable(),
   stageIndex: z.number().int().min(0).max(MAX_STAGE_INDEX),
   maxHp: z.number().int().min(1),
+  mainTreasure: MainTreasureCombatSchema.optional(),
 });
 export type ZoneRosterEntry = z.infer<typeof ZoneRosterEntrySchema>;
 
@@ -123,6 +125,9 @@ export const ZoneFrameSchema = z.object({
   remove: z.array(z.number().int().min(0)),
   ents: z.array(ZoneEntityTupleSchema),
   events: z.array(ZoneEventSchema),
+  treasureStates: z
+    .array(z.object({ i: z.number().int().min(0), shield: z.number().min(0) }))
+    .optional(),
   boss: z.object({
     alive: z.boolean(),
     /** Epoch ms of the next appearance; null while one is already on the field. */

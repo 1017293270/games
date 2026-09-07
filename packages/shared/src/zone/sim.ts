@@ -30,6 +30,14 @@
  * job, because only the service can read and write a character row.
  */
 
+import type { MainTreasureCombat } from '../domain/progression.js';
+import {
+  createTreasureRuntime,
+  stepTreasure,
+  absorbTreasureShield,
+  treasureAttackBonus,
+  type TreasureRuntime,
+} from '../combat/treasure.js';
 import type { Rng } from '../core/rng.js';
 import { createRng } from '../core/rng.js';
 import { clamp } from '../core/util.js';
@@ -151,6 +159,8 @@ export interface ZoneEntity {
   stats: Stats;
   /** Up to four 神通 ids, cast in rotation order. */
   skills: string[];
+  mainTreasure?: MainTreasureCombat;
+  treasureRuntime?: TreasureRuntime;
   /** Content id behind a 妖兽/BOSS; null for cultivators. */
   monsterId: string | null;
 
@@ -176,7 +186,7 @@ export interface ZoneEntity {
   /** Remaining cooldown per skill, in *actions*, aligned with `skills`. */
   cooldowns: number[];
   /** Active modifiers, counted down in actions rather than seconds. */
-  modifiers: { stat: keyof Stats; amount: number; actions: number }[];
+  modifiers: { stat: keyof Stats; amount: number; actions: number; source?: string }[];
 
   respawnAt: number;
   protectedUntil: number;
@@ -265,6 +275,7 @@ export interface AddCultivatorInput {
   stageIndex: number;
   stats: Stats;
   skills: readonly (string | null)[];
+  mainTreasure?: MainTreasureCombat;
   /** Current 气血 as a fraction of the ceiling, i.e. `CharacterState.hpPercent`. */
   hpShare: number;
   online: boolean;
@@ -275,6 +286,7 @@ export interface AddCultivatorInput {
 export interface RefreshCultivatorInput {
   stats: Stats;
   skills: readonly (string | null)[];
+  mainTreasure?: MainTreasureCombat;
   stageIndex: number;
   maxHp: number;
 }
@@ -357,6 +369,7 @@ function rosterEntry(e: ZoneEntity): ZoneRosterEntry {
     art: e.art,
     stageIndex: e.stageIndex,
     maxHp: e.maxHp,
+    ...(e.mainTreasure ? { mainTreasure: e.mainTreasure } : {}),
   };
 }
 
@@ -577,6 +590,9 @@ export function addCultivator(sim: ZoneSim, input: AddCultivatorInput): ZoneEnti
     spawnGroup: -1,
     range: reachOf(skills),
     nextActionAt: sim.now,
+    ...(input.mainTreasure
+      ? { mainTreasure: input.mainTreasure, treasureRuntime: createTreasureRuntime(sim.now) }
+      : {}),
     mana: COMBAT_MANA_MAX,
     rotation: 0,
     cooldowns: new Array<number>(skills.length).fill(0),
@@ -685,6 +701,14 @@ export function refreshCultivator(sim: ZoneSim, i: number, input: RefreshCultiva
   const share = e.maxHp > 0 ? e.hp / e.maxHp : 1;
   const maxHp = Math.max(1, Math.round(input.maxHp));
   e.stats = input.stats;
+  if (input.mainTreasure) {
+    if (e.mainTreasure?.definitionId !== input.mainTreasure.definitionId)
+      e.treasureRuntime = createTreasureRuntime(sim.now);
+    e.mainTreasure = input.mainTreasure;
+  } else {
+    delete e.mainTreasure;
+    delete e.treasureRuntime;
+  }
   e.stageIndex = input.stageIndex;
   e.skills = input.skills
     .filter((s): s is string => typeof s === 'string' && s.length > 0)
@@ -882,6 +906,7 @@ function respawnPhase(sim: ZoneSim, out: ZoneStepOutput): void {
     e.damageTaken.clear();
     e.respawnAt = 0;
     e.nextActionAt = sim.now + actionIntervalMs(e);
+    if (e.mainTreasure) e.treasureRuntime = createTreasureRuntime(sim.now);
     markDirty(e);
   }
 
@@ -1015,8 +1040,8 @@ function moveToward(sim: ZoneSim, e: ZoneEntity, to: ZonePoint, step: number): v
   e.y = clamp(e.y + (dy / d) * travel, 0, sim.zone.height);
 }
 
-function modifiersOf(e: ZoneEntity): readonly StatModifier[] {
-  return e.modifiers;
+function modifiersOf(e: ZoneEntity, now: number): readonly StatModifier[] {
+  return [...e.modifiers, { stat: 'atk', amount: treasureAttackBonus(e.treasureRuntime, now) }];
 }
 
 function applyModifiers(actor: ZoneEntity, target: ZoneEntity, skill: Skill): void {
@@ -1140,8 +1165,8 @@ function strike(
   out: ZoneStepOutput,
 ): void {
   const roll = rollDamage(
-    { stats: actor.stats, modifiers: modifiersOf(actor) },
-    { stats: target.stats, modifiers: modifiersOf(target) },
+    { stats: actor.stats, modifiers: modifiersOf(actor, sim.now) },
+    { stats: target.stats, modifiers: modifiersOf(target, sim.now) },
     power,
     sim.rng,
   );
@@ -1153,7 +1178,7 @@ function strike(
   actor.flags |= roll.crit ? ZONE_FLAGS.HIT | ZONE_FLAGS.CRIT : ZONE_FLAGS.HIT;
   target.flags |= ZONE_FLAGS.HIT;
   markDirty(actor);
-  recordDamage(target, actor, roll.damage, sim.now);
+  recordDamage(target, actor, absorbTreasureShield(target.treasureRuntime, roll.damage), sim.now);
   if (target.hp <= 0 && target.state !== 'dead') killEntity(sim, target, actor, out);
 }
 
@@ -1205,7 +1230,7 @@ function act(sim: ZoneSim, e: ZoneEntity, target: ZoneEntity, out: ZoneStepOutpu
           strike(sim, e, hit, chosen.power, out);
           break;
         case 'heal': {
-          const atk = effectiveStat(e.stats, modifiersOf(e), 'atk');
+          const atk = effectiveStat(e.stats, modifiersOf(e, sim.now), 'atk');
           const amount = Math.max(1, Math.round(Math.min(atk * chosen.power, hit.maxHp - hit.hp)));
           if (hit.hp < hit.maxHp) {
             hit.hp = Math.min(hit.maxHp, hit.hp + amount);
@@ -1246,10 +1271,25 @@ function act(sim: ZoneSim, e: ZoneEntity, target: ZoneEntity, out: ZoneStepOutpu
 function actPhase(sim: ZoneSim, out: ZoneStepOutput): void {
   for (const e of sim.entities) {
     if (!e || e.state === 'dead') continue;
-    if (e.nextActionAt > sim.now) continue;
     const target = livingAt(sim, e.targetI);
     if (!target) continue;
     if (distance(e, target) > e.range) continue;
+    if (e.mainTreasure && e.treasureRuntime) {
+      for (const effect of stepTreasure(e.mainTreasure, e.treasureRuntime, sim.now)) {
+        if (effect.shieldFraction) {
+          e.treasureRuntime.shield = Math.max(
+            e.treasureRuntime.shield,
+            Math.round(e.maxHp * effect.shieldFraction),
+          );
+          markDirty(e);
+        }
+
+        if (effect.power)
+          for (const t of splashTargets(sim, e, target).slice(0, effect.targets))
+            if (t.state !== 'dead') strike(sim, e, t, effect.power, out);
+      }
+    }
+    if (e.nextActionAt > sim.now || target.state === 'dead') continue;
     act(sim, e, target, out);
   }
 }
@@ -1348,6 +1388,9 @@ export function buildFrame(sim: ZoneSim, full: boolean): ZoneFrame {
     }
   }
 
+  const treasureStates = sim.entities
+    .filter((e): e is ZoneEntity => !!e && !!e.mainTreasure && (full || e.dirty))
+    .map((e) => ({ i: e.i, shield: e.treasureRuntime?.shield ?? 0 }));
   const remove = full ? [] : sim.pendingRemoves;
   if (!full) sim.pendingRemoves = [];
 
@@ -1373,6 +1416,7 @@ export function buildFrame(sim: ZoneSim, full: boolean): ZoneFrame {
     remove,
     ents,
     events,
+    ...(treasureStates.length ? { treasureStates } : {}),
     boss: {
       alive: sim.bossI !== null,
       nextAt: sim.bossI === null ? sim.nextBossAt : null,
