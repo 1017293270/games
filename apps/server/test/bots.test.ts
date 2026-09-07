@@ -8,7 +8,7 @@ import {
   ZONE_BOT_MIN_STAY_MS,
 } from '@xianxia/shared';
 import type { CharacterState } from '@xianxia/shared';
-import { eloDelta, insightWorld } from '../src/engine/bots/engine.js';
+import { eloDelta, insightWorld, ZONE_ENTER_CHANCE } from '../src/engine/bots/engine.js';
 import { generateBots } from '../src/engine/bots/generate.js';
 import { BOT_CHAT_TEMPLATES, renderBotLine } from '../src/engine/bots/chatter.js';
 import type { ZoneEnterResult, ZoneService, ZoneStats } from '../src/engine/zone/api.js';
@@ -324,16 +324,24 @@ describe('bot engine', () => {
     expect(h.ctx.characters.byId(bot!.id)!.hpPercent).toBe(1);
   });
 
-  /** A world of 散修 (`explorePref: 'explore'`), which is what fills the maps. */
-  const seedWanderers = (zones: FakeZoneService, count = 20): CharacterState[] => {
+  /** A world of one archetype, low enough that 青云山 is the only map for it. */
+  const seedCohort = (
+    zones: FakeZoneService,
+    archetypeId: string,
+    count: number,
+  ): CharacterState[] => {
     h.ctx.zones = zones;
     h.ctx.settings.patch({ botCount: 0 });
     return generateBots(
       h.ctx,
-      { count, archetypeId: 'bot-sanxiu', minStageIndex: 0, maxStageIndex: 1, seed: 17 },
+      { count, archetypeId, minStageIndex: 0, maxStageIndex: 1, seed: 17 },
       h.clock.now(),
     );
   };
+
+  /** A world of 散修, awake 06:00-22:00 UTC. */
+  const seedWanderers = (zones: FakeZoneService, count = 20): CharacterState[] =>
+    seedCohort(zones, 'bot-sanxiu', count);
 
   it('sends 散修 out to the 战斗大地图 their 境界 belongs on', () => {
     const zones = new FakeZoneService();
@@ -367,6 +375,37 @@ describe('bot engine', () => {
 
     expect(zones.botRetreats.map((r) => r.id).sort()).toEqual(wanderers.map((b) => b.id).sort());
     expect(zones.standing.size).toBe(0);
+    expect(zones.botEnters).toHaveLength(0);
+  });
+
+  it('fills a map at an hour when nobody would ever roll 历练', () => {
+    const zones = new FakeZoneService();
+    // 02:00 UTC: 散修 and 隐士 are asleep, and every archetype still awake has
+    // an `explorePref` of 'cultivate' or 'arena'. Gating 进图 on the 历练
+    // action left the maps empty from 22:00 to 06:00 UTC on a cold world.
+    h.clock.set(Date.UTC(2026, 0, 2, 2, 0, 0));
+    const bots = seedCohort(zones, 'bot-kuxiu', 120);
+
+    h.clock.advance(30_000);
+    h.ctx.bots.tick(h.clock.now());
+
+    // One tick, so nobody has had a chance to roll twice.
+    expect(zones.botEnters.length).toBeGreaterThan(bots.length * (ZONE_ENTER_CHANCE - 0.15));
+    expect(zones.botEnters.length).toBeLessThan(bots.length * (ZONE_ENTER_CHANCE + 0.15));
+    for (const entry of zones.botEnters) expect(entry.zoneId).toBe('map-qingyun-mountain');
+  });
+
+  it('still leaves the map alone while a bot is off-hours', () => {
+    const zones = new FakeZoneService();
+    // 隐士 keeps a 04:00-10:00 UTC window, so at 02:00 the flat 进图 roll never
+    // gets asked.
+    h.clock.set(Date.UTC(2026, 0, 2, 2, 0, 0));
+    seedCohort(zones, 'bot-yinshi', 60);
+
+    for (let i = 0; i < 3; i += 1) {
+      h.clock.advance(30_000);
+      h.ctx.bots.tick(h.clock.now());
+    }
     expect(zones.botEnters).toHaveLength(0);
   });
 

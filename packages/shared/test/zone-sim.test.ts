@@ -8,11 +8,13 @@ import {
   ZONE_BY_ID,
   ZONE_PVP_PROTECT_MS,
   ZONE_SEEK_RADIUS,
+  ZONE_TIER_SPREAD,
   zoneBotLimit,
   zoneFor,
   zoneKillDemand,
   zoneSpawnThroughput,
 } from '../src/content/zones.js';
+import { createRng } from '../src/core/rng.js';
 import { EXPLORE_MAP_BY_ID } from '../src/content/maps.js';
 import { ZONE_FLAGS } from '../src/protocol/zone.js';
 import {
@@ -1061,6 +1063,56 @@ describe('zone content', () => {
     expect(zoneFor(10).id).toBe('map-youming-valley');
     expect(zoneFor(35).id).toBe('map-kunlun-ruins');
     expect(ZONE_BY_ID.get('map-kunlun-ruins')?.floorArt).toBe('zone/kunlun-ruins');
+  });
+
+  /** Shares of 10 000 rolls at `stageIndex`, keyed by zone id. */
+  function spread(stageIndex: number, seed: number): Map<string, number> {
+    const rolls = 10_000;
+    const rng = createRng(seed);
+    const counts = new Map<string, number>();
+    for (let n = 0; n < rolls; n += 1) {
+      const id = zoneFor(stageIndex, rng).id;
+      counts.set(id, (counts.get(id) ?? 0) + 1);
+    }
+    return new Map([...counts].map(([id, count]) => [id, count / rolls]));
+  }
+
+  /** Share the sample is allowed to drift from the constant, in points. */
+  const SPREAD_TOLERANCE = 0.03;
+
+  function expectShare(shares: Map<string, number>, zoneId: string, want: number): void {
+    const got = shares.get(zoneId) ?? 0;
+    expect(Math.abs(got - want)).toBeLessThanOrEqual(SPREAD_TOLERANCE);
+  }
+
+  it('spreads a random crowd three fifths at home, a fifth each way', () => {
+    const { up, down } = ZONE_TIER_SPREAD;
+    // 元婴后期: 洛水城 is what it is tuned for, 幽冥谷 unlocked two stages ago
+    // and 青云山 is behind it — the only rung with somewhere to go both ways.
+    const shares = spread(9, 20_260_906);
+    expectShare(shares, 'map-luoshui-city', 1 - up - down);
+    expectShare(shares, 'map-youming-valley', up);
+    expectShare(shares, 'map-qingyun-mountain', down);
+    expect(shares.get('map-kunlun-ruins')).toBeUndefined();
+  });
+
+  it('keeps a roll with nowhere to go on the tier it started from', () => {
+    const { down } = ZONE_TIER_SPREAD;
+
+    // 练气: nothing below 青云山, and 洛水城 does not unlock until 筑基中期.
+    expect(spread(0, 11).get('map-qingyun-mountain')).toBe(1);
+
+    // 金丹初期 is tuned for 洛水城 but cannot enter 幽冥谷 yet, so the fifth
+    // that would have climbed stays put and only the fifth below moves.
+    const early = spread(6, 12);
+    expectShare(early, 'map-luoshui-city', 1 - down);
+    expectShare(early, 'map-qingyun-mountain', down);
+    expect(early.get('map-youming-valley')).toBeUndefined();
+
+    // 大乘: 昆仑墟 is the last map there is, so the climbers stay too.
+    const top = spread(35, 13);
+    expectShare(top, 'map-kunlun-ruins', 1 - down);
+    expectShare(top, 'map-youming-valley', down);
   });
 });
 

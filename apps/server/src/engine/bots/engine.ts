@@ -54,6 +54,18 @@ const OPPONENT_STAGE_WINDOW = 3;
 /** Ceiling on bots created in one tick, so raising `botCount` cannot stall it. */
 const MAX_CREATED_PER_TICK = 500;
 
+/**
+ * Odds an awake bot that is standing nowhere walks onto a 战斗大地图 this tick.
+ *
+ * At the default 30 秒一息 this puts a bot on a field about a minute and a half
+ * after it wakes up or comes home, which is what a cold-started world needs to
+ * have company on the starter map before a player has finished reading the
+ * 开服公告. It reads high, but a field is governed by `zoneBotLimit` and by the
+ * ten-minute stay below, not by this: a bot turned away at a full map simply
+ * rolls again next tick.
+ */
+export const ZONE_ENTER_CHANCE = 0.35;
+
 export interface BotTickStats {
   at: number;
   /** Bots present at the start of the tick, after topping the population up. */
@@ -98,8 +110,7 @@ export function insightWorld(
   const base = BREAKTHROUGH_BASE_CHANCE[realmOf(stageIndex)];
   if (base === undefined || base <= 0) return world;
   return {
-    breakthroughChanceMultiplier:
-      world.breakthroughChanceMultiplier * ((base + insight) / base),
+    breakthroughChanceMultiplier: world.breakthroughChanceMultiplier * ((base + insight) / base),
   };
 }
 
@@ -170,15 +181,18 @@ export class BotEngine {
   private schedule(): void {
     if (!this.running) return;
     const seconds = this.ctx.settings.get().botTickSeconds;
-    this.timer = setTimeout(() => {
-      this.timer = null;
-      try {
-        this.tick();
-      } catch (error) {
-        console.error('[bots] tick failed:', error);
-      }
-      this.schedule();
-    }, Math.max(1, seconds) * 1000);
+    this.timer = setTimeout(
+      () => {
+        this.timer = null;
+        try {
+          this.tick();
+        } catch (error) {
+          console.error('[bots] tick failed:', error);
+        }
+        this.schedule();
+      },
+      Math.max(1, seconds) * 1000,
+    );
     this.timer.unref?.();
   }
 
@@ -313,7 +327,7 @@ export class BotEngine {
 
       // Walking onto (or off) a 战斗大地图 is decided from the equipped state,
       // so the field gets the bot with the 战力 it will actually fight at.
-      this.stepZone(equipped, action, scheduleMultiplier, rng, world, now);
+      this.stepZone(equipped, action, scheduleMultiplier, rng, now);
     }
 
     // ---- fights, resolved after the settle pass so both sides are current
@@ -371,11 +385,21 @@ export class BotEngine {
   /**
    * Sends a bot out to a 战斗大地图, or calls it home.
    *
-   * This is what keeps the maps populated around the clock: a bot that decided
-   * to 历练 walks onto the field its 境界 belongs on and stays there for at
-   * least `ZONE_BOT_MIN_STAY_MS`, so the roster a player sees does not churn
-   * every tick. Asleep bots always come home, which is what makes a map quiet
-   * at 04:00 and crowded in the evening.
+   * This is what keeps the maps populated around the clock: an awake bot that
+   * is not already standing on a field walks onto the one its 境界 belongs on
+   * with `ZONE_ENTER_CHANCE` odds, and stays for at least
+   * `ZONE_BOT_MIN_STAY_MS` so the roster a player sees does not churn every
+   * tick. Asleep bots always come home, which is what makes a map quiet at
+   * 04:00 and crowded in the evening.
+   *
+   * The roll is deliberately blind to the tick's `action`. It used to require
+   * 历练, and 历练 is only ever chosen by an archetype whose `explorePref` says
+   * so — one of the six, 散修, awake 06:00–22:00 UTC. Outside that window no
+   * awake archetype could produce it at all, so a fresh world booted at 23:00
+   * UTC left every map empty until morning, and an operator retuning
+   * `explorePref` in the admin panel silently emptied them for good. Attendance
+   * now hangs on the 作息 window alone, which is the knob that is *about* when
+   * a cultivator is out and about.
    *
    * `ZoneService` owns the field itself — the bot's own row is settled and
    * saved by the tick around this call either way, so a full map never blocks
@@ -386,7 +410,6 @@ export class BotEngine {
     action: BotAction,
     scheduleMultiplier: number,
     rng: ReturnType<typeof createRng>,
-    world: WorldSettings,
     now: number,
   ): void {
     // The same gate the chatter uses: below this a bot is off-hours.
@@ -395,10 +418,7 @@ export class BotEngine {
 
     if (current === null) {
       if (!awake) return;
-      // 历练 goes to the field. So does a fight-picking bot once 大地图 PvP is
-      // on, because that is where the fights are.
-      const goes = action === 'explore' || (world.mapPvp && action === 'arena');
-      if (!goes) return;
+      if (!rng.chance(ZONE_ENTER_CHANCE)) return;
       const zone = zoneFor(bot.stageIndex, rng);
       if (this.ctx.zones.enterBot(bot, zone.id, now)) this.zoneEnteredAt.set(bot.id, now);
       return;
@@ -481,9 +501,7 @@ export class BotEngine {
     rng: ReturnType<typeof createRng>,
   ): string | null {
     const near = headers.filter(
-      (h) =>
-        h.id !== bot.id &&
-        Math.abs(h.stageIndex - bot.stageIndex) <= OPPONENT_STAGE_WINDOW,
+      (h) => h.id !== bot.id && Math.abs(h.stageIndex - bot.stageIndex) <= OPPONENT_STAGE_WINDOW,
     );
     if (near.length === 0) return null;
 

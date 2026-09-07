@@ -296,13 +296,27 @@ function recommendedStageOf(zone: Zone): number {
 }
 
 /**
+ * How a random population spreads around the field its 境界 is tuned for.
+ *
+ * A crowd that only ever climbs empties the low maps. Bots keep breaking
+ * through, and a day into a 200-bot world not one of them was still under
+ * 金丹: 青云山 held 0 bots, 幽冥谷 sat at its cap of 36, and the 练气 player
+ * the starter map exists for had it to himself. A fifth walking back down one
+ * tier is what staffs a map with cultivators who out-grew it, instead of only
+ * with the ones who have not arrived yet.
+ */
+export const ZONE_TIER_SPREAD = { up: 0.2, down: 0.2 } as const;
+
+/**
  * Where a cultivator at `stageIndex` belongs.
  *
  * Without an `rng` this is deterministic: the hardest zone the character is
- * actually tuned for (`recommendedStage <= stageIndex`). With one, a fifth of
- * the population pushes one tier further out when that tier has unlocked, which
- * is what keeps the higher maps from standing empty until everyone out-levels
- * the lower ones.
+ * actually tuned for (`recommendedStage <= stageIndex`). With one, the base
+ * tier keeps three fifths of the crowd, a fifth pushes one tier further out
+ * when that tier has unlocked, and a fifth drops back one tier when there is
+ * one below. A roll that has nowhere to go — the lowest map has no tier below
+ * it, the next one up has not unlocked — stays on the base tier, so the ends of
+ * the ladder simply hold a larger share.
  */
 export function zoneFor(stageIndex: number, rng?: Rng): Zone {
   const first = ZONES[0] as Zone;
@@ -315,8 +329,14 @@ export function zoneFor(stageIndex: number, rng?: Rng): Zone {
     }
   }
   if (!rng) return base;
-  const next = ZONES[baseIndex + 1];
-  if (next && unlockStageOf(next) <= stageIndex && rng.chance(0.2)) return next;
+  const roll = rng.next();
+  if (roll < ZONE_TIER_SPREAD.up) {
+    const next = ZONES[baseIndex + 1];
+    return next && unlockStageOf(next) <= stageIndex ? next : base;
+  }
+  if (roll < ZONE_TIER_SPREAD.up + ZONE_TIER_SPREAD.down) {
+    return ZONES[baseIndex - 1] ?? base;
+  }
   return base;
 }
 
