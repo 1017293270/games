@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Navigate, Outlet } from 'react-router';
-import type { SettleResponse } from '@xianxia/shared';
+import type { SettleResponse, ZoneLoot } from '@xianxia/shared';
 import { SETTLE_INTERVAL_MS } from '../config';
 import { ArenaChallengedNotice } from '../features/arena/ArenaChallengedNotice';
-import { OfflineReturnModal } from '../features/cultivation/OfflineReturnModal';
+import { OfflineReturnModal, receiptAwaySec } from '../features/cultivation/OfflineReturnModal';
 import { useCharacterStore } from '../store/character';
 import { useSessionStore } from '../store/session';
 import { closeSocket, openSocket } from '../store/socket';
@@ -14,6 +14,20 @@ import { TopBar } from './TopBar';
 /** Time away that is worth interrupting the player with a summary. */
 const RETURN_THRESHOLD_SEC = 120;
 
+/**
+ * Whether a 战果 receipt is proof the character fought on without its owner.
+ *
+ * Two things have to hold. The window it covers has to be longer than the
+ * threshold — the same one the 修炼 summary uses — and it has to have opened
+ * before this session did: `store/zone.ts` merges every receipt into one tally
+ * and keeps the *earliest* `since`, so a stint that began after the app opened
+ * is this session's own farming, however old that `since` looks by now.
+ */
+function isHomecoming(loot: ZoneLoot | null, sessionAgeMs: number): boolean {
+  const awaySec = receiptAwaySec(loot);
+  return awaySec >= RETURN_THRESHOLD_SEC && awaySec * 1000 >= sessionAgeMs;
+}
+
 export function AppShell() {
   const status = useSessionStore((state) => state.status);
   const token = useSessionStore((state) => state.token);
@@ -21,12 +35,28 @@ export function AppShell() {
   const load = useCharacterStore((state) => state.load);
   const settle = useCharacterStore((state) => state.settle);
   const view = useCharacterStore((state) => state.view);
+  const loot = useZoneStore((state) => state.loot);
   const [summary, setSummary] = useState<SettleResponse | null>(null);
+  /** Whether the 闭关归来 panel has already been offered this session. */
   const greeted = useRef(false);
+  /** The boot settle, held so a receipt that lands after it has numbers to show. */
+  const settled = useRef<SettleResponse | null>(null);
+  /**
+   * When this shell mounted. The login screen is a route of its own, so a
+   * session that starts with a password lands on a shell mounted right then.
+   */
+  const openedAt = useRef(Date.now());
 
   const resettle = useCallback(async () => {
     await settle({ silent: true });
   }, [settle]);
+
+  /** Opens 闭关归来 once, for whichever proof of an absence arrives first. */
+  const greet = useCallback((result: SettleResponse) => {
+    if (greeted.current) return;
+    greeted.current = true;
+    setSummary(result);
+  }, []);
 
   /**
    * Boot through `character/settle` rather than `character/get`: reading the
@@ -40,15 +70,37 @@ export function AppShell() {
       await load();
       return;
     }
-    if (greeted.current) return;
-    greeted.current = true;
-    if (result.creditedSec >= RETURN_THRESHOLD_SEC) setSummary(result);
-  }, [settle, load]);
+    settled.current = result;
+    if (result.creditedSec >= RETURN_THRESHOLD_SEC) {
+      greet(result);
+      return;
+    }
+    // The 留场 receipt can beat this settle home: the socket asks the server to
+    // restore the field the moment it opens and the tally follows `zone:joined`
+    // in the same breath. Whichever of the two arrives second does the greeting.
+    if (isHomecoming(useZoneStore.getState().loot, Date.now() - openedAt.current)) greet(result);
+  }, [settle, load, greet]);
 
   useEffect(() => {
     if (status !== 'ready' || !characterId) return;
     void boot();
   }, [status, characterId, boot]);
+
+  /**
+   * 留场 spoils. A character left on a 战斗大地图 keeps fighting while its owner
+   * is away, and the server hands that whole tally over as one `zone:loot` once
+   * the field is restored. The 修炼 summary cannot notice such an absence — the
+   * zone loop settles the row every few seconds, so `creditedSec` comes back
+   * tiny for exactly the players who were gone longest — so the receipt opens
+   * the panel itself, and the panel reads the tally straight from the store.
+   */
+  useEffect(() => {
+    if (greeted.current || !loot) return;
+    // No summary yet: the boot settle re-reads the tally when it lands.
+    const result = settled.current;
+    if (!result) return;
+    if (isHomecoming(loot, Date.now() - openedAt.current)) greet(result);
+  }, [loot, greet]);
 
   useEffect(() => {
     if (status !== 'ready' || !token) return;

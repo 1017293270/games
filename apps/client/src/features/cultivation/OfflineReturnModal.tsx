@@ -1,11 +1,24 @@
-import { formatDuration, type SettleResponse } from '@xianxia/shared';
+import { formatDuration, type SettleResponse, type ZoneLoot } from '@xianxia/shared';
 import { Button, CloudRule, Modal } from '../../design';
+import { serverNow } from '../../store/session';
 import { useZoneStore } from '../../store/zone';
 import './cultivation.css';
 
 export interface OfflineReturnModalProps {
   summary: SettleResponse | null;
   onClose: () => void;
+}
+
+/**
+ * Seconds a 战果 receipt says the character has been banking spoils for.
+ *
+ * `since` is the server's epoch ms for the moment the accrual window opened —
+ * for a 留场 character, the moment its owner dropped off the socket — so the
+ * clock offset measured at login is applied before subtracting.
+ */
+export function receiptAwaySec(loot: ZoneLoot | null): number {
+  if (!loot) return 0;
+  return Math.max(0, (serverNow() - loot.since) / 1000);
 }
 
 /** The 闭关归来 summary: what the wall clock was worth while you were away. */
@@ -18,13 +31,17 @@ export function OfflineReturnModal({ summary, onClose }: OfflineReturnModalProps
   if (!summary) return null;
   const forfeited = summary.forfeitedSec > 1;
   const fought = Boolean(loot && (loot.kills > 0 || loot.exp > 0));
+  // 修炼 is settled every few seconds for anyone left on a 战斗大地图, so
+  // `elapsedSec` under-reports the absence of exactly the players who were away
+  // longest. The receipt's own window is the longer, truer measure of it.
+  const awaySec = Math.max(summary.elapsedSec, receiptAwaySec(loot));
 
   return (
     <Modal
       open
       onClose={onClose}
       title="闭关归来"
-      lede={`离山 ${formatDuration(summary.elapsedSec)}，坐忘而已`}
+      lede={`离山 ${formatDuration(awaySec)}，坐忘而已`}
     >
       <div className="settle-rows">
         <div className="settle-row">
