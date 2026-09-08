@@ -66,10 +66,21 @@ export function mainTreasureOf(state: CharacterState) {
 }
 
 /** Full attributes with gear and 功法 folded in. */
-export function statsOf(state: CharacterState, equipment: readonly EquipmentItem[]): Stats {
+export function statsOf(
+  state: CharacterState,
+  equipment: readonly EquipmentItem[],
+  nowMs = state.lastSettledAt,
+): Stats {
+  const bonuses = progressionBonuses(progressionOf(state));
+  for (const buff of state.buffs) {
+    if (buff.expiresAt <= nowMs || !buff.stats) continue;
+    for (const key of Object.keys(bonuses.extraPercent) as (keyof Stats)[]) {
+      bonuses.extraPercent[key] += buff.stats[key] ?? 0;
+    }
+  }
   return computeStats({
     stageIndex: state.stageIndex,
-    ...progressionBonuses(progressionOf(state)),
+    ...bonuses,
     equipment,
     technique: getTechnique(state.techniqueId),
   });
@@ -84,8 +95,9 @@ export function statsOf(state: CharacterState, equipment: readonly EquipmentItem
 export function withFreshPower(
   state: CharacterState,
   equipment: readonly EquipmentItem[],
+  nowMs = state.lastSettledAt,
 ): CharacterState {
-  const power = powerScore(statsOf(state, equipment));
+  const power = powerScore(statsOf(state, equipment, nowMs));
   return state.powerScore === power ? state : { ...state, powerScore: power };
 }
 
@@ -158,7 +170,7 @@ export function buildView(
   const equipment = resolveEquipment(state, inventory);
   return {
     character: state,
-    stats: statsOf(state, equipment),
+    stats: statsOf(state, equipment, nowMs),
     stageName: stageName(state.stageIndex),
     expRequired: expRequired(state.stageIndex),
     ratePerSec: ratePerSecOf(state, world, nowMs),
@@ -195,8 +207,10 @@ export function buildPublicProfile(
   state: CharacterState,
   online: boolean,
   inventory: InventoryRepo,
+  nowMs = state.lastSettledAt,
 ): PublicProfile {
   const equipment = resolveEquipment(state, inventory);
+  const stats = statsOf(state, equipment, nowMs);
   return {
     id: state.id,
     name: state.name,
@@ -206,8 +220,8 @@ export function buildPublicProfile(
     stageIndex: state.stageIndex,
     stageName: stageName(state.stageIndex),
     spiritRoot: state.spiritRoot,
-    powerScore: state.powerScore,
-    stats: statsOf(state, equipment),
+    powerScore: powerScore(stats),
+    stats,
     techniqueName: getTechnique(state.techniqueId)?.name ?? null,
     skillIds: state.skillSlots.filter((s): s is string => s !== null),
     equipmentItemIds: equipment.map((e) => e.id),

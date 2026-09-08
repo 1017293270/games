@@ -158,13 +158,13 @@ export function flushZone(
         }
       }
       const equipment = resolveEquipment(next, ctx.inventory);
-      next = withFreshPower(next, equipment);
+      next = withFreshPower(next, equipment, now);
 
       const slot = world.slots.get(id);
       if (slot !== undefined) {
         refreshes.push({
           slot,
-          stats: statsOf(next, equipment),
+          stats: statsOf(next, equipment, now),
           mainTreasure: mainTreasureOf(next),
           skills: next.skillSlots,
           stageIndex: next.stageIndex,

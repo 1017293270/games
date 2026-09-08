@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { CharacterView, InventoryItem, InventoryListResponse } from '@xianxia/shared';
+import { ITEM_BY_ID, TECHNIQUE_BY_ID, computeStats, type CharacterView, type InventoryItem, type InventoryListResponse, type PublicProfile } from '@xianxia/shared';
+import { resolveEquipment, statsOf } from '../src/game/character.js';
+import { characterCombatant, runBattle } from '../src/game/combat.js';
+import type { ZoneServiceImpl } from '../src/engine/zone/service.js';
 import {
   auth,
   createHarness,
@@ -71,6 +74,45 @@ describe('inventory', () => {
     expect(used.view.character.buffs).toHaveLength(1);
     expect(used.view.ratePerSec).toBeGreaterThan(before.ratePerSec);
     expect(find((await list()).items, 'pill-qi').qty).toBe(2);
+  });
+
+  it('stat pills persist their existing bonuses in battle and an occupied zone, then expire', async () => {
+    // Official existence: https://xian.leiting.com/news/3.html (2020-12-03). Values/stacking follow GDD 4.3 and ITEMS, not the original game's numbers.
+    h.ctx.settings.patch({ cultivationMultiplier: 0 });
+    const before = await list();
+    h.ctx.zones.enter(player.characterId, 'map-qingyun-mountain', h.clock.now());
+    const world = (h.ctx.zones as ZoneServiceImpl).worlds.get('map-qingyun-mountain')!;
+    const total: Record<string, number> = {};
+    for (const id of ['pill-power', 'pill-spirit']) {
+      const item = ITEM_BY_ID.get(id)!;
+      if (item.kind !== 'pill' || item.effect.type !== 'stat_buff') throw new Error('stat pill missing');
+      h.ctx.inventory.add(player.characterId, id, 2);
+      const pill = find((await list()).items, id);
+      const response = await h.app.inject({ method: 'POST', url: '/api/inventory/use', headers: auth(player.token), payload: { uid: pill.uid, qty: 2 } });
+      const used = expectOk<{ view: CharacterView }>(response.json());
+      for (const [stat, amount] of Object.entries(item.effect.stats)) total[stat] = (total[stat] ?? 0) + amount * 2;
+      const state = h.ctx.characters.byId(player.characterId)!;
+      const expected = computeStats({ stageIndex: state.stageIndex, equipment: resolveEquipment(state, h.ctx.inventory), technique: TECHNIQUE_BY_ID.get(state.techniqueId ?? ''), extraPercent: total });
+      expect(used.view.stats).toEqual(expected);
+      expect(used.view.ratePerSec).toBe(0);
+      expect((await list()).stats).toEqual(expected);
+      expect(h.ctx.inventory.byUid(pill.uid)).toBeNull();
+      h.ctx.zones.flush(h.clock.now()); // Even a no-kill window must refresh the already occupied field.
+      expect(world.entityOf(player.characterId)!.stats).toEqual(expected);
+    }
+    const state = h.ctx.characters.byId(player.characterId)!;
+    const buffed = statsOf(state, resolveEquipment(state, h.ctx.inventory));
+    const enemy = { id: 'target', name: 'target', stats: { ...before.stats, hp: 10000 }, skills: [] };
+    const withPill = runBattle([characterCombatant(state, buffed)], [enemy], 42, { maxBattleRounds: 1 });
+    const without = runBattle([characterCombatant(state, before.stats)], [enemy], 42, { maxBattleRounds: 1 });
+    expect(withPill.finalHp.target!).toBeLessThan(without.finalHp.target!);
+    h.clock.advance(1800 * 1000);
+    h.ctx.zones.flush(h.clock.now()); // Expiry must work without a character REST read or any loot.
+    expect(world.entityOf(player.characterId)!.stats).toEqual(before.stats);
+    const directory = expectOk<{ items: PublicProfile[] }>((await h.app.inject({ method: 'GET', url: `/api/cultivators?q=${encodeURIComponent(player.name)}`, headers: auth(player.token) })).json());
+    expect(directory.items.find(row => row.id === player.characterId)!.stats).toEqual(before.stats);
+    expect((await list()).stats).toEqual(before.stats);
+    expect(h.ctx.characters.byId(player.characterId)!.buffs).toHaveLength(0);
   });
 
   it('服用筑基丹 grants 修为 immediately', async () => {

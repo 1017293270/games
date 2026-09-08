@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { ProgressionStateSchema } from './progression.js';
 import { ART_AVATARS, ART_IDS } from '../core/art.js';
 import { MAX_STAGE_INDEX } from '../cultivation/realms.js';
-import { SpiritRootSchema, StatsSchema } from './stats.js';
+import { SpiritRootSchema, StatsSchema, StatBonusSchema } from './stats.js';
 import { EquipSlotSchema, InventoryItemSchema, ItemGradeSchema } from './item.js';
 import { BotParamsSchema } from './bot.js';
 import { QuestProgressSchema } from './quest.js';
@@ -14,13 +14,15 @@ export const GENDERS = ['male', 'female'] as const;
 export const GenderSchema = z.enum(GENDERS);
 export type Gender = z.infer<typeof GenderSchema>;
 
-/** A timed cultivation-rate buff granted by a pill. */
+/** A timed pill buff; stat-only pills have a zero cultivation bonus. */
 export const CultivationBuffSchema = z.object({
   id: z.string().min(1),
   /** Item that granted the buff, for the UI icon. */
   itemId: z.string().min(1),
   /** Additive bonus, e.g. 0.5 = +50% cultivation rate. */
   bonus: z.number().min(0),
+  /** Additive combat percentages, using the existing computeStats percentage block. */
+  stats: StatBonusSchema.partial().optional(),
   /** Epoch ms at which the buff stops applying. */
   expiresAt: z.number().int(),
 });

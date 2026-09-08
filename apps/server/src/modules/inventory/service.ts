@@ -24,9 +24,8 @@ export function list(
   now: number,
 ): InventoryListResponse {
   void world;
-  void now;
   const equipment = resolveEquipment(state, ctx.inventory);
-  const stats = statsOf(state, equipment);
+  const stats = statsOf(state, equipment, now);
   return {
     items: ctx.inventory.view(state.id, Object.values(state.equipment)),
     spiritStones: state.spiritStones,
@@ -98,10 +97,18 @@ export function useItem(
       break;
     }
     case 'stat_buff': {
-      // Combat-stat pills are consumed for their flavour text in M1; the fight
-      // modifiers land with the arena module, which is where a timed combat
-      // buff first has something to apply to.
-      message = `服下${item.name}，一股暖流游走四肢百骸`;
+      const buffs = [...next.buffs];
+      for (let i = 0; i < qty; i += 1) {
+        buffs.push({
+          id: randomUUID(),
+          itemId: item.id,
+          bonus: 0,
+          stats: { ...item.effect.stats },
+          expiresAt: now + item.effect.durationSec * 1000,
+        });
+      }
+      next = { ...next, buffs };
+      message = `服下${item.name}，属性提升，持续 ${item.effect.durationSec} 秒`;
       break;
     }
     case 'unlock_skill_slot': {

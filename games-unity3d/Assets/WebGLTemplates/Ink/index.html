@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f3f0e5">
+  <title>青云问道 · 水墨修行</title>
+  <style>
+    * { box-sizing: border-box; }
+    html,body { margin:0; width:100%; height:100%; overflow:hidden; background:#f3f0e5; color:#33453f; }
+    body { font-family:"PingFang SC","Microsoft YaHei",sans-serif; }
+    #unity-canvas { width:100%; height:100%; display:block; outline:none; touch-action:none; }
+    #loading { position:fixed; inset:0; display:grid; place-content:center; text-align:center; background:radial-gradient(ellipse at center,#faf8f0,#e1e6d9); }
+    h1 { margin:0 0 20px; font-family:"Songti SC",serif; font-size:42px; font-weight:400; letter-spacing:12px; }
+    p { margin:0 0 30px; font-size:14px; color:#748077; letter-spacing:4px; }
+    progress { width:240px; height:3px; appearance:none; border:0; }
+    progress::-webkit-progress-bar { background:#d5dace; }
+    progress::-webkit-progress-value { background:#a38a5e; }
+    progress::-moz-progress-bar { background:#a38a5e; }
+    #notice { position:fixed; left:50%; top:24px; transform:translateX(-50%); max-width:calc(100% - 32px); background:#fff9ee; color:#8b3d30; padding:14px 20px; display:none; }
+  </style>
+</head>
+<body>
+  <canvas id="unity-canvas" tabindex="0" aria-label="青云问道平面水墨战场"></canvas>
+  <div id="loading"><h1>青云问道</h1><p>山水入卷，静候君来</p><progress id="progress" max="1" value="0" aria-label="游戏加载进度"></progress></div>
+  <div id="notice" role="alert"></div>
+  <script>
+    const canvas=document.getElementById('unity-canvas');
+    const notice=document.getElementById('notice');
+    const config={
+      dataUrl:'Build/{{{ DATA_FILENAME }}}',
+      frameworkUrl:'Build/{{{ FRAMEWORK_FILENAME }}}',
+      codeUrl:'Build/{{{ CODE_FILENAME }}}',
+      streamingAssetsUrl:'StreamingAssets',
+      companyName:'{{{ COMPANY_NAME }}}',
+      productName:'{{{ PRODUCT_NAME }}}',
+      productVersion:'{{{ PRODUCT_VERSION }}}',
+      devicePixelRatio:Math.min(window.devicePixelRatio||1,2),
+      showBanner:(message,type)=>{if(type==='error'){notice.textContent=message;notice.style.display='block';}}
+    };
+    const loader=document.createElement('script');
+    loader.src='Build/{{{ LOADER_FILENAME }}}';
+    loader.onload=()=>createUnityInstance(canvas,config,p=>{document.getElementById('progress').value=p;})
+      .then(()=>{document.getElementById('loading').remove();canvas.focus();})
+      .catch(()=>{notice.textContent='青云山暂时未能载入，请刷新重试。';notice.style.display='block';});
+    loader.onerror=()=>{notice.textContent='游戏文件加载失败，请确认本地预览服务仍在运行。';notice.style.display='block';};
+    document.body.appendChild(loader);
+  </script>
+</body>
+</html>

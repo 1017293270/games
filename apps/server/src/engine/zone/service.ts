@@ -405,7 +405,7 @@ export class ZoneServiceImpl implements ZoneService {
 
   /** Projects a character onto a field: attributes, 神通, 气血 share, presence. */
   private place(world: ZoneWorld, state: CharacterState, isBot: boolean, now: number): ZoneEntity {
-    const stats = statsOf(state, resolveEquipment(state, this.ctx.inventory));
+    const stats = statsOf(state, resolveEquipment(state, this.ctx.inventory), now);
     const mainTreasure = mainTreasureOf(state);
     const entity = world.add(
       {

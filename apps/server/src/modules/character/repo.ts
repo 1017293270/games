@@ -70,7 +70,7 @@ export function cultivatorPage(
   const { states, total } = ctx.characters.pageStates(query);
   return {
     items: states.map((state) =>
-      buildPublicProfile(state, ctx.presence.isOnline(state.id), ctx.inventory),
+      buildPublicProfile(state, ctx.presence.isOnline(state.id), ctx.inventory, ctx.now()),
     ),
     total,
   };

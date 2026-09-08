@@ -1,0 +1,17 @@
+{
+  "name": "qingyun-unity-prototype",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "content": "node tools/export-content.mjs",
+    "verify:content": "node tools/export-content.mjs --check",
+    "server": "node tools/dev-server.mjs",
+    "verify:backend": "node tools/smoke-backend.mjs",
+    "verify:unity": "bash tools/unity.sh verify",
+    "build:mac": "bash tools/unity.sh mac",
+    "build:web": "bash tools/unity.sh web",
+    "open": "bash tools/unity.sh open",
+    "preview": "python3 -m http.server 3180 --bind 127.0.0.1 --directory Builds/Web"
+  }
+}

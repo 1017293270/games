@@ -1,0 +1,155 @@
+.game-root { flex-grow: 1; align-items: center; background-color: rgb(40, 49, 47); color: rgb(42, 48, 43); font-size: 15px; }
+.game-frame { width: 100%; max-width: 640px; height: 100%; flex-grow: 1; overflow: hidden; background-color: rgb(238, 239, 226); }
+.page-background { position: absolute; left: 0; top: 0; right: 0; bottom: 0; -unity-background-scale-mode: scale-and-crop; opacity: 0.32; }
+.game-header { position: relative; flex-shrink: 0; min-height: 56px; padding: 5px 56px 5px 12px; background-color: rgba(234, 237, 222, 0.94); border-bottom-width: 1px; border-bottom-color: rgba(115, 125, 102, 0.42); }
+.header-identity { font-size: 15px; -unity-font-style: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 1px 0; }
+.header-resources { font-size: 12px; color: rgb(97, 84, 54); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 1; }
+.header-connection { font-size: 11px; color: rgb(91, 117, 93); margin: 0 0 0 5px; white-space: nowrap; flex-shrink: 0; }
+.main-scroll { flex-grow: 1; flex-shrink: 1; min-height: 0; }
+.main-scroll > .unity-scroll-view__content-viewport { flex-grow: 1; }
+.page-content { padding: 12px 12px 18px 12px; min-height: 100%; }
+.heading { font-size: 27px; color: rgb(39, 58, 49); margin: 2px 0 6px 0; white-space: normal; }
+.heading-note { color: rgb(113, 121, 105); font-size: 14px; margin-bottom: 8px; white-space: normal; }
+.body { white-space: normal; margin: 4px 0; color: rgb(54, 63, 53); }
+.muted { white-space: normal; margin: 5px 0; color: rgb(105, 115, 94); font-size: 14px; }
+.small { white-space: normal; margin: 3px 0; color: rgb(93, 103, 87); font-size: 13px; }
+.section-title { white-space: normal; margin: 4px 0 6px 0; font-size: 16px; color: rgb(49, 68, 54); -unity-font-style: bold; }
+.row, .grid, .avatar-grid, .battle-fighters { flex-direction: row; flex-wrap: wrap; align-items: center; }
+.row > * { margin-right: 6px; }
+.row > .card { align-self: stretch; }
+.grid { align-items: stretch; justify-content: space-around; }
+.grid > .card { flex-basis: 148px; flex-grow: 1; flex-shrink: 1; min-width: 140px; margin-right: 6px; }
+.card { background-color: rgba(248, 247, 235, 0.78); border-top-width: 1px; border-top-color: rgba(156, 154, 120, 0.50); border-bottom-width: 1px; border-bottom-color: rgba(170, 173, 147, 0.38); border-left-width: 1px; border-right-width: 1px; border-left-color: rgba(170, 173, 147, 0.24); border-right-color: rgba(170, 173, 147, 0.24); border-radius: 3px; padding: 8px; margin: 4px 0 8px 0; flex-shrink: 1; min-width: 0; }
+.game-button { margin: 5px 4px 5px 0; min-height: 44px; padding: 8px 10px; white-space: normal; border-width: 1px; border-color: rgb(168, 176, 145); border-radius: 4px; color: rgb(56, 77, 57); background-color: rgba(232, 236, 214, 0.96); font-size: 14px; -unity-font-style: normal; }
+.game-button:hover { background-color: rgb(218, 228, 198); border-color: rgb(116, 147, 109); }
+.game-button:active { background-color: rgb(204, 218, 181); }
+.game-button:focus { border-color: rgb(74, 118, 107); border-width: 2px; }
+.primary { background-color: rgb(70, 103, 79); color: rgb(253, 247, 221); border-color: rgb(58, 83, 59); }
+.primary:hover { background-color: rgb(84, 123, 89); color: white; }
+.danger { color: rgb(145, 67, 52); border-color: rgb(189, 136, 111); background-color: rgb(242, 227, 209); }
+.game-button:disabled { color: rgb(142, 147, 132); background-color: rgba(223, 225, 211, 0.75); border-color: rgb(197, 201, 184); }
+.header-menu { position: absolute; right: 6px; top: 4px; min-height: 44px; width: 44px; padding: 2px; margin: 0; font-size: 14px; background-color: rgba(236, 239, 222, 0.3); border-color: rgba(155, 170, 132, 0.45); }
+.game-field { margin: 9px 0; flex-direction: column; min-width: 0; }
+.game-field > .unity-text-field__label { min-width: 0; margin: 0 0 6px 0; color: rgb(75, 91, 72); font-size: 13px; white-space: normal; }
+.game-field > .unity-text-field__input { min-height: 43px; padding: 9px 10px; background-color: rgb(253, 250, 239); color: rgb(42, 53, 43); border-color: rgb(173, 181, 150); border-width: 1px; border-radius: 4px; }
+.game-field > .unity-text-field__input:focus { border-color: rgb(73, 123, 108); }
+.game-picture { margin: 4px; flex-shrink: 0; }
+.picture-missing { background-color: rgba(151, 164, 143, 0.08); }
+.meter { height: 25px; margin: 6px 0; background-color: rgb(211, 220, 196); border-radius: 3px; overflow: hidden; flex-shrink: 0; }
+.meter-fill { height: 100%; background-color: rgba(87, 132, 103, 0.60); position: absolute; left: 0; top: 0; }
+.meter-caption { -unity-text-align: middle-center; font-size: 12px; color: rgb(37, 56, 42); height: 100%; padding: 2px 5px; }
+.bottom-nav { flex-direction: row; flex-shrink: 0; padding: 4px 4px 6px 4px; background-color: rgba(227, 234, 214, 0.97); border-top-width: 1px; border-top-color: rgb(146, 166, 129); }
+.nav-button { flex-grow: 1; flex-basis: 0; min-width: 0; height: 56px; margin: 0 2px; padding: 3px 0; font-size: 22px; border-radius: 24px; border-color: rgba(150, 167, 134, 0.55); background-color: rgba(244, 241, 221, 0.9); }
+.nav-selected { background-color: rgb(67, 99, 72); color: rgb(255, 246, 215); border-color: rgb(84, 106, 70); }
+.notifications { padding: 0 10px; flex-shrink: 0; }
+.error-banner { white-space: normal; color: rgb(151, 63, 49); background-color: rgb(250, 231, 206); padding: 8px 14px; font-size: 12px; flex-shrink: 0; }
+.sheet-overlay { position: absolute; left: 0; right: 0; top: 0; bottom: 67px; background-color: rgba(25, 39, 34, 0.58); justify-content: flex-end; align-items: center; }
+.sheet { width: 100%; max-width: 620px; max-height: 96%; min-height: 190px; background-color: rgb(245, 244, 230); border-top-left-radius: 14px; border-top-right-radius: 14px; padding: 0 0 10px 0; border-top-width: 2px; border-top-color: rgb(170, 165, 121); }
+.sheet-header { flex-direction: row; align-items: center; padding: 12px 17px 8px 17px; border-bottom-width: 1px; border-bottom-color: rgb(214, 216, 192); flex-shrink: 0; }
+.sheet-title { font-size: 27px; white-space: normal; color: rgb(43, 68, 50); }
+.sheet-close { min-height: 44px; margin-left: 8px; }
+.sheet-scroll { flex-grow: 1; flex-shrink: 1; min-height: 80px; }
+.sheet-scroll .unity-scroll-view__content-container { padding: 10px 17px 18px 17px; }
+.game-toast { flex-shrink: 0; margin: 0; padding: 8px 12px; background-color: rgb(51, 77, 58); color: rgb(255, 248, 223); white-space: normal; font-size: 13px; -unity-text-align: middle-center; }
+.world-frame { background-color: rgba(0, 0, 0, 0); }
+.world-content { min-height: 100%; }
+.world-frame .game-header, .world-frame .bottom-nav { background-color: rgba(233, 238, 220, 0.9); }
+.avatar-grid { justify-content: space-around; }
+.avatar-choice { width: 76px; height: 80px; padding: 1px; margin: 4px; align-items: center; justify-content: center; }
+.avatar-selected { border-width: 3px; border-color: rgb(66, 108, 76); background-color: rgb(203, 222, 185); }
+.rarity-common { border-top-color: rgb(173, 177, 162); }
+.rarity-uncommon { border-top-color: rgb(90, 146, 105); }
+.rarity-rare { border-top-color: rgb(88, 139, 167); }
+.rarity-epic { border-top-color: rgb(145, 112, 166); }
+.rarity-legendary { border-top-color: rgb(187, 151, 62); }
+.rarity-mythic { border-top-color: rgb(176, 87, 67); }
+.battle-fighters { flex-direction: column; flex-wrap: nowrap; align-items: stretch; }
+.battle-fighter { flex-grow: 0; width: 100%; min-width: 0; margin: 3px 0; padding: 6px 8px; }
+.battle-avatar { border-radius: 28px; overflow: hidden; align-self: center; }
+.battle-log { margin: 8px 0; min-height: 0; padding: 8px; background-color: rgba(215, 226, 206, 0.62); border-radius: 5px; }
+.unity-scroller--vertical { width: 8px; }
+
+.world-root { background-color: rgba(0, 0, 0, 0); }
+
+/* 2020 scene seals / 2023 cultivation focus; layout and motion amplitudes belong to Qingyun. */
+.header-name-row { flex-direction: row; align-items: center; min-height: 23px; }
+.header-meta { flex-direction: row; align-items: center; min-height: 18px; }
+.home-frame .page-background { opacity: 0.54; }
+.home-content { padding: 4px 12px 12px 12px; }
+.home-scene { position: relative; height: 418px; flex-shrink: 0; }
+.home-scene-title { position: absolute; top: 10px; left: 0; right: 0; font-size: 27px; -unity-text-align: middle-center; color: rgb(41, 65, 52); }
+.home-scene-note { position: absolute; top: 46px; left: 0; right: 0; font-size: 13px; -unity-text-align: middle-center; color: rgb(115, 120, 94); }
+.home-meditator { position: absolute; left: 12%; top: 100px; margin: 0; }
+.home-qi-ring { position: absolute; left: 26%; top: 344px; width: 48%; height: 47px; border-radius: 100px; border-width: 2px; border-color: rgba(79, 155, 140, 0.70); background-color: rgba(89, 171, 153, 0.08); }
+.home-seal { position: absolute; width: 72px; align-items: center; }
+.home-seal .game-button { width: 64px; height: 56px; min-height: 56px; padding: 3px; margin: 0; border-radius: 28px; border-width: 1px; border-color: rgb(135, 139, 93); background-color: rgba(247, 242, 219, 0.90); color: rgb(54, 75, 52); font-size: 19px; }
+.home-seal .game-button:hover { background-color: rgb(226, 234, 204); }
+.home-seal-caption { margin-top: 4px; font-size: 12px; color: rgb(105, 111, 80); -unity-text-align: middle-center; }
+.home-practice { padding: 9px 8px 10px 8px; border-top-width: 1px; border-top-color: rgba(125, 148, 107, 0.50); background-color: rgba(246, 247, 230, 0.73); }
+.home-practice > .section-title { margin: 0 0 5px 0; -unity-text-align: middle-center; }
+.home-practice > .muted { font-size: 14px; margin: 6px 0; -unity-text-align: middle-center; }
+.home-progress { height: 26px; margin: 0; }
+.home-progress .unity-progress-bar__container { height: 26px; border-width: 0; border-radius: 3px; background-color: rgb(205, 219, 192); }
+.home-progress .unity-progress-bar__progress { border-width: 0; border-radius: 3px; background-color: rgb(119, 159, 123); }
+.home-progress .unity-progress-bar__title { font-size: 13px; color: rgb(29, 53, 36); -unity-text-align: middle-center; }
+.home-actions { flex-direction: row; flex-wrap: nowrap; justify-content: space-between; }
+.home-actions .game-button { flex-grow: 1; flex-basis: 0; min-width: 0; min-height: 48px; margin: 3px 3px 0 3px; padding: 8px 4px; font-size: 14px; }
+.progression-content > .row > .card { background-color: rgba(249, 246, 230, 0.56); border-left-width: 0; border-right-width: 0; }
+.progression-content > .row > .card > .game-picture { max-width: 56px; max-height: 56px; }
+.progression-content .grid > .card, .town-content .grid > .card { background-color: rgba(248, 247, 235, 0.66); border-left-width: 0; border-right-width: 0; }
+.progression-content .grid > .card > .game-picture { align-self: center; }
+.town-content > .game-picture { max-height: 112px; }
+.town-content .grid > .card > .section-title { font-size: 15px; }
+
+.world-status { flex-direction: row; flex-wrap: nowrap; align-items: stretch; margin: 3px 0 7px 0; }
+.world-status-actor { flex-direction: row; flex-wrap: nowrap; align-items: center; flex-basis: 0; flex-grow: 1; min-width: 0; padding: 6px; margin-right: 4px; border-radius: 4px; background-color: rgba(241, 246, 230, 0.94); }
+.world-status-portrait { width: 40px; height: 40px; flex-shrink: 0; border-radius: 22px; overflow: hidden; border-width: 1px; border-color: rgb(106, 133, 93); margin-right: 6px; }
+.world-status-details { flex-grow: 1; min-width: 0; }
+.world-status-name { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: rgb(44, 70, 47); }
+.world-status-details .meter { height: 19px; margin: 3px 0 0 0; }
+.world-status-details .meter-caption { font-size: 11px; padding: 0 2px; }
+.battle-fighter-row { flex-direction: row; flex-wrap: nowrap; align-items: center; }
+.battle-fighter-details { flex-grow: 1; min-width: 0; padding-left: 6px; }
+.battle-fighter-details .small { margin: 1px 0; }
+.battle-fighter-details .meter { height: 21px; margin: 3px 0; }
+.battle-footer { flex-shrink: 0; padding: 7px 17px 5px 17px; border-top-width: 1px; border-top-color: rgb(202, 211, 183); background-color: rgb(233, 238, 220); }
+.battle-footer .small { margin: 0; -unity-text-align: middle-center; }
+.battle-footer .game-button { margin-right: 0; min-height: 44px; }
+
+/* Official historical skill/status hierarchy and shop rows; column counts are Qingyun's layout. */
+.character-stat-grid, .character-study-grid, .character-slot-grid, .bag-equipment-grid, .bag-item-grid { flex-direction: row; flex-wrap: wrap; justify-content: space-between; align-items: stretch; }
+.character-identity .body, .character-identity .muted { margin: 2px 0; }
+.character-stat-cell { padding: 4px 0; margin: 0; border-bottom-width: 1px; border-bottom-color: rgba(161, 174, 145, 0.3); }
+.character-stat-cell > * { margin-right: 0; }
+.character-stat-cell .muted { font-size: 13px; }
+.character-stat-cell .section-title { font-size: 15px; }
+.character-study-tile { padding: 7px; margin: 4px 0; }
+.character-study-tile > .section-title { font-size: 14px; margin: 3px 0; }
+.character-study-tile .small, .character-study-tile .muted { font-size: 12px; margin: 3px 0; }
+.character-study-tile .game-button { margin: 4px 0 0 0; padding: 5px 3px; font-size: 13px; }
+.character-slot-button { padding: 6px 3px; font-size: 12px; }
+.skill-mark { width: 36px; height: 36px; -unity-text-align: middle-center; font-size: 22px; margin: 2px 0 5px 0; border-width: 1px; border-radius: 5px; border-color: rgb(161, 166, 139); background-color: rgb(231, 235, 218); color: rgb(55, 80, 60); }
+.skill-mark-metal { color: rgb(137, 108, 51); background-color: rgb(241, 233, 207); }
+.skill-mark-water { color: rgb(50, 99, 123); background-color: rgb(217, 231, 230); }
+.skill-mark-fire { color: rgb(148, 75, 57); background-color: rgb(244, 225, 209); }
+.skill-mark-earth { color: rgb(122, 98, 63); background-color: rgb(235, 229, 211); }
+.bag-equipment-slot { padding: 5px; margin: 3px 0; }
+.bag-equipment-slot .small, .bag-equipment-slot .muted { margin: 2px 0; font-size: 12px; -unity-text-align: middle-center; }
+.bag-item-tile { padding: 6px; margin: 4px 0; }
+.bag-item-name { white-space: normal; font-size: 12px; min-height: 29px; margin: 3px 0; color: rgb(42, 61, 45); }
+.bag-item-meta { white-space: normal; font-size: 11px; margin: 2px 0; color: rgb(109, 111, 84); }
+.bag-item-action { min-height: 44px; padding: 5px 2px; margin: 4px 0 0 0; font-size: 12px; }
+.bag-selected { border-width: 2px; border-color: rgb(72, 118, 91); background-color: rgb(230, 240, 215); }
+.bag-detail-heading { margin-bottom: 7px; }
+.town-shop-toolbar { margin-bottom: 2px; }
+.town-shop-balance { color: rgb(124, 103, 61); font-size: 14px; margin: 5px 0 8px 0; }
+.town-shop-group { padding: 6px 0; margin: 6px 0 2px 0; -unity-text-align: middle-center; color: rgb(66, 78, 58); border-bottom-width: 1px; border-bottom-color: rgb(193, 198, 172); }
+.town-shop-row { padding: 7px; margin: 4px 0; flex-wrap: nowrap; border-radius: 3px; }
+.town-shop-icon { margin: 0 8px 0 0; flex-shrink: 0; }
+.town-shop-copy { flex-direction: column; flex-wrap: nowrap; align-items: flex-start; margin-right: 5px; }
+.town-shop-copy > * { margin-right: 0; }
+.town-shop-name { white-space: normal; font-size: 14px; color: rgb(43, 69, 50); margin: 2px 0; }
+.town-shop-note { white-space: normal; font-size: 11px; color: rgb(105, 114, 89); margin: 2px 0; }
+.town-shop-price { width: 70px; flex-shrink: 0; font-size: 12px; color: rgb(123, 99, 55); -unity-text-align: middle-right; margin-right: 7px; white-space: normal; }
+.town-shop-action { min-height: 44px; width: 48px; flex-shrink: 0; margin: 0; padding: 5px 2px; font-size: 13px; }
+.town-trade-detail { padding: 10px; }

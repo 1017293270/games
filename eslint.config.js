@@ -8,6 +8,7 @@ export default tseslint.config(
     // generated bundles out of the tree.
     ignores: [
       '**/node_modules/**',
+      'games-unity3d/{Library,Temp,Obj,Builds,Logs,UserSettings,.local}/**',
       '**/dist/**',
       '**/build/**',
       '**/coverage/**',
